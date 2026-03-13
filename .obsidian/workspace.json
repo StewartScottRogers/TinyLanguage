@@ -1,0 +1,227 @@
+{
+  "main": {
+    "id": "8afa3ff1f9b55d96",
+    "type": "split",
+    "children": [
+      {
+        "id": "3cf2de4f9cfc81fe",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0302f32cbcb2aa94",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TinyLanguage.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "TinyLanguage"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9cbd3f22e2664d70",
+    "type": "split",
+    "children": [
+      {
+        "id": "caf9cbca6ae797b9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ba9fe80e5e815f7c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "6691d5c92adac147",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "3136d2b449fbd916",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "dbc290fd1d68254b",
+    "type": "split",
+    "children": [
+      {
+        "id": "cdb0a46a65d7bea5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "028682a234643f72",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "TinyLanguage.Prompt.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for TinyLanguage.Prompt"
+            }
+          },
+          {
+            "id": "d02118274f68e282",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "TinyLanguage.Prompt.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from TinyLanguage.Prompt"
+            }
+          },
+          {
+            "id": "f7c730521fd0caa9",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "9734e1b22153748c",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "29b6cab223d53d28",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "TinyLanguage.Prompt.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of TinyLanguage.Prompt"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "terminal:Open terminal": false
+    }
+  },
+  "active": "0302f32cbcb2aa94",
+  "lastOpenFiles": [
+    "TinyLanguage.2026.03.12.A/SharedProject1/SharedProject1.shproj",
+    "TinyLanguage.2026.03.12.A/SharedProject1/SharedProject1.projitems",
+    "TinyLanguage.2026.03.12.A/SharedProject1",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/obj/Debug/net10.0/cx1vdwpa.hbw~",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00012.modules.tlg",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00012.modules.cmd",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00011.patterns.tlg",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00011.patterns.cmd",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00010.classes.tlg",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00010.classes.cmd",
+    "TinyLanguage.2026.03.12.A/TinyLanguage.DemoFiles/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/bin/Debug/net10.0/00009.closures.tlg",
+    "TinyLanguage.Prompt.md",
+    "Language/TinyLanguage.Testing.md",
+    "DotNet/DotNet.UnitTests.md",
+    "Language/TinyLanguage.Syntax.md",
+    "Language/TinyLanguage.Semantics.md",
+    "Grammar/TinyLanguage.Syntax.md",
+    "Grammar/TinyLanguage.Semantics.md",
+    "Grammar/TinyLanguage.Testing.md",
+    "DotNet/DotNet.Application.md",
+    "DotNet/DotNet.Standards.md",
+    "CLAUDE.md",
+    "2026-03-10.md",
+    "Untitled.canvas",
+    "TinyLanguage.md",
+    "Language/TinyLanguage.Architecture.md",
+    "Implementations/DotNet/DotNet.Standards.md",
+    "DotNet.Standards.md",
+    "TinyLanguage.App.md",
+    "Implementations/DotNet/TinyLanguage.App.md",
+    "TinyLanguage.Architecture.md",
+    "TinyLanguage.Interpreter.md",
+    "TinyLanguage.Testing.md",
+    "TinyLanguage.DotNet.md",
+    "TinyLanguage.BNF.md",
+    "2026-03-09.md"
+  ]
+}

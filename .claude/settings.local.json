@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet test:*)",
+      "Bash(mkdir -p \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A\" && cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A\" && dotnet new sln -n TinyLanguage 2>&1)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A\" && dotnet run --project TinyLanguage.App --no-build; echo \"Exit: $?\")",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A\" && dotnet \"TinyLanguage.App/bin/Debug/net10.0/TinyLanguage.App.dll\" 2>&1 | head -50)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A/TinyLanguage.App/bin/Debug/net10.0\" && ./TinyLanguage.App.exe 2>&1 | head -50)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A/TinyLanguage.App/bin/Debug/net10.0\" && dotnet TinyLanguage.App.dll 2>&1)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A/TinyLanguage.App/bin/Debug/net10.0\" && echo \"test\" | dotnet TinyLanguage.App.dll 2>&1)",
+      "Bash(dotnet TinyLanguage.App.dll)",
+      "Read(//tmp/**)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A/TinyLanguage.App/bin/Debug/net10.0\" && timeout 5 dotnet TinyLanguage.App.dll Demos/demo_fizzbuzz.tl 2>&1 | head -30)",
+      "Bash(powershell -Command \"& {cd 'Z:\\\\Vaults\\\\TinyLanguage\\\\TinyLanguage.26.03.10.A\\\\TinyLanguage.App\\\\bin\\\\Debug\\\\net10.0'; \\\\$out = & dotnet TinyLanguage.App.dll 'Demos\\\\demo_fizzbuzz.tl' 2>&1; Write-Output \\\\$out}\" 2>&1)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.26.03.10.A/TinyLanguage.App/bin/Debug/net10.0\" && dotnet TinyLanguage.App.dll \"Demos/demo_fizzbuzz.tl\" 2>&1; echo \"EXIT:$?\")",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && mkdir -p TinyLanguage.DemoFiles && dotnet sln add TinyLanguage.Lexer/TinyLanguage.Lexer.csproj TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj TinyLanguage/TinyLanguage.csproj TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj 2>&1)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && dotnet restore 2>&1 | tail -20)",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && dotnet run --project TinyLanguage -- 2>&1; echo \"Exit code: $?\")",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && dotnet run --project TinyLanguage 2>&1; echo \"EXIT:$?\")",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A/TinyLanguage/bin/Debug/net10.0/TinyLanguage.exe\" 2>&1; echo \"EXIT:$?\")",
+      "Bash(taskkill /F /IM TinyLanguage.exe 2>&1; sleep 2)",
+      "Bash(powershell -Command \"Stop-Process -Name TinyLanguage -Force -ErrorAction SilentlyContinue; Start-Sleep 2\")",
+      "Bash(cd \"Z:/Vaults/TinyLanguage/TinyLanguage.2026.03.11.A\" && \"TinyLanguage/bin/Debug/net10.0/TinyLanguage.exe\" 2>&1 | tail -3)"
+    ]
+  }
+}
