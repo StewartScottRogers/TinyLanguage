@@ -9,5 +9,6 @@
     <Import_RootNamespace>TinyLanguage</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)TinyLanguage.md" />
   </ItemGroup>
 </Project>
