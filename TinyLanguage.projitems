@@ -10,7 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Claude Code Docs.url" />
+    <None Include="$(MSBuildThisFileDirectory)Claude--dangerously-skip-permissions--settings-lmstudio.cmd" />
     <None Include="$(MSBuildThisFileDirectory)Claude--dangerously-skip-permissions.cmd" />
     <None Include="$(MSBuildThisFileDirectory)TinyLanguage.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)LMStudio.Settings.json" />
   </ItemGroup>
 </Project>
