@@ -1458,5 +1458,36 @@ dotnet run --project TinyLanguage --configuration Release -- <input-file.tlg> <o
 - All integration tests pass.
 - Demo suite prints `All demos completed successfully.` and exits with code 0.
 
+## Implementation Requirements for Building
+
+To ensure the solution builds correctly according to specifications:
+
+1. **Solution Structure**:
+   - Create a solution file `TinyLanguage.sln`
+   - Create project files for:
+     * TinyLanguage (main application)
+     * TinyLanguage.Core (language implementation)
+     * TinyLanguage.UnitTests
+     * TinyLanguage.IntegrationTests
+
+2. **Project Dependencies**:
+   - TinyLanguage depends on TinyLanguage.Core
+   - Unit tests depend on TinyLanguage.Core and TinyLanguage
+   - Integration tests depend on TinyLanguage.Core and TinyLanguage
+
+3. **Build Configuration**:
+   - Use .NET 10.0 as specified in the requirements
+   - Configure all projects to target .NET 10.0
+   - Set build configuration to Release
+
+4. **Compiler Settings**:
+   - Enable all warnings as errors
+   - Disable nullable reference types (as per specifications)
+   - Disable implicit usings (as per specifications)
+
+5. **Testing Requirements**:
+   - All unit tests must use `[TestClass]` and `[TestMethod]`
+   - All integration tests must pass with 0 failures
+   - Test output must be clean with no unexpected warnings or errors
+
 Never mark the task complete while any test is failing.
-yes
