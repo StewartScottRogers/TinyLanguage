@@ -16,4 +16,7 @@
     <None Include="$(MSBuildThisFileDirectory)Claude--dangerously-skip-permissions.cmd" />
     <None Include="$(MSBuildThisFileDirectory)TinyLanguage.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)LMStudio.Settings.json" />
+  </ItemGroup>
 </Project>
