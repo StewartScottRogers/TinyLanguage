@@ -1,3 +1,11 @@
 <Solution>
-  <Project Path="TinyLanguage.shproj" />
+  <Folder Name="/Solution Items/">
+    <File Path="Build.md" />
+    <File Path="Build.Solution.md" />
+    <File Path="Claude Code Docs.url" />
+    <File Path="Claude Usage.url" />
+    <File Path="Claude--dangerously-skip-permissions--settings-lmstudio.cmd" />
+    <File Path="Claude--dangerously-skip-permissions.cmd" />
+    <File Path="LMStudio.Settings.json" />
+  </Folder>
 </Solution>

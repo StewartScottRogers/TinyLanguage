@@ -75,7 +75,7 @@ Use all sections below as the complete specification. Every rule is mandatory un
 
 ## What to Build
 
-- Create Solution in Folder TinyLanguage.YYYY.MM.DD.HH
+- Create Solution in Folder ..\TinyLanguage.YYYY.MM.DD.HH
 - Name the Solution TinyLanguage.
 - Apply the BNF Grammar Verification Strategy to generate all unit tests.
 
