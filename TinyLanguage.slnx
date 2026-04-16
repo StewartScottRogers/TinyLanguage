@@ -8,4 +8,5 @@
     <File Path="Claude--dangerously-skip-permissions.cmd" />
     <File Path="LMStudio.Settings.json" />
   </Folder>
+  <Project Path=".claude/claude.shproj" Id="60827118-5955-4d80-a32e-a6bf7ae2c2d3" />
 </Solution>

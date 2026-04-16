@@ -1,3 +1,77 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Plan.md` has the dependency graph and work unit breakdown.
+
+## Build & Test Commands
+
+```bash
+dotnet build                        # Must succeed with 0 errors, 0 warnings
+dotnet test --verbosity normal      # Must report Failed: 0
+dotnet run --project TinyLanguage   # Demo mode: runs all demo files; exit 0, prints "All demos completed successfully."
+dotnet run --project TinyLanguage -- input.tlg output.txt  # File-processor mode
+```
+
+Run a single test class:
+```bash
+dotnet test --filter "FullyQualifiedName~LexerUnitTests"
+```
+
+**Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `dotnet run` demo mode → exit 0.
+
+## Architecture
+
+Five projects in the solution (`TinyLanguage.slnx`):
+
+| Project | Role |
+|---|---|
+| `TinyLanguage.Lexer` | Lexer, Parser, AST nodes, `AstPrettyPrinter` |
+| `TinyLanguage.Interpreter` | Tree-walking interpreter, `Scope` chain |
+| `TinyLanguage` | Console app (demo mode + file-processor mode) |
+| `TinyLanguage.UnitTests` | MSTest unit tests (lexer + parser) |
+| `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter + end-to-end) |
+
+**Data flow:** source text → `Lexer` → `Token[]` → `Parser` → AST → `Interpreter` (visitor) → output/side effects.
+
+### Key design decisions
+
+- **Visitor pattern:** All AST nodes implement `Accept(INodeVisitor)`. The interpreter and pretty-printer both implement `INodeVisitor`.
+- **Scope chain:** `Scope` is a linked list with parent delegation — not a flat dictionary. Functions create a fresh scope (no closure capture from call site).
+- **No nullable, no implicit usings** throughout — explicit types everywhere.
+- **Records over classes** except AST nodes (which need the visitor pattern and inheritance).
+- **BCL only** — no NuGet packages.
+
+### AST node hierarchy
+
+Base class `AstNode`. Roughly 60+ node types covering statements, expressions, declarations, control flow, and pattern matching. Each node is in its own file (one type per file rule).
+
+## Coding Standards
+
+From `Build.Solution.md` — follow exactly:
+
+- **Naming:** `UpperCamelCase` for types/methods/members; `lowerCamelCase` for locals; `I`-prefix for interfaces; exceptions use same case as variable name; tuple types suffixed `Tuple`.
+- **One file per type** (class, interface, enum, record).
+- **`readonly`** on all variables whenever possible.
+- **Streams over string loads** for file I/O.
+- **Test method naming:** `Subject_Action_ExpectedOutcome` (no "Test" in the name). Test class names end in `UnitTests` or `IntegrationTests`.
+- **Test framework:** MSTest only (no XUnit, no NUnit).
+
+## Disambiguation Rules
+
+The parser has 23 documented disambiguation rules (see `Build.Solution.md` §1.5). The critical ones:
+
+- `(expr)` vs cast: look-ahead determines cast vs. grouped expression.
+- Lambda detection: `(params) =>` vs. parenthesized expression.
+- `if` as expression vs. statement: determined by context (right-hand side of assignment/return/call arg → expression; otherwise → statement).
+- `do { ... } while` vs `do` block: `while` keyword after `}` closes a do-while; otherwise it's a do-block.
+
+When implementing parser rules, consult the BNF in `Build.Solution.md` §1.4 and the notes in §1.5 before writing any code.
+
+---
+
 ## Coding Guidelines
 
 # Karpathy Guidelines
