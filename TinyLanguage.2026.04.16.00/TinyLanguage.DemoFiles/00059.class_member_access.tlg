@@ -1,0 +1,20 @@
+# Demo: class member access and mutation
+class Rectangle {
+    let Width : float := 0.0
+    let Height : float := 0.0
+    Constructor(w : float, h : float)
+        Width := w
+        Height := h
+    end
+    function area() -> float
+        return Width * Height
+    end
+    function perimeter() -> float
+        return 2.0 * (Width + Height)
+    end
+}
+let r := new Rectangle(5.0, 3.0)
+print r.area()
+print r.perimeter()
+r.Width := 10.0
+print r.area()

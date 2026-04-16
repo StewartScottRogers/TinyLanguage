@@ -1,0 +1,31 @@
+# Demo: fluent interface style code
+class QueryBuilder {
+    let Table : string := ""
+    let Condition : string := ""
+    let Limit : int := 100
+    Constructor()
+        Table := ""
+        Condition := ""
+        Limit := 100
+    end
+    function from(tableName : string) -> QueryBuilder
+        Table := tableName
+        return this
+    end
+    function where(cond : string) -> QueryBuilder
+        Condition := cond
+        return this
+    end
+    function take(n : int) -> QueryBuilder
+        Limit := n
+        return this
+    end
+    function toSql() -> string
+        return "SELECT * FROM " & Table & " WHERE " & Condition & " LIMIT " & str(Limit)
+    end
+}
+let qb := new QueryBuilder()
+qb.from("users")
+qb.where("active = 1")
+qb.take(10)
+print qb.toSql()

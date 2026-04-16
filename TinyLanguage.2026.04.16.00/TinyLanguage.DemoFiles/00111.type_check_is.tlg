@@ -1,0 +1,9 @@
+# Demo: type checking with 'is' operator
+let n := 42
+let s := "hello"
+let f := 3.14
+let b := true
+print n is int
+print s is string
+print f is float
+print b is bool

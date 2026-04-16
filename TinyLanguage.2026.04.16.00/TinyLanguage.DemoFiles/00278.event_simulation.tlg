@@ -1,0 +1,19 @@
+# Demo: event-driven simulation with class
+class SimEvent {
+    let Time : int := 0
+    let Kind : string := ""
+    Constructor(time : int, kind : string)
+        Time := time
+        Kind := kind
+    end
+}
+let events := []
+events[0] := new SimEvent(1, "arrive")
+events[1] := new SimEvent(3, "depart")
+events[2] := new SimEvent(5, "arrive")
+events[3] := new SimEvent(7, "depart")
+let clock := 0
+foreach ev in events do
+    clock := ev.Time
+    print "Time " & str(clock) & ": " & ev.Kind
+end

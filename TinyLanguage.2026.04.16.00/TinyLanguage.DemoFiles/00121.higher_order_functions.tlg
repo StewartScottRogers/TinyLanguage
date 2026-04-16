@@ -1,0 +1,15 @@
+# Demo: higher-order functions (map-like behavior)
+function mapArray(arr, transform)
+    let result := []
+    let i := 0
+    while i < len(arr) do
+        result[i] := transform(arr[i])
+        i := i + 1
+    end
+    return result
+end
+let nums := [1, 2, 3, 4, 5]
+let doubled := mapArray(nums, function(x : int) x * 2)
+foreach item in doubled do
+    print item
+end

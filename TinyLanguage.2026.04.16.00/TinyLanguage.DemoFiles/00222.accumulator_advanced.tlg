@@ -1,0 +1,17 @@
+# Demo: accumulator pattern for running statistics
+function runningAverage(arr)
+    let total := 0
+    let count := 0
+    let averages := []
+    foreach n in arr do
+        total := total + n
+        count := count + 1
+        averages[count - 1] := total / count
+    end
+    return averages
+end
+let data := [4, 7, 2, 9, 1, 5, 8]
+let avgs := runningAverage(data)
+foreach a in avgs do
+    print a
+end

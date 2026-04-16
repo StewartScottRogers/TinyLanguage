@@ -1,0 +1,8 @@
+# Demo: import statement
+module Helpers {
+    function double(n : int) -> int
+        return n * 2
+    end
+}
+import Helpers
+print Helpers.double(21)

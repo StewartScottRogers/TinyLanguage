@@ -1,0 +1,13 @@
+# Demo: sum the digits of a number
+function digitSum(n : int) -> int
+    let sum := 0
+    let remaining := n
+    while remaining > 0 do
+        sum := sum + remaining % 10
+        remaining := remaining // 10
+    end
+    return sum
+end
+print digitSum(12345)
+print digitSum(999)
+print digitSum(100)

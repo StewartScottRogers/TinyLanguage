@@ -1,0 +1,30 @@
+# Demo: Sieve of Eratosthenes
+function sieve(limit : int)
+    let isPrime := []
+    let i := 0
+    while i <= limit do
+        isPrime[i] := true
+        i := i + 1
+    end
+    isPrime[0] := false
+    isPrime[1] := false
+    let p := 2
+    while p * p <= limit do
+        if isPrime[p] then
+            let multiple := p * p
+            while multiple <= limit do
+                isPrime[multiple] := false
+                multiple := multiple + p
+            end
+        end
+        p := p + 1
+    end
+    let n := 2
+    while n <= limit do
+        if isPrime[n] then
+            print n
+        end
+        n := n + 1
+    end
+end
+sieve(30)

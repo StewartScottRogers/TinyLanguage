@@ -1,0 +1,17 @@
+# Demo: finally block for cleanup
+function riskyOperation(shouldFail : bool)
+    let cleanup := "pending"
+    try
+        if shouldFail then
+            throw "deliberate failure"
+        end
+        print "Success!"
+    catch err
+        print "Caught: " + str(err)
+    finally
+        cleanup := "done"
+        print "Cleaned up: " + cleanup
+    end
+end
+riskyOperation(false)
+riskyOperation(true)

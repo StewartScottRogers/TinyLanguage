@@ -1,0 +1,23 @@
+# Demo: selection sort algorithm
+function selectionSort(arr)
+    let n := len(arr)
+    for i := 0 to n - 2 do
+        let minIdx := i
+        for j := i + 1 to n - 1 do
+            if arr[j] < arr[minIdx] then
+                minIdx := j
+            end
+        end
+        if minIdx != i then
+            let temp := arr[i]
+            arr[i] := arr[minIdx]
+            arr[minIdx] := temp
+        end
+    end
+    return arr
+end
+let data := [29, 10, 14, 37, 13]
+let sorted := selectionSort(data)
+foreach n in sorted do
+    print n
+end

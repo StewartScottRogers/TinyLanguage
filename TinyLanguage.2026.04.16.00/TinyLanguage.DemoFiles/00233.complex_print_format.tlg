@@ -1,0 +1,18 @@
+# Demo: complex print formatting
+function table(headers, rows)
+    let headerLine := ""
+    foreach h in headers do
+        headerLine := headerLine & h & "\t"
+    end
+    print headerLine
+    foreach row in rows do
+        let line := ""
+        foreach cell in row do
+            line := line & str(cell) & "\t"
+        end
+        print line
+    end
+end
+let headers := ["Name", "Age", "Score"]
+let rows := [["Alice", 30, 95], ["Bob", 25, 87], ["Carol", 35, 92]]
+table(headers, rows)

@@ -1,0 +1,20 @@
+# Demo: class with multiple constructors (using static factory style)
+class Rectangle {
+    let Width : int := 0
+    let Height : int := 0
+    Constructor(w : int, h : int)
+        Width := w
+        Height := h
+    end
+    function area() -> int
+        return Width * Height
+    end
+    function perimeter() -> int
+        return 2 * (Width + Height)
+    end
+}
+let r1 := new Rectangle(4, 6)
+print r1.area()
+print r1.perimeter()
+let r2 := new Rectangle(10, 3)
+print r2.area()

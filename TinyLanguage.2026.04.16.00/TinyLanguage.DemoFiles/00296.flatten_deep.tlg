@@ -1,0 +1,25 @@
+# Demo: deep flatten of nested arrays (depth 2)
+function flattenDeep(nested)
+    let result := []
+    foreach item in nested do
+        if item is array then
+            foreach sub in item do
+                if sub is array then
+                    foreach elem in sub do
+                        result[len(result)] := elem
+                    end
+                else
+                    result[len(result)] := sub
+                end
+            end
+        else
+            result[len(result)] := item
+        end
+    end
+    return result
+end
+let deep := [[1, [2, 3]], [4, [5, 6]], 7]
+let flat := flattenDeep(deep)
+foreach n in flat do
+    print n
+end

@@ -1,0 +1,19 @@
+# Demo: array operations (sorting via bubble sort, filtering, mapping)
+function bubbleSort(arr)
+    let n := len(arr)
+    for i := 0 to n - 2 do
+        for j := 0 to n - i - 2 do
+            if arr[j] > arr[j + 1] then
+                let tmp := arr[j]
+                arr[j] := arr[j + 1]
+                arr[j + 1] := tmp
+            end
+        end
+    end
+    return arr
+end
+let nums := [5, 2, 8, 1, 9, 3]
+let sorted := bubbleSort(nums)
+foreach n in sorted do
+    print n
+end

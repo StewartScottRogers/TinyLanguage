@@ -1,0 +1,8 @@
+# Demo: pattern matching with when guard
+let score := 85
+match score {
+    n when n >= 90 => print "Grade A"
+    n when n >= 80 => print "Grade B"
+    n when n >= 70 => print "Grade C"
+    _ => print "Below C"
+}

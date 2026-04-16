@@ -1,0 +1,19 @@
+# Demo: nested try/catch with re-throw
+function process(input : int) -> int
+    try
+        if input < 0 then
+            throw "negative input"
+        end
+        return input * 2
+    catch err
+        print "Inner handler: " & str(err)
+        throw err
+    end
+    return 0
+end
+try
+    print process(5)
+    process(-1)
+catch outerErr
+    print "Outer handler: " & str(outerErr)
+end

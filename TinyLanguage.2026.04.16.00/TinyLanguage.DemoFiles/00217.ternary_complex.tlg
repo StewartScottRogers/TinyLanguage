@@ -1,0 +1,13 @@
+# Demo: ternary expression in complex contexts
+let x := 10
+let sign := x > 0 ? "positive" : (x < 0 ? "negative" : "zero")
+print sign
+function maxOf(a : int, b : int) -> int
+    return a > b ? a : b
+end
+print maxOf(5, 8)
+print maxOf(10, 3)
+let arr := [1, -2, 3, -4, 5]
+foreach n in arr do
+    print n > 0 ? "pos" : "neg"
+end

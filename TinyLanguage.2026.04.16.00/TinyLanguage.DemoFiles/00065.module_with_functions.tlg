@@ -1,0 +1,15 @@
+# Demo: module with utility functions
+module StringUtils {
+    function repeat(s : string, n : int) -> string
+        let result := ""
+        for i := 1 to n do
+            result := result + s
+        end
+        return result
+    end
+    function wrap(s : string, delim : string) -> string
+        return delim & s & delim
+    end
+}
+print StringUtils.repeat("ha", 3)
+print StringUtils.wrap("hello", "*")

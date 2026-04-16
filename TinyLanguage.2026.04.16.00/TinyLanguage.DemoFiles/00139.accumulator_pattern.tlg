@@ -1,0 +1,11 @@
+# Demo: accumulator pattern
+let total := 0
+let count := 0
+let values := [5, 10, 15, 20, 25]
+foreach v in values do
+    total := total + v
+    count := count + 1
+end
+print total
+print count
+print total // count

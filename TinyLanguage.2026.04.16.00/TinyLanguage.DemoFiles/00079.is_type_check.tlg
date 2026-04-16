@@ -1,0 +1,7 @@
+# Demo: is type check expression
+let x := 42
+print x is int
+let s := "hello"
+print s is string
+let b := true
+print b is bool

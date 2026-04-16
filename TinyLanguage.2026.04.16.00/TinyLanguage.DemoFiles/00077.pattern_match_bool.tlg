@@ -1,0 +1,6 @@
+# Demo: pattern matching with boolean values
+let flag := true
+match flag {
+    true => print "It is true"
+    false => print "It is false"
+}

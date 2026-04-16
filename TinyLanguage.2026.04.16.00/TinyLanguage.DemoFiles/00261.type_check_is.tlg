@@ -1,0 +1,11 @@
+# Demo: type checking with 'is' operator
+let x := 42
+let y := 3.14
+let s := "hello"
+let b := true
+print x is int
+print y is float
+print s is string
+print b is bool
+let n := null
+print n is null

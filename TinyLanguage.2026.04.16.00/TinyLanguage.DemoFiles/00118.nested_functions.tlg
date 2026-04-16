@@ -1,0 +1,12 @@
+# Demo: nested function calls
+function add(a : int, b : int) -> int
+    return a + b
+end
+function multiply(a : int, b : int) -> int
+    return a * b
+end
+function addThenDouble(a : int, b : int) -> int
+    return multiply(add(a, b), 2)
+end
+print addThenDouble(3, 4)
+print addThenDouble(5, 5)

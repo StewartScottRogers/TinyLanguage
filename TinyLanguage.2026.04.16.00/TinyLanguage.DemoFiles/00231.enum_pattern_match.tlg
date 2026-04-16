@@ -1,0 +1,15 @@
+# Demo: enum used in pattern matching
+enum Season { Spring = 1, Summer = 2, Autumn = 3, Winter = 4 }
+function describe(s : int) -> string
+    match s {
+        1 => return "flowers bloom"
+        2 => return "sun shines"
+        3 => return "leaves fall"
+        4 => return "snow falls"
+        _ => return "unknown season"
+    }
+end
+print describe(Season.Spring)
+print describe(Season.Summer)
+print describe(Season.Autumn)
+print describe(Season.Winter)

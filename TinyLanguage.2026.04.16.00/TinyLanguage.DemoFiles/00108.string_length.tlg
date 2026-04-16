@@ -1,0 +1,6 @@
+# Demo: string length using len()
+let s := "Hello, World!"
+print len(s)
+let empty := ""
+print len(empty)
+print len("abc")

@@ -1,0 +1,12 @@
+# Demo: check if array contains a value
+function contains(arr, target : int) -> bool
+    foreach item in arr do
+        if item == target then
+            return true
+        end
+    end
+    return false
+end
+let nums := [10, 20, 30, 40, 50]
+print contains(nums, 30)
+print contains(nums, 99)

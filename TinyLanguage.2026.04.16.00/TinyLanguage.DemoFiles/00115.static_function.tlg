@@ -1,0 +1,6 @@
+# Demo: static function modifier
+static function helper(x : int) -> int
+    return x * 2
+end
+print helper(5)
+print helper(10)

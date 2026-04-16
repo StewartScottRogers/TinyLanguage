@@ -1,0 +1,19 @@
+# Demo: insertion sort algorithm
+function insertionSort(arr)
+    let n := len(arr)
+    for i := 1 to n - 1 do
+        let key := arr[i]
+        let j := i - 1
+        while j >= 0 and arr[j] > key do
+            arr[j + 1] := arr[j]
+            j := j - 1
+        end
+        arr[j + 1] := key
+    end
+    return arr
+end
+let data := [64, 34, 25, 12, 22, 11, 90]
+let sorted := insertionSort(data)
+foreach n in sorted do
+    print n
+end

@@ -1,0 +1,28 @@
+# Demo: string prefix and suffix matching
+function startsWith(s : string, prefix : string) -> bool
+    if len(prefix) > len(s) then
+        return false
+    end
+    for i := 0 to len(prefix) - 1 do
+        if s[i] != prefix[i] then
+            return false
+        end
+    end
+    return true
+end
+function endsWith(s : string, suffix : string) -> bool
+    let offset := len(s) - len(suffix)
+    if offset < 0 then
+        return false
+    end
+    for i := 0 to len(suffix) - 1 do
+        if s[offset + i] != suffix[i] then
+            return false
+        end
+    end
+    return true
+end
+print startsWith("hello world", "hello")
+print startsWith("hello world", "world")
+print endsWith("hello world", "world")
+print endsWith("hello world", "hello")

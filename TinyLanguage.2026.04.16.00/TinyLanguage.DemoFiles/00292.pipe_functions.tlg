@@ -1,0 +1,15 @@
+# Demo: pipeline of functions applied in sequence
+function pipeline(val, fns)
+    let result := val
+    foreach fn in fns do
+        result := fn(result)
+    end
+    return result
+end
+let steps := [
+    function(x : int) x + 1,
+    function(x : int) x * 2,
+    function(x : int) x - 3
+]
+print pipeline(5, steps)
+print pipeline(10, steps)

@@ -1,0 +1,6 @@
+# Demo: escape sequences - newline and tab
+print "Line1
+Line2
+Line3"
+print "Col1	Col2	Col3"
+print "A	B	C" 

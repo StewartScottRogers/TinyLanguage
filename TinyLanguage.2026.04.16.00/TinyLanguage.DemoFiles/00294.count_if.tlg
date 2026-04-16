@@ -1,0 +1,17 @@
+# Demo: count elements matching a predicate
+function countIf(arr, pred) -> int
+    let count := 0
+    foreach item in arr do
+        if pred(item) then
+            count := count + 1
+        end
+    end
+    return count
+end
+let nums := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let evenCount := countIf(nums, function(n : int) n % 2 == 0)
+print "Even count: " & str(evenCount)
+let bigCount := countIf(nums, function(n : int) n > 5)
+print "Greater than 5: " & str(bigCount)
+let negCount := countIf(nums, function(n : int) n < 0)
+print "Negative: " & str(negCount)

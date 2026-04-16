@@ -1,0 +1,18 @@
+# Demo: type assertion with 'as' operator
+function processValue(val)
+    if val is int then
+        let n := val as int
+        print "Integer: " & str(n * 2)
+    end
+    if val is string then
+        let s := val as string
+        print "String: " & s
+    end
+    if val is float then
+        let f := val as float
+        print "Float: " & str(f)
+    end
+end
+processValue(21)
+processValue("world")
+processValue(2.718)

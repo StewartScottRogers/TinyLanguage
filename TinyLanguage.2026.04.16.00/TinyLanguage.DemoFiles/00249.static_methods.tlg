@@ -1,0 +1,23 @@
+# Demo: class with static method definitions
+class MathHelper {
+    static function factorial(n : int) -> int
+        if n <= 1 then
+            return 1
+        end
+        return n * MathHelper.factorial(n - 1)
+    end
+    static function gcd(a : int, b : int) -> int
+        while b != 0 do
+            let temp := b
+            b := a % b
+            a := temp
+        end
+        return a
+    end
+    static function lcm(a : int, b : int) -> int
+        return (a * b) // MathHelper.gcd(a, b)
+    end
+}
+print MathHelper.factorial(6)
+print MathHelper.gcd(48, 18)
+print MathHelper.lcm(4, 6)

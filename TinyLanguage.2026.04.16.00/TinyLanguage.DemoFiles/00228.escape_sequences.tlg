@@ -1,0 +1,13 @@
+# Demo: escape sequences in strings
+let newline := "line1\nline2"
+print newline
+let tab := "col1\tcol2\tcol3"
+print tab
+let backslash := "back\slash"
+print backslash
+let doubleQuote := "say \"hello\""
+print doubleQuote
+let singleQuote := 'it\'s fine'
+print singleQuote
+let combined := "tab:\there\nnewline above"
+print combined

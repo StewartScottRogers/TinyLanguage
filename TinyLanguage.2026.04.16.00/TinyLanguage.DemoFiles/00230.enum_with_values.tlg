@@ -1,0 +1,10 @@
+# Demo: enum with assigned values
+enum Color { Red = 1, Green = 2, Blue = 3 }
+enum Direction { North = 0, East = 90, South = 180, West = 270 }
+print Color.Red
+print Color.Green
+print Color.Blue
+print Direction.North
+print Direction.East
+print Direction.South
+print Direction.West

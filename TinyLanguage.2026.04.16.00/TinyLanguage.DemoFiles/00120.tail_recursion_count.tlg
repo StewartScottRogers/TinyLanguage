@@ -1,0 +1,10 @@
+# Demo: tail-recursive counting
+function countdown(n : int)
+    if n <= 0 then
+        print "Blastoff!"
+        return
+    end
+    print n
+    countdown(n - 1)
+end
+countdown(5)

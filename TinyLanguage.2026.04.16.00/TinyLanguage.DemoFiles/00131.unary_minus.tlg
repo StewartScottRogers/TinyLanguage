@@ -1,0 +1,7 @@
+# Demo: unary minus operator
+let x := 5
+print -x
+print -(-x)
+let y := -3.14
+print y
+print -y

@@ -1,0 +1,19 @@
+# Demo: chained method calls a.b().c().d()
+class Builder {
+    let Data : string := ""
+    Constructor()
+        Data := ""
+    end
+    function add(s : string) -> Builder
+        Data := Data & s
+        return this
+    end
+    function build() -> string
+        return Data
+    end
+}
+let b := new Builder()
+b.add("Hello")
+b.add(", ")
+b.add("World")
+print b.build()

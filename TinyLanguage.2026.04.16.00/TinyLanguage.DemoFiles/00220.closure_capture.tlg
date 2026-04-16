@@ -1,0 +1,12 @@
+# Demo: closures capturing outer variables
+function makeCounter()
+    let count := 0
+    return function()
+        count := count + 1
+        return count
+    end
+end
+let counter1 := makeCounter()
+print counter1()
+print counter1()
+print counter1()

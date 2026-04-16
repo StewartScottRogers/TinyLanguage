@@ -1,0 +1,13 @@
+# Demo: count occurrences of a character in a string
+function countChar(s : string, target : string) -> int
+    let count := 0
+    foreach ch in s do
+        if ch == target then
+            count := count + 1
+        end
+    end
+    return count
+end
+print countChar("Hello, World!", "l")
+print countChar("abcabc", "a")
+print countChar("zzz", "z")

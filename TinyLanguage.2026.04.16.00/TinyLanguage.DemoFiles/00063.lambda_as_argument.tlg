@@ -1,0 +1,8 @@
+# Demo: lambda passed as function argument
+function apply(f, value : int) -> int
+    return f(value)
+end
+let result := apply(function(x : int) x * x, 7)
+print result
+let result2 := apply(function(n : int) n + 10, 5)
+print result2

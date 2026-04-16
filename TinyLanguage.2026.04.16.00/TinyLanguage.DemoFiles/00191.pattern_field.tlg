@@ -1,0 +1,15 @@
+# Demo: pattern matching with field patterns { field: val }
+class Point {
+    let X : int := 0
+    let Y : int := 0
+    Constructor(x : int, y : int)
+        X := x
+        Y := y
+    end
+}
+let p := new Point(0, 0)
+match p {
+    Point{ X: 0, Y: 0 } => print "origin"
+    Point{ X: 0 } => print "on y-axis"
+    _ => print "general point"
+}

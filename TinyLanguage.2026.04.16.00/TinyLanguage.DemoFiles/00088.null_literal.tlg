@@ -1,0 +1,6 @@
+# Demo: null literal
+let x := null
+print x
+print x == null
+let arr := [1, null, 3]
+print arr[1]

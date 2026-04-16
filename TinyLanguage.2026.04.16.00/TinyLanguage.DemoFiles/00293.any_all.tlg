@@ -1,0 +1,23 @@
+# Demo: any() and all() higher-order predicates
+function any(arr, pred) -> bool
+    foreach item in arr do
+        if pred(item) then
+            return true
+        end
+    end
+    return false
+end
+function all(arr, pred) -> bool
+    foreach item in arr do
+        if not pred(item) then
+            return false
+        end
+    end
+    return true
+end
+let nums := [2, 4, 6, 8, 10]
+print all(nums, function(n : int) n % 2 == 0)
+print any(nums, function(n : int) n > 9)
+print any(nums, function(n : int) n > 100)
+let mixed := [1, 2, 3, 4, 5]
+print all(mixed, function(n : int) n % 2 == 0)

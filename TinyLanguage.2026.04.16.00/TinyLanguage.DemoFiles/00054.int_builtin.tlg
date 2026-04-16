@@ -1,0 +1,9 @@
+# Demo: int() built-in conversion
+print int("42")
+print int(3.14)
+print int(3.99)
+print int(true)
+print int(false)
+let s := "100"
+let n := int(s)
+print n + 1

@@ -1,0 +1,15 @@
+# Demo: module with import and use
+module MathLib {
+    function square(n : int) -> int
+        return n * n
+    end
+    function cube(n : int) -> int
+        return n * n * n
+    end
+    function abs(n : int) -> int
+        return if n < 0 then -n else n
+    end
+}
+print MathLib.square(7)
+print MathLib.cube(4)
+print MathLib.abs(-15)

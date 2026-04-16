@@ -1,0 +1,26 @@
+# Demo: command pattern with undo support
+class CommandHistory {
+    let Commands : array := []
+    let Count : int := 0
+    Constructor()
+        Commands := []
+        Count := 0
+    end
+    function execute(cmd)
+        cmd()
+        Commands[Count] := cmd
+        Count := Count + 1
+    end
+    function getCount() -> int
+        return Count
+    end
+}
+let value := 0
+let history := new CommandHistory()
+history.execute(function() value := value + 10)
+print value
+history.execute(function() value := value * 2)
+print value
+history.execute(function() value := value - 5)
+print value
+print history.getCount()

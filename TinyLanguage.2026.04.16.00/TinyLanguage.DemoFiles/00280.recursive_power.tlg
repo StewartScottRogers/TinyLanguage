@@ -1,0 +1,15 @@
+# Demo: recursive fast power (exponentiation by squaring)
+function power(base : int, exp : int) -> int
+    if exp == 0 then
+        return 1
+    end
+    if exp % 2 == 0 then
+        let half := power(base, exp // 2)
+        return half * half
+    end
+    return base * power(base, exp - 1)
+end
+print power(2, 10)
+print power(3, 5)
+print power(5, 4)
+print power(7, 0)

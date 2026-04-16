@@ -1,0 +1,13 @@
+# Demo: mixed arithmetic (int + float promotion)
+let intVal := 5
+let floatVal := 2.5
+let sumResult := intVal + floatVal
+print sumResult
+let product := intVal * floatVal
+print product
+let divResult := 7.0 / 2.0
+print divResult
+let floorDiv := 7 // 2
+print floorDiv
+let power := 2 ** 0.5
+print power

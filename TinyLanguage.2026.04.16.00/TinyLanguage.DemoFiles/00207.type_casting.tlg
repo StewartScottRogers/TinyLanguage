@@ -1,0 +1,14 @@
+# Demo: type casting (int to float, float to int)
+let i := 42
+let f := (float) i
+print f
+let pi := 3.14159
+let truncated := (int) pi
+print truncated
+let flag := true
+let asInt := (int) flag
+print asInt
+let numStr := str(123)
+print numStr
+let backToInt := int("456")
+print backToInt

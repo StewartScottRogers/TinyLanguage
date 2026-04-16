@@ -1,0 +1,9 @@
+# Demo: multi-line strings using escape sequences
+let line1 := "First line\nSecond line\nThird line"
+print line1
+let tabbed := "Name:\tAlice\nAge:\t30"
+print tabbed
+let quoted := "She said \"hello\" to him"
+print quoted
+let path := "C:\Users\Alice\Documents"
+print path

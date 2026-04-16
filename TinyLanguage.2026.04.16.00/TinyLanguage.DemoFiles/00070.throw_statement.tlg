@@ -1,0 +1,13 @@
+# Demo: throw statement
+function divide(a : int, b : int) -> int
+    if b == 0 then
+        throw "Division by zero!"
+    end
+    return a // b
+end
+try
+    print divide(10, 2)
+    print divide(10, 0)
+catch err
+    print "Error: " + str(err)
+end

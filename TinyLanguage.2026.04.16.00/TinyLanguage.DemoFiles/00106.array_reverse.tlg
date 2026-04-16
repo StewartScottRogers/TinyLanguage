@@ -1,0 +1,17 @@
+# Demo: reverse an array
+function reverseArr(arr)
+    let n := len(arr)
+    let i := 0
+    while i < n // 2 do
+        let temp := arr[i]
+        arr[i] := arr[n - 1 - i]
+        arr[n - 1 - i] := temp
+        i := i + 1
+    end
+    return arr
+end
+let data := [1, 2, 3, 4, 5]
+let rev := reverseArr(data)
+foreach item in rev do
+    print item
+end

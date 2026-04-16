@@ -1,0 +1,8 @@
+# Demo: function returning a function (closure-like)
+function makeAdder(x : int)
+    return function(y : int) x + y
+end
+let add5 := makeAdder(5)
+let add10 := makeAdder(10)
+print add5(3)
+print add10(3)

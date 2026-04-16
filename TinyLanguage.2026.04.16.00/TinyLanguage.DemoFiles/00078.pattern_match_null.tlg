@@ -1,0 +1,6 @@
+# Demo: pattern matching with null
+let val := null
+match val {
+    null => print "Value is null"
+    _ => print "Value is not null"
+}

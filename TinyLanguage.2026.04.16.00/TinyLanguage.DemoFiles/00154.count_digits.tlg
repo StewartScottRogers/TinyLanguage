@@ -1,0 +1,16 @@
+# Demo: count digits of a number
+function countDigits(n : int) -> int
+    if n == 0 then
+        return 1
+    end
+    let count := 0
+    let remaining := n
+    while remaining > 0 do
+        count := count + 1
+        remaining := remaining // 10
+    end
+    return count
+end
+print countDigits(0)
+print countDigits(42)
+print countDigits(12345678)

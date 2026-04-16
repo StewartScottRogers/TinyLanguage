@@ -1,0 +1,7 @@
+# Demo: array type annotations
+var nums : int[] := [1, 2, 3, 4, 5]
+var strs : string[] := ["a", "b", "c"]
+print nums
+print strs
+print len(nums)
+print len(strs)

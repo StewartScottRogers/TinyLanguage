@@ -1,0 +1,11 @@
+# Demo: Tower of Hanoi recursive solution
+function hanoi(n : int, from : string, to : string, via : string)
+    if n == 1 then
+        print "Move disk 1 from " & from & " to " & to
+        return
+    end
+    hanoi(n - 1, from, via, to)
+    print "Move disk " & str(n) & " from " & from & " to " & to
+    hanoi(n - 1, via, to, from)
+end
+hanoi(3, "A", "C", "B")

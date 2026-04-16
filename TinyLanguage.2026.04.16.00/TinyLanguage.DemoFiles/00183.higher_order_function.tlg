@@ -1,0 +1,12 @@
+# Demo: higher-order function returning a lambda
+function makeAdder(n : int)
+    return function(x : int) x + n
+end
+function makeMultiplier(n : int)
+    return function(x : int) x * n
+end
+let add5 := makeAdder(5)
+let triple := makeMultiplier(3)
+print add5(10)
+print add5(20)
+print triple(7)

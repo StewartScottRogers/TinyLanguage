@@ -1,0 +1,18 @@
+# Demo: string formatting using concatenation
+function padLeft(s : string, width : int, ch : string) -> string
+    let result := s
+    while len(result) < width do
+        result := ch & result
+    end
+    return result
+end
+function padRight(s : string, width : int, ch : string) -> string
+    let result := s
+    while len(result) < width do
+        result := result & ch
+    end
+    return result
+end
+print padLeft("42", 8, "0")
+print padRight("hello", 10, " ") & "|"
+print padLeft(str(123), 6, " ")

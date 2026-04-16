@@ -1,0 +1,11 @@
+# Demo: recursive expression evaluator
+function evalToken(t) -> int
+    if t is int then
+        return t
+    end
+    return 0
+end
+let tokens := [5, 3, 8]
+for i := 0 to len(tokens) - 1 do
+    print evalToken(tokens[i])
+end

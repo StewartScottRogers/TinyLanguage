@@ -1,0 +1,14 @@
+# Demo: find minimum value in array
+function minInArray(arr) -> int
+    let minVal := arr[0]
+    let i := 1
+    while i < len(arr) do
+        if arr[i] < minVal then
+            minVal := arr[i]
+        end
+        i := i + 1
+    end
+    return minVal
+end
+let nums := [3, 1, 4, 1, 5, 9, 2, 6, 5, 3]
+print minInArray(nums)

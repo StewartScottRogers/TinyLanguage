@@ -1,0 +1,16 @@
+# Demo: str(), int(), bool() built-in conversions
+let num := 42
+let numAsStr := str(num)
+print numAsStr & " is a string"
+let strNum := "100"
+let parsed := int(strNum)
+print parsed + 1
+let zero := 0
+let boolZero := bool(zero)
+print boolZero
+let nonZero := 42
+let boolNonZero := bool(nonZero)
+print boolNonZero
+let floatNum := 3.7
+let floatStr := str(floatNum)
+print floatStr

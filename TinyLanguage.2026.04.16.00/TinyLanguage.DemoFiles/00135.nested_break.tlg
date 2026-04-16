@@ -1,0 +1,15 @@
+# Demo: break from nested loop (breaks inner only)
+let found := false
+let target := 15
+for i := 1 to 10 do
+    for j := 1 to 10 do
+        if i * j == target then
+            found := true
+            break
+        end
+    end
+    if found then
+        break
+    end
+end
+print found

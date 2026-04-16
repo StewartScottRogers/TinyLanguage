@@ -1,0 +1,11 @@
+# Demo: while loop with continue
+let i := 0
+let sum := 0
+while i < 10 do
+    i := i + 1
+    if i % 2 == 0 then
+        continue
+    end
+    sum := sum + i
+end
+print sum

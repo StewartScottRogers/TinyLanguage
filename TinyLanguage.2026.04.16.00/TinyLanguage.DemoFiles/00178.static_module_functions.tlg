@@ -1,0 +1,22 @@
+# Demo: static-style module with exported functions
+module StringUtils {
+    function toUpper(s : string) -> string
+        let result := ""
+        foreach ch in s do
+            result := result & ch
+        end
+        return result
+    end
+    function repeat(s : string, n : int) -> string
+        let result := ""
+        for i := 1 to n do
+            result := result & s
+        end
+        return result
+    end
+    function length(s : string) -> int
+        return len(s)
+    end
+}
+print StringUtils.repeat("ab", 3)
+print StringUtils.length("hello")

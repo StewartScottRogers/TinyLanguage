@@ -1,0 +1,26 @@
+# Demo: tree traversal algorithms
+class BNode {
+    let Value : int := 0
+    let Left : BNode := null
+    let Right : BNode := null
+    Constructor(val : int)
+        Value := val
+        Left := null
+        Right := null
+    end
+}
+function inorder(node : BNode)
+    if node == null then return end
+    inorder(node.Left)
+    print node.Value
+    inorder(node.Right)
+end
+let root := new BNode(4)
+root.Left := new BNode(2)
+root.Right := new BNode(6)
+root.Left.Left := new BNode(1)
+root.Left.Right := new BNode(3)
+root.Right.Left := new BNode(5)
+root.Right.Right := new BNode(7)
+print "Inorder:"
+inorder(root)

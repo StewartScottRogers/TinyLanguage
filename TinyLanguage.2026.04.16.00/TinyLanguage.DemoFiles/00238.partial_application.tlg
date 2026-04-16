@@ -1,0 +1,16 @@
+# Demo: partial application using closures
+function partial(fn, firstArg)
+    return function(secondArg) fn(firstArg, secondArg)
+end
+function add(a : int, b : int) -> int
+    return a + b
+end
+function multiply(a : int, b : int) -> int
+    return a * b
+end
+let add10 := partial(add, 10)
+let double := partial(multiply, 2)
+print add10(5)
+print add10(15)
+print double(7)
+print double(9)

@@ -1,0 +1,4 @@
+# Demo: escape sequences - backslash and quote
+print "Path: C:\Users\Alice"
+print "He said \"hello\""
+print "It's fine" 

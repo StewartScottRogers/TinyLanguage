@@ -1,0 +1,4 @@
+# Demo: string + numeric coercion
+print "Value: " + 42
+print 100 + " items"
+print "Pi = " + 3.14

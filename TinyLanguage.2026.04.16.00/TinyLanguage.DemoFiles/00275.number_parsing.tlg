@@ -1,0 +1,30 @@
+# Demo: parsing integers from string manually
+function parseDigit(ch : string) -> int
+    match ch {
+        "0" => return 0
+        "1" => return 1
+        "2" => return 2
+        "3" => return 3
+        "4" => return 4
+        "5" => return 5
+        "6" => return 6
+        "7" => return 7
+        "8" => return 8
+        "9" => return 9
+        _ => return -1
+    }
+end
+function parseInteger(s : string) -> int
+    let result := 0
+    foreach ch in s do
+        let d := parseDigit(ch)
+        if d == -1 then
+            throw "Invalid digit: " & ch
+        end
+        result := result * 10 + d
+    end
+    return result
+end
+print parseInteger("12345")
+print parseInteger("42")
+print parseInteger("100")

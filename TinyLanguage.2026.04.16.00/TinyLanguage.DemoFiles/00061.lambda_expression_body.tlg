@@ -1,0 +1,7 @@
+# Demo: lambda with expression body
+let double := function(x : int) x * 2
+let square := function(x : int) x * x
+print double(5)
+print square(4)
+let greet := function(name : string) "Hello, " + name
+print greet("World")

@@ -1,0 +1,13 @@
+# Demo: for loop with step and complex operations
+for i := 0 to 20 step 3 do
+    print i
+end
+let total := 0
+for j := 10 to 1 step -1 do
+    total := total + j
+end
+print total
+for k := 1 to 100 step 10 do
+    let sq := k * k
+    print sq
+end

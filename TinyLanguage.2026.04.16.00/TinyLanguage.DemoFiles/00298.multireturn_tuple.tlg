@@ -1,0 +1,25 @@
+# Demo: returning multiple values via array (tuple style)
+function minMax(arr)
+    let minVal := arr[0]
+    let maxVal := arr[0]
+    foreach n in arr do
+        if n < minVal then
+            minVal := n
+        end
+        if n > maxVal then
+            maxVal := n
+        end
+    end
+    return [minVal, maxVal]
+end
+function divMod(a : int, b : int)
+    let q := a // b
+    let r := a % b
+    return [q, r]
+end
+let nums := [3, 1, 4, 1, 5, 9, 2, 6, 5, 3]
+let result := minMax(nums)
+print "Min: " & str(result[0])
+print "Max: " & str(result[1])
+let dm := divMod(17, 5)
+print "17 div 5 = " & str(dm[0]) & " rem " & str(dm[1])

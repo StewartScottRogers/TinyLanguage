@@ -1,0 +1,10 @@
+# Demo: Towers of Hanoi
+function hanoi(n : int, from_peg : string, to_peg : string, aux : string)
+    if n == 0 then
+        return
+    end
+    hanoi(n - 1, from_peg, aux, to_peg)
+    print "Move disk " + str(n) + " from " + from_peg + " to " + to_peg
+    hanoi(n - 1, aux, to_peg, from_peg)
+end
+hanoi(3, "A", "C", "B")

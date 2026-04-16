@@ -1,0 +1,7 @@
+# Demo: pattern alternation with |
+let n := 3
+match n {
+    1 | 2 => print "one or two"
+    3 | 4 => print "three or four"
+    _ => print "something else"
+}

@@ -1,0 +1,8 @@
+# Demo: switch with default clause
+let grade := "B"
+switch grade {
+    case "A": print "Excellent"
+    case "B": print "Good"
+    case "C": print "Average"
+    default: print "Below Average"
+}

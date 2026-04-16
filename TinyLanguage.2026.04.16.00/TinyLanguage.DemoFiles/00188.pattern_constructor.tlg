@@ -1,0 +1,13 @@
+# Demo: pattern matching with constructor patterns
+class Shape {
+    let Kind : string := ""
+    Constructor(kind : string)
+        Kind := kind
+    end
+}
+let shape := new Shape("circle")
+match shape.Kind {
+    "circle" => print "It is a circle"
+    "square" => print "It is a square"
+    _ => print "Unknown shape"
+}

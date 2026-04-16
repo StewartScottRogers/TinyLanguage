@@ -1,0 +1,9 @@
+# Demo: recursive sum of array
+function sumList(arr, idx : int) -> int
+    if idx >= len(arr) then
+        return 0
+    end
+    return arr[idx] + sumList(arr, idx + 1)
+end
+let nums := [1, 2, 3, 4, 5]
+print sumList(nums, 0)

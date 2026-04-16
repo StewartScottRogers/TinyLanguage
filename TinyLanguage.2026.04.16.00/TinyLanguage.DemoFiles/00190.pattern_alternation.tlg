@@ -1,0 +1,13 @@
+# Demo: pattern matching with alternation patterns a | b
+let day := 6
+match day {
+    1 | 7 => print "weekend"
+    2 | 3 | 4 | 5 | 6 => print "weekday"
+    _ => print "invalid"
+}
+let grade := "B"
+match grade {
+    "A" | "B" => print "good"
+    "C" | "D" => print "average"
+    _ => print "fail"
+}

@@ -1,0 +1,24 @@
+# Demo: group elements by a key function
+function groupByParity(arr)
+    let evens := []
+    let odds := []
+    foreach n in arr do
+        if n % 2 == 0 then
+            evens[len(evens)] := n
+        else
+            odds[len(odds)] := n
+        end
+    end
+    let result := [evens, odds]
+    return result
+end
+let nums := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let grouped := groupByParity(nums)
+print "Evens:"
+foreach n in grouped[0] do
+    print n
+end
+print "Odds:"
+foreach n in grouped[1] do
+    print n
+end

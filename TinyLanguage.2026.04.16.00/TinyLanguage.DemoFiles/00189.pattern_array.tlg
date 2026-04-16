@@ -1,0 +1,13 @@
+# Demo: pattern matching with array patterns
+let arr := [1, 2, 3]
+match arr {
+    [] => print "empty"
+    [1] => print "single one"
+    [1, 2, 3] => print "one two three"
+    _ => print "other"
+}
+let arr2 := []
+match arr2 {
+    [] => print "empty array"
+    _ => print "non-empty"
+}

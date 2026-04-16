@@ -1,0 +1,23 @@
+# Demo: extract unique elements from array
+function contains(arr, val) -> bool
+    foreach item in arr do
+        if item == val then
+            return true
+        end
+    end
+    return false
+end
+function unique(arr)
+    let result := []
+    foreach item in arr do
+        if not contains(result, item) then
+            result[len(result)] := item
+        end
+    end
+    return result
+end
+let arr := [1, 2, 3, 2, 1, 4, 3, 5]
+let uniq := unique(arr)
+foreach n in uniq do
+    print n
+end

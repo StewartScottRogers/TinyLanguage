@@ -1,0 +1,20 @@
+# Demo: observer/event pattern
+class EventEmitter {
+    let Listeners : array := []
+    Constructor()
+        Listeners := []
+    end
+    function on(listener)
+        Listeners[len(Listeners)] := listener
+    end
+    function emit(event : string)
+        foreach listener in Listeners do
+            listener(event)
+        end
+    end
+}
+let emitter := new EventEmitter()
+emitter.on(function(e : string) print "Listener 1: " & e)
+emitter.on(function(e : string) print "Listener 2 saw: " & e)
+emitter.emit("click")
+emitter.emit("hover")

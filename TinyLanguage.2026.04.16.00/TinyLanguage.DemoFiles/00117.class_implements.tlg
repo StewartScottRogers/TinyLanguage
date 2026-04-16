@@ -1,0 +1,14 @@
+# Demo: class implementing interface (structural)
+class Greeter {
+    let Prefix : string := ""
+    Constructor(prefix : string)
+        Prefix := prefix
+    end
+    function greet(name : string) -> string
+        return Prefix & " " & name & "!"
+    end
+}
+let formal := new Greeter("Good day")
+let casual := new Greeter("Hey")
+print formal.greet("Alice")
+print casual.greet("Bob")

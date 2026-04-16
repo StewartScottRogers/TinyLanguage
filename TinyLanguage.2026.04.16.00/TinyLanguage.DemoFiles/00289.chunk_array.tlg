@@ -1,0 +1,25 @@
+# Demo: chunking an array into subarrays of fixed size
+function chunk(arr, size : int)
+    let result := []
+    let i := 0
+    while i < len(arr) do
+        let group := []
+        let j := i
+        while j < i + size and j < len(arr) do
+            group[len(group)] := arr[j]
+            j := j + 1
+        end
+        result[len(result)] := group
+        i := i + size
+    end
+    return result
+end
+let arr := [1, 2, 3, 4, 5, 6, 7, 8, 9]
+let chunks := chunk(arr, 3)
+foreach c in chunks do
+    let line := ""
+    foreach n in c do
+        line := line & str(n) & " "
+    end
+    print line
+end

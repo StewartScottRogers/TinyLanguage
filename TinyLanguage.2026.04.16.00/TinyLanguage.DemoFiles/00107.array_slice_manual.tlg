@@ -1,0 +1,15 @@
+# Demo: manual array slice (copy a range)
+function sliceArr(arr, start : int, stop : int)
+    let result := []
+    let i := start
+    while i < stop do
+        result[i - start] := arr[i]
+        i := i + 1
+    end
+    return result
+end
+let nums := [10, 20, 30, 40, 50, 60]
+let part := sliceArr(nums, 1, 4)
+foreach item in part do
+    print item
+end
