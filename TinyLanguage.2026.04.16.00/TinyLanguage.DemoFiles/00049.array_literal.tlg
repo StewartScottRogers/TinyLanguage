@@ -1,0 +1,9 @@
+# Demo: array literals
+let numbers := [1, 2, 3, 4, 5]
+let names := ["Alice", "Bob", "Charlie"]
+let mixed := [1, "two", true, 3.14]
+let empty := []
+print numbers
+print names
+print len(numbers)
+print len(names)

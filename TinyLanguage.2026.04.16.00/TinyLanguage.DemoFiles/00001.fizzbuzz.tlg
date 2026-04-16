@@ -1,0 +1,12 @@
+# Demo: FizzBuzz classic
+for i := 1 to 100 do
+    if i % 15 == 0 then
+        print "FizzBuzz"
+    else if i % 3 == 0 then
+        print "Fizz"
+    else if i % 5 == 0 then
+        print "Buzz"
+    else
+        print i
+    end
+end

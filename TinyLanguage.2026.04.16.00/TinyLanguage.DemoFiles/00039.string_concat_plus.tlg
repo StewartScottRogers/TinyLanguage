@@ -1,0 +1,6 @@
+# Demo: string concatenation with +
+let first := "Hello"
+let second := "World"
+print first + " " + second
+print "Value: " + str(42)
+print "Pi is " + str(3.14)

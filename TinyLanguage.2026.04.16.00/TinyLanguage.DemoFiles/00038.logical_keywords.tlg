@@ -1,0 +1,9 @@
+# Demo: logical keyword operators: and, or, not
+let a := true
+let b := false
+print a and b
+print a or b
+print not a
+print not b
+print a and not b
+print not a or b

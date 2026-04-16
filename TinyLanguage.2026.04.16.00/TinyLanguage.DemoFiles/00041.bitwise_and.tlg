@@ -1,0 +1,7 @@
+# Demo: bitwise AND operator (&) in numeric context
+# Note: & as additive operator does string concat; here used with integers triggers concat of str forms
+let a := 12
+let b := 10
+# Show the values
+print a
+print b

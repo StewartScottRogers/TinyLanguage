@@ -1,0 +1,6 @@
+# Demo: compound assignment /=
+let amount := 120
+amount /= 4
+print amount
+amount /= 3
+print amount

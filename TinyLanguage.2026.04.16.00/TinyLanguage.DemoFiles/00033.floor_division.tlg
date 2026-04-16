@@ -1,0 +1,7 @@
+# Demo: floor division operator (//)
+print 17 // 5
+print -17 // 5
+print 10 // 3
+let x := 100
+let y := 7
+print x // y

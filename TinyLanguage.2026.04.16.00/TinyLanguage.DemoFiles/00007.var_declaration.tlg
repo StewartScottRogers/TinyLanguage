@@ -1,0 +1,9 @@
+# Demo: var declarations with type annotations
+var count : int := 0
+var price : float := 9.99
+var greeting : string := "Hello"
+var active : bool := true
+print count
+print price
+print greeting
+print active

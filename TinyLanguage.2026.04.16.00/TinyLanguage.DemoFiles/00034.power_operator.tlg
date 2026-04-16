@@ -1,0 +1,7 @@
+# Demo: power operator (**)
+print 2 ** 10
+print 3 ** 3
+print 2 ** 0
+let base := 5
+let exp := 4
+print base ** exp
