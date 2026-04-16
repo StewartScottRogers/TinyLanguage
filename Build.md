@@ -59,7 +59,7 @@ Create the full solution skeleton:
   - TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj (MSTest)
   - TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj (MSTest)
   - TinyLanguage/TinyLanguage.csproj (net10.0 console)
-  - TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.shproj (SharedProject)
+  - TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj  (SDK-style, content-only, no output assembly)
 
 Apply every coding-style rule from the spec. Do not generate any C# source yet —
 scaffold files, project references, and Directory.Build.props only.

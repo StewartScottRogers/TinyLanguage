@@ -117,11 +117,25 @@ Use all sections below as the complete specification. Every rule is mandatory un
 - Exit with code 0 if all demos pass, code 1 if any demo fails.
 
 ## Tiny Language Demonstration Suite (name: TinyLanguage.DemoFiles)
-- The TinyLanguage.DemoFiles must be a `SharedProject` type.
-- The `SharedProject` must containing the demo `.tlg`
-  source files and their matching `.cmd` runner scripts.
-- Demo `.tlg` files are embedded files, not compiled assemblies.
-- Demo `.cmd` files are embedded files, not compiled assemblies.
+- The TinyLanguage.DemoFiles must be a regular SDK-style `.csproj` (NOT a SharedProject / `.shproj`).
+  SharedProjects require `Microsoft.CodeSharing.CSharp.targets` which is fragile and causes
+  "project failed to load" errors in Visual Studio Solution Explorer.
+- The project must use `<NoTargets>` SDK or set `<OutputType>` to none so it produces no assembly.
+  Recommended project file:
+  ```xml
+  <Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+      <TargetFramework>net10.0</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+      <Content Include="**/*.tlg" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="**/*.cmd" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Project>
+  ```
+- The project contains the demo `.tlg` source files and their matching `.cmd` runner scripts.
+- Demo `.tlg` files are content items, not compiled assemblies.
+- Demo `.cmd` files are content items, not compiled assemblies.
 - The demonstration TinyLanguage demo files should be exhaustive and named
   using a zero-padded numeric prefix. EXAMPLE: `00001.fizzbuzz.tlg`
 - Create a matching `00001.fizzbuzz.cmd` script for each demo file that
