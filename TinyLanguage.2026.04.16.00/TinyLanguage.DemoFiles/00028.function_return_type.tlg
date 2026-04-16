@@ -1,9 +1,0 @@
-# Demo: function with explicit return type
-function square(n : int) -> int
-    return n * n
-end
-function cube(n : int) -> int
-    return n * n * n
-end
-print square(5)
-print cube(3)

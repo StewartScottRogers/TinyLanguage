@@ -1,5 +1,0 @@
-# Demo: string concatenation with & operator
-let name := "TinyLanguage"
-let version := "1.0"
-let msg := "Welcome to " & name & " v" & version
-print msg

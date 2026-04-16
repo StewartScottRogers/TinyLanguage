@@ -1,8 +1,0 @@
-# Demo: pattern matching with string values
-let day := "Monday"
-match day {
-    "Saturday" => print "Weekend!"
-    "Sunday" => print "Weekend!"
-    "Monday" => print "Start of work week"
-    _ => print "Midweek"
-}

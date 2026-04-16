@@ -1,9 +1,0 @@
-# Demo: boolean literals and operations
-let t := true
-let f := false
-print t
-print f
-print t && f
-print t || f
-print !t
-print !f

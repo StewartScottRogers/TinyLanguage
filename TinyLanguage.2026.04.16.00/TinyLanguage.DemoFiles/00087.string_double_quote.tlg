@@ -1,5 +1,0 @@
-# Demo: strings with double quotes
-let name := "Bob"
-let msg := "This has a \"quoted\" word"
-print name
-print msg

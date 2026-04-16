@@ -1,8 +1,0 @@
-# Demo: bool() built-in conversion (truthiness)
-print bool(1)
-print bool(0)
-print bool("hello")
-print bool("")
-print bool(null)
-print bool(3.14)
-print bool(0.0)

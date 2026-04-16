@@ -1,7 +1,0 @@
-# Demo: string index access (character access)
-let s := "Hello"
-print s[0]
-print s[1]
-print s[4]
-let i := 2
-print s[i]

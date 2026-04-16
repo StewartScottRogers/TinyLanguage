@@ -1,7 +1,0 @@
-# Demo: nested scope - inner variables shadow outer
-let x := "outer"
-if true then
-    let x := "inner"
-    print x
-end
-print x

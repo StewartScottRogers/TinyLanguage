@@ -1,7 +1,0 @@
-# Demo: modulo operator (%)
-print 10 % 3
-print 17 % 5
-print 100 % 7
-let n := 42
-print n % 2
-print n % 10

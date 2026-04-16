@@ -1,7 +1,0 @@
-# Demo: cast expression (type) expr
-let x := 3.7
-let n := (int) x
-print n
-let i := 65
-let f := (float) i
-print f

@@ -1,7 +1,0 @@
-# Demo: break in a loop
-for i := 1 to 100 do
-    if i > 5 then
-        break
-    end
-    print i
-end

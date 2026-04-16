@@ -1,8 +1,0 @@
-# Demo: str() built-in conversion
-print str(42)
-print str(3.14)
-print str(true)
-print str(false)
-print str(null)
-let n := 100
-print "Number: " + str(n)

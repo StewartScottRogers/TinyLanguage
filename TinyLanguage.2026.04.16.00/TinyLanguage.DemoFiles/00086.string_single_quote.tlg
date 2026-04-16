@@ -1,6 +1,0 @@
-# Demo: strings with single quotes
-let name := 'Alice'
-let greeting := 'Hello, World!'
-print name
-print greeting
-print "It's a double-quoted string"

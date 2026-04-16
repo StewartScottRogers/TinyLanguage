@@ -1,9 +1,0 @@
-# Demo: integer literals including hex, binary, octal
-print 42
-print 0
-print 255
-print 0xFF
-print 0b1010
-print 0o17
-let hex := 0xDEAD
-print hex

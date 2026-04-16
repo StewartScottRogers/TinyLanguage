@@ -1,7 +1,0 @@
-# Demo: if-else statement
-let score := 75
-if score >= 90 then
-    print "Grade A"
-else
-    print "Below A"
-end

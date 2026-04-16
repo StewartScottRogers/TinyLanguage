@@ -1,7 +1,0 @@
-# Demo: multiple comment styles
-# First comment
-let a := 5
-# Second comment
-let b := 10
-# Third comment - adding a and b
-print a + b

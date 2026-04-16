@@ -1,6 +1,0 @@
-# Demo: compound assignment -=
-let balance := 100
-balance -= 30
-print balance
-balance -= 15
-print balance

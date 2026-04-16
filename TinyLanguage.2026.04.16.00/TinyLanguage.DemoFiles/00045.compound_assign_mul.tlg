@@ -1,6 +1,0 @@
-# Demo: compound assignment *=
-let value := 2
-value *= 3
-print value
-value *= 4
-print value

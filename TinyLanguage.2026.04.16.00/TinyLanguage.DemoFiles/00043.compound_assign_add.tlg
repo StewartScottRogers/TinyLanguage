@@ -1,8 +1,0 @@
-# Demo: compound assignment +=
-let total := 0
-total += 10
-print total
-total += 25
-print total
-total += 5
-print total

@@ -1,7 +1,0 @@
-# Demo: as type assertion
-let value := 42
-let n := value as int
-print n
-let pi := 3.14
-let f := pi as float
-print f

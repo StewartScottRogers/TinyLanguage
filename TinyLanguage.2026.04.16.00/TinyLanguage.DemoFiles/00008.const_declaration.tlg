@@ -1,7 +1,0 @@
-# Demo: const declarations
-const MAX := 100
-const PI : float := 3.14159265
-const APP_NAME : string := "TinyLanguage"
-print MAX
-print PI
-print APP_NAME

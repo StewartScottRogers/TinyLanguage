@@ -1,4 +1,0 @@
-# Demo: input statement
-print "Enter your name:"
-input userName
-print "Hello, " + userName

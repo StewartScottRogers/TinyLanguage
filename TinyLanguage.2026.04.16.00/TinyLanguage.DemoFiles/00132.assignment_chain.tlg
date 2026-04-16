@@ -1,8 +1,0 @@
-# Demo: multiple assignments
-let a := 1
-let b := 2
-let c := 3
-a := a + b + c
-print a
-b := a * 2
-print b

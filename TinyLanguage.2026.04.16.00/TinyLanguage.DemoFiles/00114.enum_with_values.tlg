@@ -1,9 +1,0 @@
-# Demo: enum with explicit values
-enum Status {
-    Active = 1,
-    Inactive = 0,
-    Pending = 2
-}
-print Status.Active
-print Status.Inactive
-print Status.Pending

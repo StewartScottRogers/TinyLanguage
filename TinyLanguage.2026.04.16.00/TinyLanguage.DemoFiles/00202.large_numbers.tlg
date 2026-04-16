@@ -1,8 +1,0 @@
-# Demo: large integer arithmetic
-let bigA := 1000000
-let bigB := 999999
-print bigA * bigB
-let factorial10 := 1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10
-print factorial10
-let power := 2 ** 30
-print power

@@ -1,9 +1,0 @@
-# Demo: let with explicit type annotations
-let age : int := 25
-let temperature : float := 98.6
-let message : string := "typed variable"
-let isValid : bool := false
-print age
-print temperature
-print message
-print isValid

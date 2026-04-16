@@ -1,8 +1,0 @@
-# Demo: array element assignment (ArrayElementAssignNode)
-let arr := [1, 2, 3, 4, 5]
-print arr[0]
-arr[0] := 100
-print arr[0]
-arr[2] := 999
-print arr[2]
-print arr

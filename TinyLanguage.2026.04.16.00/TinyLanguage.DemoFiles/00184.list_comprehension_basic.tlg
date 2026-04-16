@@ -1,9 +1,0 @@
-# Demo: basic list comprehension
-let squares := [x * x for x in [1, 2, 3, 4, 5]]
-foreach s in squares do
-    print s
-end
-let doubled := [n * 2 for n in [10, 20, 30]]
-foreach d in doubled do
-    print d
-end

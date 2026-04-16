@@ -1,4 +1,0 @@
-# Demo: escape sequences - newline and tab
-print "Line1\nLine2\nLine3"
-print "Col1\tCol2\tCol3"
-print "A\tB\tC"

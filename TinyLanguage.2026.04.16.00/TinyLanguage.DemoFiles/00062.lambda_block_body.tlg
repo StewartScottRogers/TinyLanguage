@@ -1,7 +1,0 @@
-# Demo: lambda with block body (ends with end)
-let printRange := function(from : int, to_val : int)
-    for i := from to to_val do
-        print i
-    end
-end
-printRange(1, 5)

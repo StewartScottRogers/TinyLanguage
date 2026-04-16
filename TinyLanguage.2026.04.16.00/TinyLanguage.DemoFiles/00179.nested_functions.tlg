@@ -1,9 +1,0 @@
-# Demo: function defined inside another function
-function outer(x : int) -> int
-    function inner(y : int) -> int
-        return y * y
-    end
-    return inner(x) + inner(x + 1)
-end
-print outer(3)
-print outer(5)

@@ -1,7 +1,0 @@
-# Demo: len() built-in function
-let nums := [1, 2, 3, 4, 5, 6, 7]
-print len(nums)
-let greeting := "Hello"
-print len(greeting)
-let empty := []
-print len(empty)

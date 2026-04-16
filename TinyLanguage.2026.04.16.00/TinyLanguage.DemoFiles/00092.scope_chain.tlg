@@ -1,8 +1,0 @@
-# Demo: scope chain - variable lookup walks outward
-let outer := 10
-function test()
-    let inner := 20
-    print inner
-end
-test()
-print outer

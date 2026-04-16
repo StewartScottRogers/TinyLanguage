@@ -1,7 +1,0 @@
-# Demo: ternary operator (? :)
-let a := 10
-let b := 20
-let max := a > b ? a : b
-print max
-let sign := a > 0 ? "positive" : a < 0 ? "negative" : "zero"
-print sign

@@ -1,9 +1,0 @@
-# Demo: integer and float arithmetic promotion
-let a := 5
-let b := 2.0
-print a + b
-print a * b
-print a / b
-let c := 7
-let d := 2
-print c / d

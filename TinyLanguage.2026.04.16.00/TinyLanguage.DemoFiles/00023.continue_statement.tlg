@@ -1,7 +1,0 @@
-# Demo: continue in a loop (skip even numbers)
-for i := 1 to 10 do
-    if i % 2 == 0 then
-        continue
-    end
-    print i
-end

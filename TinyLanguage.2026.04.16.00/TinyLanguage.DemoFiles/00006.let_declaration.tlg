@@ -1,9 +1,0 @@
-# Demo: let variable declarations
-let x := 42
-let name := "Alice"
-let flag := true
-let pi := 3.14159
-print x
-print name
-print flag
-print pi

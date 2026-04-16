@@ -1,5 +1,0 @@
-# Demo: single-line comments using # character
-let x := 10 # this is x
-let y := 20 # this is y
-# This entire line is a comment
-print x + y # print the sum

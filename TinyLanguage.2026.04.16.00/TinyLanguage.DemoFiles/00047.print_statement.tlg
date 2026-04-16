@@ -1,8 +1,0 @@
-# Demo: print statement variations
-print "Hello, World!"
-print 42
-print 3.14
-print true
-print false
-print "Line 1"
-print "Line 2"

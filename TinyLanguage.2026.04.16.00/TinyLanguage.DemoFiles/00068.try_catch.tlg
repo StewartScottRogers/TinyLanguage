@@ -1,8 +1,0 @@
-# Demo: try/catch exception handling
-try
-    let x := 10
-    print "In try block"
-    print x
-catch err
-    print "Caught error: " + str(err)
-end

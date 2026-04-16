@@ -1,6 +1,0 @@
-# Demo: function with multiple parameters
-function describe(name : string, age : int, active : bool) -> string
-    return name & " age=" & str(age) & " active=" & str(active)
-end
-print describe("Alice", 30, true)
-print describe("Bob", 25, false)

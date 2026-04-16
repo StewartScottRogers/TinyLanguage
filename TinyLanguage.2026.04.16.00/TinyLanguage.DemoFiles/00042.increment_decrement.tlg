@@ -1,8 +1,0 @@
-# Demo: increment and decrement (++ and --)
-let x := 5
-x++
-print x
-x++
-print x
-x--
-print x
