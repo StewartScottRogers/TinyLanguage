@@ -251,7 +251,26 @@ namespace TinyLanguage.Interpreter
         public void Visit(AssignStatementNode node)
         {
             object value = Evaluate(node.ValueExpression);
-            CurrentScope.Assign(node.VariableName, value, node.Line);
+            // Try normal scope assignment first.
+            if (CurrentScope.IsDefined(node.VariableName))
+            {
+                CurrentScope.Assign(node.VariableName, value, node.Line);
+            }
+            else
+            {
+                // Fall back: check if 'this' is in scope and has a matching field.
+                if (CurrentScope.IsDefined("this"))
+                {
+                    object thisObj = CurrentScope.Lookup("this", node.Line);
+                    if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(node.VariableName))
+                    {
+                        inst.Fields[node.VariableName] = value;
+                        LastResult = value;
+                        return;
+                    }
+                }
+                CurrentScope.Assign(node.VariableName, value, node.Line);
+            }
             LastResult = value;
         }
 
@@ -601,9 +620,28 @@ namespace TinyLanguage.Interpreter
             // Resolve the receiver chain.
             if (node.ReceiverChain.Count == 1)
             {
-                // Simple function call.
+                // Simple function call — try scope first, then 'this' fields.
                 string functionName = node.ReceiverChain[0];
-                object callee = CurrentScope.Lookup(functionName, node.Line);
+                object callee;
+                if (CurrentScope.IsDefined(functionName))
+                {
+                    callee = CurrentScope.Lookup(functionName, node.Line);
+                }
+                else if (CurrentScope.IsDefined("this"))
+                {
+                    object thisObj = CurrentScope.Lookup("this", node.Line);
+                    if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(functionName))
+                    {
+                        List<object> args = EvaluateArguments(node.Arguments);
+                        CallMethod(thisObj, functionName, args, node.Line);
+                        return;
+                    }
+                    callee = CurrentScope.Lookup(functionName, node.Line);
+                }
+                else
+                {
+                    callee = CurrentScope.Lookup(functionName, node.Line);
+                }
                 List<object> arguments = EvaluateArguments(node.Arguments);
                 CallCallable(callee, arguments, node.Line);
             }
@@ -611,7 +649,27 @@ namespace TinyLanguage.Interpreter
             {
                 // Method call: obj.method() or obj.a.b.method()
                 string firstName = node.ReceiverChain[0];
-                object target = CurrentScope.Lookup(firstName, node.Line);
+                object target;
+                if (CurrentScope.IsDefined(firstName))
+                {
+                    target = CurrentScope.Lookup(firstName, node.Line);
+                }
+                else if (CurrentScope.IsDefined("this"))
+                {
+                    object thisObj = CurrentScope.Lookup("this", node.Line);
+                    if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(firstName))
+                    {
+                        target = inst.Fields[firstName];
+                    }
+                    else
+                    {
+                        target = CurrentScope.Lookup(firstName, node.Line);
+                    }
+                }
+                else
+                {
+                    target = CurrentScope.Lookup(firstName, node.Line);
+                }
 
                 // Walk through intermediate member accesses.
                 for (int index = 1; index < node.ReceiverChain.Count - 1; index++)
@@ -788,20 +846,47 @@ namespace TinyLanguage.Interpreter
         public void Visit(ArrayElementAssignNode node)
         {
             // Spec note 7: mutate the existing list in-place.
-            object arrayValue = CurrentScope.Lookup(node.ArrayName, node.Line);
+            object arrayValue;
+            if (CurrentScope.IsDefined(node.ArrayName))
+            {
+                arrayValue = CurrentScope.Lookup(node.ArrayName, node.Line);
+            }
+            else if (CurrentScope.IsDefined("this"))
+            {
+                object thisObj = CurrentScope.Lookup("this", node.Line);
+                if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(node.ArrayName))
+                {
+                    arrayValue = inst.Fields[node.ArrayName];
+                }
+                else
+                {
+                    arrayValue = CurrentScope.Lookup(node.ArrayName, node.Line);
+                }
+            }
+            else
+            {
+                arrayValue = CurrentScope.Lookup(node.ArrayName, node.Line);
+            }
             if (arrayValue is List<object> list)
             {
                 object indexValue = Evaluate(node.IndexExpression);
                 if (indexValue is long indexLong)
                 {
                     int index = (int)indexLong;
-                    if (index < 0 || index >= list.Count)
+                    if (index < 0 || index > list.Count)
                     {
                         throw new InterpreterException(
                             $"Array index {index} out of bounds (length {list.Count})", node.Line);
                     }
                     object value = Evaluate(node.ValueExpression);
-                    list[index] = value;
+                    if (index == list.Count)
+                    {
+                        list.Add(value);
+                    }
+                    else
+                    {
+                        list[index] = value;
+                    }
                     LastResult = value;
                 }
                 else
@@ -813,6 +898,22 @@ namespace TinyLanguage.Interpreter
             {
                 throw new InterpreterException(
                     $"Cannot index into non-array value '{node.ArrayName}'", node.Line);
+            }
+        }
+
+        public void Visit(MemberAssignNode node)
+        {
+            object target = Evaluate(node.Target);
+            object value = Evaluate(node.ValueExpression);
+            if (target is ClassInstance instance)
+            {
+                instance.Fields[node.MemberName] = value;
+                LastResult = value;
+            }
+            else
+            {
+                throw new InterpreterException(
+                    $"Cannot assign to member '{node.MemberName}' on non-object value", node.Line);
             }
         }
 
@@ -1125,6 +1226,7 @@ namespace TinyLanguage.Interpreter
                     return;
 
                 case "not":
+                case "!":
                     LastResult = !IsTruthy(operand);
                     return;
 
@@ -1148,6 +1250,21 @@ namespace TinyLanguage.Interpreter
 
         public void Visit(IdentifierNode node)
         {
+            if (CurrentScope.IsDefined(node.Name))
+            {
+                LastResult = CurrentScope.Lookup(node.Name, node.Line);
+                return;
+            }
+            // Fall back: check if 'this' is in scope and has a matching field.
+            if (CurrentScope.IsDefined("this"))
+            {
+                object thisObj = CurrentScope.Lookup("this", node.Line);
+                if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(node.Name))
+                {
+                    LastResult = inst.Fields[node.Name];
+                    return;
+                }
+            }
             LastResult = CurrentScope.Lookup(node.Name, node.Line);
         }
 
@@ -1247,6 +1364,21 @@ namespace TinyLanguage.Interpreter
 
         public void Visit(FunctionCallNode node)
         {
+            // Check if the callee is a method retrieved from 'this' — if so, call as method
+            // so that 'this' is properly bound in the method scope.
+            if (node.CalleeExpression is IdentifierNode idNode)
+            {
+                if (!CurrentScope.IsDefined(idNode.Name) && CurrentScope.IsDefined("this"))
+                {
+                    object thisObj = CurrentScope.Lookup("this", node.Line);
+                    if (thisObj is ClassInstance inst && inst.Fields.ContainsKey(idNode.Name))
+                    {
+                        List<object> args = EvaluateArguments(node.Arguments);
+                        LastResult = CallMethod(thisObj, idNode.Name, args, node.Line);
+                        return;
+                    }
+                }
+            }
             object callee = Evaluate(node.CalleeExpression);
             List<object> arguments = EvaluateArguments(node.Arguments);
             LastResult = CallCallable(callee, arguments, node.Line);
@@ -1261,40 +1393,72 @@ namespace TinyLanguage.Interpreter
                 List<object> constructorArguments = EvaluateArguments(node.Arguments);
 
                 // Initialize fields and find constructor.
+                // Walk the inheritance chain from base to derived so derived can override.
                 ConstructorDefNode constructorDef = null;
                 Scope instanceScope = GlobalScope.CreateChild();
                 instanceScope.Define("this", instance);
 
-                foreach (AstNode member in classValue.Members)
+                // Collect the class hierarchy (base first).
+                List<ClassValue> hierarchy = new List<ClassValue>();
+                ClassValue current = classValue;
+                while (current != null)
                 {
-                    if (member is FieldDeclareNode fieldNode)
+                    hierarchy.Insert(0, current);
+                    if (current.BaseClassName != null && CurrentScope.IsDefined(current.BaseClassName))
                     {
-                        Scope previousScope = CurrentScope;
-                        CurrentScope = instanceScope;
-                        object fieldValue = Evaluate(fieldNode.InitialiserExpression);
-                        CurrentScope = previousScope;
-                        instance.Fields[fieldNode.FieldName] = fieldValue;
+                        object baseObj = CurrentScope.Lookup(current.BaseClassName, node.Line);
+                        current = baseObj as ClassValue;
                     }
-                    else if (member is FunctionDefNode methodNode)
+                    else
                     {
-                        FunctionValue method = new FunctionValue(
-                            methodNode.FunctionName,
-                            methodNode.Parameters,
-                            methodNode.Body,
-                            GlobalScope);
-                        instance.Fields[methodNode.FunctionName] = method;
+                        current = null;
                     }
-                    else if (member is ConstructorDefNode ctorNode)
+                }
+
+                foreach (ClassValue cls in hierarchy)
+                {
+                    foreach (AstNode member in cls.Members)
                     {
-                        constructorDef = ctorNode;
-                    }
-                    else if (member is ConstDeclareNode constNode)
-                    {
-                        Scope previousScope = CurrentScope;
-                        CurrentScope = instanceScope;
-                        object constValue = Evaluate(constNode.InitialiserExpression);
-                        CurrentScope = previousScope;
-                        instance.Fields[constNode.ConstantName] = constValue;
+                        // Unwrap annotated members to get the inner declaration.
+                        AstNode effectiveMember = member;
+                        if (member is AnnotatedStatementNode annotatedNode)
+                        {
+                            effectiveMember = annotatedNode.InnerStatement;
+                        }
+
+                        if (effectiveMember is FieldDeclareNode fieldNode)
+                        {
+                            Scope previousScope = CurrentScope;
+                            CurrentScope = instanceScope;
+                            object fieldValue = Evaluate(fieldNode.InitialiserExpression);
+                            CurrentScope = previousScope;
+                            instance.Fields[fieldNode.FieldName] = fieldValue;
+                        }
+                        else if (effectiveMember is FunctionDefNode methodNode)
+                        {
+                            FunctionValue method = new FunctionValue(
+                                methodNode.FunctionName,
+                                methodNode.Parameters,
+                                methodNode.Body,
+                                GlobalScope);
+                            instance.Fields[methodNode.FunctionName] = method;
+                        }
+                        else if (effectiveMember is ConstructorDefNode ctorNode)
+                        {
+                            // Only use the most-derived class's constructor.
+                            if (cls == classValue)
+                            {
+                                constructorDef = ctorNode;
+                            }
+                        }
+                        else if (effectiveMember is ConstDeclareNode constNode)
+                        {
+                            Scope previousScope = CurrentScope;
+                            CurrentScope = instanceScope;
+                            object constValue = Evaluate(constNode.InitialiserExpression);
+                            CurrentScope = previousScope;
+                            instance.Fields[constNode.ConstantName] = constValue;
+                        }
                     }
                 }
 
@@ -1481,7 +1645,7 @@ namespace TinyLanguage.Interpreter
                 };
             }
 
-            FunctionValue lambda = new FunctionValue(null, node.Parameters, body, GlobalScope);
+            FunctionValue lambda = new FunctionValue(null, node.Parameters, body, CurrentScope);
             LastResult = lambda;
         }
 
@@ -1682,6 +1846,22 @@ namespace TinyLanguage.Interpreter
                     $"Object of class '{instance.ClassDefinition.Name}' has no method '{methodName}'", line);
             }
 
+            // Static method calls on ClassValue.
+            if (target is ClassValue classValue)
+            {
+                foreach (AstNode member in classValue.Members)
+                {
+                    if (member is FunctionDefNode funcDef && funcDef.FunctionName == methodName)
+                    {
+                        FunctionValue staticMethod = new FunctionValue(
+                            funcDef.FunctionName, funcDef.Parameters, funcDef.Body, GlobalScope);
+                        return CallFunction(staticMethod, arguments, line);
+                    }
+                }
+                throw new InterpreterException(
+                    $"Class '{classValue.Name}' has no static method '{methodName}'", line);
+            }
+
             // Built-in methods on arrays.
             if (target is List<object> list)
             {
@@ -1716,6 +1896,28 @@ namespace TinyLanguage.Interpreter
                 }
                 throw new InterpreterException(
                     $"Object of class '{instance.ClassDefinition.Name}' has no field '{memberName}'", line);
+            }
+
+            // Static member access on ClassValue.
+            if (target is ClassValue classVal)
+            {
+                foreach (AstNode member in classVal.Members)
+                {
+                    if (member is FunctionDefNode funcDef && funcDef.FunctionName == memberName)
+                    {
+                        return new FunctionValue(funcDef.FunctionName, funcDef.Parameters, funcDef.Body, GlobalScope);
+                    }
+                    if (member is FieldDeclareNode fieldDef && fieldDef.FieldName == memberName)
+                    {
+                        return Evaluate(fieldDef.InitialiserExpression);
+                    }
+                    if (member is ConstDeclareNode constDef && constDef.ConstantName == memberName)
+                    {
+                        return Evaluate(constDef.InitialiserExpression);
+                    }
+                }
+                throw new InterpreterException(
+                    $"Class '{classVal.Name}' has no static member '{memberName}'", line);
             }
 
             if (target is EnumValue enumValue)

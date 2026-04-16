@@ -3,4 +3,4 @@ let name := 'Alice'
 let greeting := 'Hello, World!'
 print name
 print greeting
-print 'It's a single-quoted string'
+print "It's a double-quoted string"

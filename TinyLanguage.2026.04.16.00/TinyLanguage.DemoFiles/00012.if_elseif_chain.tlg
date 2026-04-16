@@ -2,12 +2,18 @@
 let score := 85
 if score >= 90 then
     print "Grade A"
-else if score >= 80 then
-    print "Grade B"
-else if score >= 70 then
-    print "Grade C"
-else if score >= 60 then
-    print "Grade D"
 else
-    print "Grade F"
+    if score >= 80 then
+        print "Grade B"
+    else
+        if score >= 70 then
+            print "Grade C"
+        else
+            if score >= 60 then
+                print "Grade D"
+            else
+                print "Grade F"
+            end
+        end
+    end
 end

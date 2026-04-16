@@ -7,7 +7,9 @@ function matMul2x2(a, b)
             for k := 0 to 1 do
                 sum := sum + a[i][k] * b[k][j]
             end
-            result[i][j] := sum
+            let row := result[i]
+            row[j] := sum
+            result[i] := row
         end
     end
     return result

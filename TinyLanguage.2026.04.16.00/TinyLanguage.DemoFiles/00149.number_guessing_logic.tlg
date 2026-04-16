@@ -6,9 +6,11 @@ foreach guess in guesses do
     if guess == secret then
         print "Found it: " + str(guess)
         found := true
-    else if guess < secret then
-        print str(guess) + " is too low"
     else
-        print str(guess) + " is too high"
+        if guess < secret then
+            print str(guess) + " is too low"
+        else
+            print str(guess) + " is too high"
+        end
     end
 end

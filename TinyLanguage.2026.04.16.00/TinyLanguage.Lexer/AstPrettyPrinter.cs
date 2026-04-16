@@ -512,6 +512,21 @@ namespace TinyLanguage.Lexer
             Dedent();
         }
 
+        public void Visit(MemberAssignNode node)
+        {
+            WriteLine($"MemberAssignNode Member={node.MemberName}");
+            Indent();
+            WriteLine("Target:");
+            Indent();
+            node.Target.Accept(this);
+            Dedent();
+            WriteLine("Value:");
+            Indent();
+            node.ValueExpression.Accept(this);
+            Dedent();
+            Dedent();
+        }
+
         // ----------------------------------------------------------------
         // Expression nodes
         // ----------------------------------------------------------------

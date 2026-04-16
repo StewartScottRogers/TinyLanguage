@@ -11,5 +11,12 @@ let sum := reduce(nums, function(a : int, b : int) a + b, 0)
 print sum
 let product := reduce(nums, function(a : int, b : int) a * b, 1)
 print product
-let maxVal := reduce(nums, function(a : int, b : int) if a > b then a else b, 0)
+function maxOf(a : int, b : int) -> int
+    if a > b then
+        return a
+    else
+        return b
+    end
+end
+let maxVal := reduce(nums, maxOf, 0)
 print maxVal

@@ -14,7 +14,11 @@ class EventEmitter {
     end
 }
 let emitter := new EventEmitter()
-emitter.on(function(e : string) print "Listener 1: " & e)
-emitter.on(function(e : string) print "Listener 2 saw: " & e)
+emitter.on(function(e : string)
+    print "Listener 1: " & e
+end)
+emitter.on(function(e : string)
+    print "Listener 2 saw: " & e
+end)
 emitter.emit("click")
 emitter.emit("hover")

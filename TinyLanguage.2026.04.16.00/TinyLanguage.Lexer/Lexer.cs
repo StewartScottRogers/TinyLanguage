@@ -226,36 +226,92 @@ namespace TinyLanguage.Lexer
             switch (current)
             {
                 case '+':
+                    // '++' increment
+                    if (Position < Source.Length && Source[Position] == '+')
+                    {
+                        Position++;
+                        return new Token(TokenType.PlusPlus, "++", tokenLine);
+                    }
+                    // '+=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '=')
+                    {
+                        Position++;
+                        return new Token(TokenType.PlusEqual, "+=", tokenLine);
+                    }
                     return new Token(TokenType.Plus, "+", tokenLine);
 
                 case '-':
+                    // '--' decrement
+                    if (Position < Source.Length && Source[Position] == '-')
+                    {
+                        Position++;
+                        return new Token(TokenType.MinusMinus, "--", tokenLine);
+                    }
                     // '->' return-type arrow
                     if (Position < Source.Length && Source[Position] == '>')
                     {
                         Position++;
                         return new Token(TokenType.Arrow, "->", tokenLine);
                     }
+                    // '-=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '=')
+                    {
+                        Position++;
+                        return new Token(TokenType.MinusEqual, "-=", tokenLine);
+                    }
                     return new Token(TokenType.Minus, "-", tokenLine);
 
                 case '*':
+                    // '**=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '*' &&
+                        Position + 1 < Source.Length && Source[Position + 1] == '=')
+                    {
+                        Position += 2;
+                        return new Token(TokenType.StarStarEqual, "**=", tokenLine);
+                    }
                     // '**' exponentiation
                     if (Position < Source.Length && Source[Position] == '*')
                     {
                         Position++;
                         return new Token(TokenType.StarStar, "**", tokenLine);
                     }
+                    // '*=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '=')
+                    {
+                        Position++;
+                        return new Token(TokenType.StarEqual, "*=", tokenLine);
+                    }
                     return new Token(TokenType.Star, "*", tokenLine);
 
                 case '/':
+                    // '//=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '/' &&
+                        Position + 1 < Source.Length && Source[Position + 1] == '=')
+                    {
+                        Position += 2;
+                        return new Token(TokenType.SlashSlashEqual, "//=", tokenLine);
+                    }
                     // '//' floor-division — NEVER a comment (spec note 1)
                     if (Position < Source.Length && Source[Position] == '/')
                     {
                         Position++;
                         return new Token(TokenType.SlashSlash, "//", tokenLine);
                     }
+                    // '/=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '=')
+                    {
+                        Position++;
+                        return new Token(TokenType.SlashEqual, "/=", tokenLine);
+                    }
                     return new Token(TokenType.Slash, "/", tokenLine);
 
                 case '%':
+                    // '%=' compound assignment
+                    if (Position < Source.Length && Source[Position] == '=')
+                    {
+                        Position++;
+                        return new Token(TokenType.PercentEqual, "%=", tokenLine);
+                    }
                     return new Token(TokenType.Percent, "%", tokenLine);
 
                 case '&':
@@ -299,7 +355,7 @@ namespace TinyLanguage.Lexer
                         Position++;
                         return new Token(TokenType.BangEqual, "!=", tokenLine);
                     }
-                    return new Token(TokenType.Unknown, "!", tokenLine);
+                    return new Token(TokenType.Not, "!", tokenLine);
 
                 case '<':
                     // '<=' less-or-equal

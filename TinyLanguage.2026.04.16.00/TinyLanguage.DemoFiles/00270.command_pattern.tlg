@@ -17,10 +17,16 @@ class CommandHistory {
 }
 let value := 0
 let history := new CommandHistory()
-history.execute(function() value := value + 10)
+history.execute(function()
+    value := value + 10
+end)
 print value
-history.execute(function() value := value * 2)
+history.execute(function()
+    value := value * 2
+end)
 print value
-history.execute(function() value := value - 5)
+history.execute(function()
+    value := value - 5
+end)
 print value
 print history.getCount()

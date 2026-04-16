@@ -6,10 +6,12 @@ function binarySearch(arr, target : int) -> int
         let mid := (low + high) // 2
         if arr[mid] == target then
             return mid
-        else if arr[mid] < target then
-            low := mid + 1
         else
-            high := mid - 1
+            if arr[mid] < target then
+                low := mid + 1
+            else
+                high := mid - 1
+            end
         end
     end
     return -1

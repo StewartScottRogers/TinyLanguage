@@ -788,10 +788,10 @@ namespace TinyLanguage.UnitTests
         }
 
         [TestMethod]
-        public void Operator_Bang_Standalone_ProducesUnknownToken()
+        public void Operator_Bang_Standalone_ProducesNotToken()
         {
-            // '!' alone (not '!=') is not a valid token
-            Assert.AreEqual(TokenType.Unknown, Lex("!")[0].Type);
+            // '!' alone is the unary not operator
+            Assert.AreEqual(TokenType.Not, Lex("!")[0].Type);
         }
 
         // ----------------------------------------------------------------

@@ -143,6 +143,24 @@ namespace TinyLanguage.Lexer
         // Assignment
         ColonEquals,        // :=
 
+        // Compound assignment operators
+        PlusEqual,          // +=
+        MinusEqual,         // -=
+        StarEqual,          // *=
+        SlashEqual,         // /=
+        PercentEqual,       // %=
+        StarStarEqual,      // **=
+        SlashSlashEqual,    // //=
+        AmpersandEqual,     // &=
+        PipeEqual,          // |=
+        CaretEqual,         // ^=
+        LessLessEqual,      // <<=
+        GreaterGreaterEqual, // >>=
+
+        // Increment / decrement
+        PlusPlus,           // ++
+        MinusMinus,         // --
+
         // Equality — only valid inside annotations and enum bodies per spec §1.2
         SingleEqual,        // =
 

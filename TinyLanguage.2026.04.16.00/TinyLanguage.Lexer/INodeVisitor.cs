@@ -49,6 +49,7 @@ namespace TinyLanguage.Lexer
         void Visit(AnnotationNode node);
         void Visit(AnnotationParamNode node);
         void Visit(ArrayElementAssignNode node);
+        void Visit(MemberAssignNode node);
 
         // ----------------------------------------------------------------
         // Expression nodes
