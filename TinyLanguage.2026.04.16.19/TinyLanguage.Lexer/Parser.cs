@@ -408,6 +408,15 @@ public sealed class Parser
         List<AstNode> elseBody = new List<AstNode>();
         if (Match(TokenType.Else))
         {
+            // "else if" is a common chained conditional: parse the nested if
+            // statement as the entire else-body. The nested if consumes its
+            // own 'end', so we do NOT consume another one here.
+            if (Check(TokenType.If))
+            {
+                AstNode nestedIf = ParseIfStatement();
+                elseBody.Add(nestedIf);
+                return new IfStatementNode(condition, thenBody, elseBody, line);
+            }
             HashSet<TokenType> elseStop = new HashSet<TokenType> { TokenType.End };
             elseBody = ParseStatementList(elseStop);
         }
@@ -1650,6 +1659,20 @@ public sealed class Parser
             return new IdentifierNode(token.Value, token.Line);
         }
 
+        // Type keywords used as built-in function names: int(...), float(...),
+        // bool(...), string(...). These are lexed as type tokens but are also
+        // valid built-in function call names when followed immediately by '('.
+        if ((type == TokenType.TypeInt || type == TokenType.TypeFloat ||
+             type == TokenType.TypeBool || type == TokenType.TypeString) &&
+            PeekAt(1).Type == TokenType.LeftParen)
+        {
+            Token typeToken = Advance(); // consume type keyword
+            Advance();                   // consume '('
+            List<AstNode> arguments = ParseArgList();
+            Expect(TokenType.RightParen, "Expected ')' after built-in type-cast call");
+            return new FunctionCallNode(typeToken.Value, arguments, typeToken.Line);
+        }
+
         throw new ParserException(
             "Expected expression but got '" + current.Value + "' (" + current.Type + ")",
             current.Line);
@@ -1700,7 +1723,10 @@ public sealed class Parser
             returnType = ParseType();
         }
 
-        if (CanStartStatement())
+        // Per note 14: scan ahead at the same nesting depth. If a matching
+        // 'end' is found before EOF, this is a block-body lambda; otherwise
+        // the body is a single expression.
+        if (CanStartStatement() && HasEndAtCurrentDepth())
         {
             HashSet<TokenType> stop = new HashSet<TokenType> { TokenType.End };
             List<AstNode> blockBody = ParseStatementList(stop);
@@ -1712,6 +1738,51 @@ public sealed class Parser
         List<AstNode> bodyList = new List<AstNode>();
         bodyList.Add(expressionBody);
         return new LambdaExprNode(parameters, returnType, bodyList, false, line);
+    }
+
+    // Scans forward from the current position looking for an 'end' token at
+    // the same nesting depth as the current position. Nesting is tracked by
+    // counting constructs that introduce 'end' delimiters (if/while/for/
+    // foreach/do-block/function/class/try). Returns true when a matching 'end'
+    // is found before EOF.
+    private bool HasEndAtCurrentDepth()
+    {
+        int depth = 0;
+        int index = Position;
+        while (index < Tokens.Count)
+        {
+            TokenType type = Tokens[index].Type;
+            if (type == TokenType.EndOfFile)
+            {
+                return false;
+            }
+            // These keywords open a nested block that is closed by 'end'.
+            if (type == TokenType.If || type == TokenType.While ||
+                type == TokenType.For || type == TokenType.Foreach ||
+                type == TokenType.Function || type == TokenType.Class ||
+                type == TokenType.Try)
+            {
+                depth = depth + 1;
+            }
+            else if (type == TokenType.Do)
+            {
+                // 'do' opens a block only when not followed by a statement list
+                // and then 'while' (do-while). We conservatively count it as
+                // a depth opener because ParseStatementList stops at 'while'
+                // for do-while anyway.
+                depth = depth + 1;
+            }
+            else if (type == TokenType.End)
+            {
+                if (depth == 0)
+                {
+                    return true;
+                }
+                depth = depth - 1;
+            }
+            index = index + 1;
+        }
+        return false;
     }
 
     // Parenthesised expression or cast expression (note 13).

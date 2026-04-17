@@ -41,7 +41,15 @@ public sealed class Interpreter : IInterpreter, INodeVisitor
 
     public void Execute(ProgramNode program)
     {
-        program.Accept(this);
+        try
+        {
+            program.Accept(this);
+        }
+        catch (ThrowSignal throwSignal)
+        {
+            // An uncaught user throw surfaces as an interpreter error.
+            throw new InterpreterException("Uncaught throw: " + ValueToString(throwSignal.Value), throwSignal.ThrowLine);
+        }
     }
 
     public object Evaluate(AstNode expression)
@@ -222,9 +230,23 @@ public sealed class Interpreter : IInterpreter, INodeVisitor
         }
         else
         {
-            // Bare assignment to an undeclared name creates the binding in
-            // the current scope (common in loop bodies and top-level code).
-            CurrentScope.Define(node.Name, value);
+            // When no scope binding exists, check whether 'this' is in scope
+            // and owns a field with the given name. Constructors and instance
+            // methods use plain assignment (e.g. X := v) to set fields on the
+            // current object rather than this.X := v.
+            object thisValue;
+            if (CurrentScope.IsDefinedAnywhere("this") &&
+                CurrentScope.Lookup("this", node.Line) is TinyLanguageObject thisObject &&
+                thisObject.Fields.ContainsKey(node.Name))
+            {
+                thisObject.Fields[node.Name] = value;
+            }
+            else
+            {
+                // Bare assignment to an undeclared name creates the binding in
+                // the current scope (common in loop bodies and top-level code).
+                CurrentScope.Define(node.Name, value);
+            }
         }
         LastValue = TinyLanguageNull.Instance;
     }
@@ -968,6 +990,26 @@ public sealed class Interpreter : IInterpreter, INodeVisitor
 
     public void Visit(IdentifierNode node)
     {
+        // Standard scope lookup first.
+        if (CurrentScope.IsDefinedAnywhere(node.Name))
+        {
+            LastValue = CurrentScope.Lookup(node.Name, node.Line);
+            return;
+        }
+        // When 'this' is in scope and has a field with the given name, return
+        // the field value. This allows instance methods and constructors to
+        // reference fields without the explicit 'this.' prefix.
+        if (CurrentScope.IsDefinedAnywhere("this"))
+        {
+            object thisValue = CurrentScope.Lookup("this", node.Line);
+            if (thisValue is TinyLanguageObject thisObject &&
+                thisObject.Fields.TryGetValue(node.Name, out object fieldValue))
+            {
+                LastValue = fieldValue;
+                return;
+            }
+        }
+        // Fall back to error.
         LastValue = CurrentScope.Lookup(node.Name, node.Line);
     }
 
