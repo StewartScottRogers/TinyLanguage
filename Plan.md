@@ -197,8 +197,12 @@ WU-01 (Scaffold)
 
 ## 4. Project Directory Layout
 
+The generated folder is created as a **sibling of the repo** (one level above), e.g.
+`Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` alongside `Z:\repos\TinyLanguage\`.
+
 ```
-TinyLanguage.2026.03.23.00/
+..\TinyLanguage.2026.04.16.19\   (sibling of the TinyLanguage repo)
+
 ├── TinyLanguage.sln
 ├── Directory.Build.props
 │

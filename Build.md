@@ -3,6 +3,10 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
+> **Output location:** The generated solution folder (`TinyLanguage.YYYY.MM.DD.HH/`) is
+> created as a **sibling of this repo**, not inside it. For example, if this repo is at
+> `Z:\repos\TinyLanguage\`, the output goes to `Z:\repos\TinyLanguage.2026.04.16.19\`.
+
 ---
 
 ## How to Run This Plan
@@ -51,8 +55,9 @@ Each agent runs in an **isolated git worktree** (`isolation: "worktree"`).
 Read Build.Solution.md sections: ".NET Standards", "Application Description",
 "File System Structure".
 
-Create the full solution skeleton:
-- TinyLanguage.YYYY.MM.DD.HH/
+Create the full solution skeleton ONE LEVEL ABOVE the repo root (i.e. a sibling
+of the TinyLanguage repo directory, not inside it):
+- ../TinyLanguage.YYYY.MM.DD.HH/          ← sibling of Z:\repos\TinyLanguage\
   - TinyLanguage.slnx (or .sln for SDK-style)
   - TinyLanguage.Lexer/TinyLanguage.Lexer.csproj  (net10.0 classlib)
   - TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj (net10.0 classlib)
