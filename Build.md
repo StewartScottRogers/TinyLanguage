@@ -63,11 +63,29 @@ of the TinyLanguage repo directory, not inside it):
   - TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj (net10.0 classlib)
   - TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj (MSTest)
   - TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj (MSTest)
-  - TinyLanguage/TinyLanguage.csproj (net10.0 console)
+  - TinyLanguage/TinyLanguage.csproj (net10.0 console, self-contained single-file win-x64 exe)
   - TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj  (SDK-style, content-only, no output assembly)
 
 Apply every coding-style rule from the spec. Do not generate any C# source yet —
 scaffold files, project references, and Directory.Build.props only.
+
+TinyLanguage/TinyLanguage.csproj must include:
+  <SelfContained>true</SelfContained>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <PublishSingleFile>true</PublishSingleFile>
+  <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  <!-- copy exe to DemoFiles after every build -->
+  <Target Name="CopyExeToDemoFiles" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)TinyLanguage.exe"
+          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
+          SkipUnchangedFiles="true" />
+  </Target>
+  <!-- copy single-file exe to DemoFiles after publish -->
+  <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish">
+    <Copy SourceFiles="$(PublishDir)TinyLanguage.exe"
+          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 Run: dotnet build
 Accept only: 0 errors, 0 warnings.
@@ -245,6 +263,10 @@ Implement TinyLanguage/Program.cs:
 
 Run: dotnet run --project TinyLanguage
 Accept only: "All demos completed successfully." printed, exit code 0.
+
+Then publish the single-file exe and verify it was copied to DemoFiles:
+  dotnet publish TinyLanguage -c Release
+  (TinyLanguage.exe must appear in TinyLanguage.DemoFiles/ — self-contained, ~36 MB, no runtime required)
 ```
 
 ---
@@ -259,11 +281,13 @@ Merge all worktree branches. From the solution root run the Test Validation Prot
   dotnet build
   dotnet run --project TinyLanguage
   dotnet test --verbosity normal
+  dotnet publish TinyLanguage -c Release
 
 Acceptance criteria (from Build.Solution.md "Acceptance Criteria"):
-  - dotnet build  → 0 errors, 0 warnings
-  - dotnet run    → "All demos completed successfully.", exit 0
-  - dotnet test   → Failed: 0
+  - dotnet build   → 0 errors, 0 warnings; TinyLanguage.exe copied to TinyLanguage.DemoFiles/
+  - dotnet run     → "All demos completed successfully.", exit 0
+  - dotnet test    → Failed: 0
+  - dotnet publish → single-file self-contained TinyLanguage.exe (~36 MB) in TinyLanguage.DemoFiles/
 
 If any criterion fails, apply the Fix-and-Retry Loop from the spec:
   1. Read full error output.

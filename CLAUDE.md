@@ -9,10 +9,11 @@ TinyLanguage is a complete .NET 10.0 implementation of a small programming langu
 ## Build & Test Commands
 
 ```bash
-dotnet build                        # Must succeed with 0 errors, 0 warnings
-dotnet test --verbosity normal      # Must report Failed: 0
-dotnet run --project TinyLanguage   # Demo mode: runs all demo files; exit 0, prints "All demos completed successfully."
+dotnet build                                    # Must succeed with 0 errors, 0 warnings
+dotnet test --verbosity normal                  # Must report Failed: 0
+dotnet run --project TinyLanguage               # Demo mode: runs all demo files; exit 0, prints "All demos completed successfully."
 dotnet run --project TinyLanguage -- input.tlg output.txt  # File-processor mode
+dotnet publish TinyLanguage -c Release          # Produces single-file self-contained TinyLanguage.exe
 ```
 
 Run a single test class:
@@ -21,6 +22,12 @@ dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 ```
 
 **Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `dotnet run` demo mode → exit 0.
+
+### Single-file exe
+`TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
+
+- **After every `dotnet build`:** the build-output exe is automatically copied to `TinyLanguage.DemoFiles/` via a `CopyExeToDemoFiles` MSBuild target.
+- **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/` via a `CopySingleFileExeToDemoFiles` MSBuild target.
 
 ## Architecture
 

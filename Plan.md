@@ -82,6 +82,7 @@
 | **Outputs** | `.sln`, all `.csproj`, `.shproj`, `.projitems`, `Directory.Build.props` |
 | **Dependencies** | None |
 | **Assignee Role** | Build Engineer |
+| **Exe requirement** | `TinyLanguage.csproj` must set `SelfContained=true`, `RuntimeIdentifier=win-x64`, `PublishSingleFile=true`, `EnableCompressionInSingleFile=true`, and include MSBuild targets to copy the exe to `TinyLanguage.DemoFiles/` after every build and after publish |
 
 ### WU-02: Token Types and Lexer
 | Field | Value |
@@ -156,6 +157,7 @@
 | **Outputs** | `Program.cs` |
 | **Dependencies** | WU-06 |
 | **Assignee Role** | Application Engineer |
+| **Verification** | `dotnet publish TinyLanguage -c Release` → single-file `TinyLanguage.exe` appears in `TinyLanguage.DemoFiles/` (self-contained, no runtime required) |
 
 ### WU-10: Demo File Suite
 | Field | Value |
