@@ -1,9 +1,0 @@
-# Demo: function called multiple times
-function square(n : int) -> int
-    return n * n
-end
-let sumOfSquares := 0
-for i := 1 to 5 do
-    sumOfSquares := sumOfSquares + square(i)
-end
-print sumOfSquares

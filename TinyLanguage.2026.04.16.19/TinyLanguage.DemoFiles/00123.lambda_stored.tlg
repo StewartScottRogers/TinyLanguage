@@ -1,5 +1,0 @@
-# Demo: lambda stored in variable
-let isEven := function(n : int) n % 2 == 0
-print isEven(4)
-print isEven(7)
-print isEven(0)

@@ -1,8 +1,0 @@
-# Demo: switch on string value
-let color := "blue"
-switch color {
-    case "red": print "warm"
-    case "blue": print "cool"
-    case "green": print "nature"
-    default: print "unknown"
-}

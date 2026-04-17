@@ -1,7 +1,0 @@
-# Demo: multiple annotations
-@deprecated
-@author(name = "Alice")
-function annotatedFunction()
-    print "annotated"
-end
-annotatedFunction()

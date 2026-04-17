@@ -1,7 +1,0 @@
-# Demo: switch on boolean expression
-let x := 42
-let isEven := x % 2 == 0
-switch isEven {
-    case true: print "even number"
-    case false: print "odd number"
-}

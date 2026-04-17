@@ -1,5 +1,0 @@
-# Demo: equality comparison
-print 5 == 5
-print 5 == 6
-print "hello" == "hello"
-print "hello" == "world"

@@ -1,4 +1,0 @@
-# Demo: print string literals
-print "hello"
-print "world"
-print "TinyLanguage demo"

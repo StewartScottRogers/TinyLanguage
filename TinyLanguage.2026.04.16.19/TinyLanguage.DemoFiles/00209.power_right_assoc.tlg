@@ -1,4 +1,0 @@
-# Demo: power operator is right-associative
-print 2 ** 3 ** 2
-print (2 ** 3) ** 2
-print 2 ** (3 ** 2)

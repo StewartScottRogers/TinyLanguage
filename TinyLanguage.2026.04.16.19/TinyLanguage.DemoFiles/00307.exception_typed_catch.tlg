@@ -1,6 +1,0 @@
-# Demo: typed catch clause
-try
-    throw "string error"
-catch (err : string)
-    print "String error: " + err
-end

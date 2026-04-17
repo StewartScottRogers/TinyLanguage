@@ -1,9 +1,0 @@
-# Demo: assignment updates the scope where variable was declared
-let counter := 0
-function increment()
-    counter := counter + 1
-end
-increment()
-increment()
-increment()
-print counter

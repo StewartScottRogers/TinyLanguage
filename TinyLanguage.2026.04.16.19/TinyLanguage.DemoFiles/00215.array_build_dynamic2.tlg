@@ -1,8 +1,0 @@
-# Demo: building an array dynamically with for
-let squares := []
-for i := 1 to 10 do
-    squares[i - 1] := i * i
-end
-foreach sq in squares do
-    print sq
-end

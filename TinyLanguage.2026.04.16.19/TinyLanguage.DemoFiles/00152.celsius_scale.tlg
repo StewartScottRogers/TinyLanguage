@@ -1,5 +1,0 @@
-# Demo: generate Celsius to Fahrenheit table
-for c := 0 to 100 step 10 do
-    let f := c * 9 // 5 + 32
-    print str(c) + "C = " + str(f) + "F"
-end

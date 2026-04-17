@@ -1,7 +1,0 @@
-# Demo: comparison results stored in variables
-let a := 5
-let b := 10
-let isLess := a < b
-let isEqual := a == b
-print isLess
-print isEqual

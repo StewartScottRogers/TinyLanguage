@@ -1,5 +1,0 @@
-# Demo: foreach over string array
-let fruits := ["apple", "banana", "cherry"]
-foreach fruit in fruits do
-    print fruit
-end

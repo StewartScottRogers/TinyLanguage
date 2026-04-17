@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TinyLanguage.Interpreter\TinyLanguage.Interpreter.csproj" />
-  </ItemGroup>
-</Project>

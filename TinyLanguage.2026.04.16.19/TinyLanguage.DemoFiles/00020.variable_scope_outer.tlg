@@ -1,6 +1,0 @@
-# Demo: outer scope variable updated from inner block
-let counter := 0
-while counter < 5 do
-    counter := counter + 1
-end
-print counter

@@ -1,8 +1,0 @@
-# Demo: try block without throw
-try
-    print "no error"
-catch e
-    print "never reaches here"
-finally
-    print "finally always runs"
-end

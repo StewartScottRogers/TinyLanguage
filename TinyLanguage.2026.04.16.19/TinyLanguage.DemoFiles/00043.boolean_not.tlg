@@ -1,5 +1,0 @@
-# Demo: logical not operator
-print not true
-print not false
-let x := true
-print not x

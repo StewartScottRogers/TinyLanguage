@@ -11,10 +11,4 @@
     <File Path="Plan.md" />
   </Folder>
   <Project Path=".claude/claude.shproj" Id="60827118-5955-4d80-a32e-a6bf7ae2c2d3" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage/TinyLanguage.csproj" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage.Lexer/TinyLanguage.Lexer.csproj" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj" />
-  <Project Path="TinyLanguage.2026.04.16.00/TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj" />
 </Solution>

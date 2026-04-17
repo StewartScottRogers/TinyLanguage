@@ -1,5 +1,0 @@
-# Demo: not-equal comparison
-print 5 != 6
-print 5 != 5
-print "a" != "b"
-print "a" != "a"

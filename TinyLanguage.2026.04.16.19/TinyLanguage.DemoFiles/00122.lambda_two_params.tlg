@@ -1,5 +1,0 @@
-# Demo: lambda with two parameters
-let add := function(a : int, b : int) a + b
-let mul := function(a : int, b : int) a * b
-print add(3, 4)
-print mul(3, 4)

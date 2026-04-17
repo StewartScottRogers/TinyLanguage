@@ -1,6 +1,0 @@
-# Demo: len() function on strings
-print len("hello")
-print len("")
-print len("TinyLanguage")
-let s := "test"
-print len(s)

@@ -1,5 +1,0 @@
-# Demo: string concatenation with &
-print "Name: " & "Alice"
-print "Number: " & 42
-print "Pi: " & 3.14
-print "Flag: " & true

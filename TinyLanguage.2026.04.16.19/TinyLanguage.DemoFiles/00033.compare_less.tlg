@@ -1,5 +1,0 @@
-# Demo: less-than comparison
-print 3 < 5
-print 5 < 3
-print 5 < 5
-print 1.5 < 2.0

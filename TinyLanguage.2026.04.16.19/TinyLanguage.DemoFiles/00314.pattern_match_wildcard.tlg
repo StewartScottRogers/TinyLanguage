@@ -1,8 +1,0 @@
-# Demo: pattern matching wildcard
-let nums := [1, 2, 42, 99, 3]
-foreach n in nums do
-    match n {
-        42 => print "found the answer!"
-        _ => print str(n)
-    }
-end

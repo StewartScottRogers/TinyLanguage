@@ -1,7 +1,0 @@
-# Demo: function parameters shadow global names
-let x := 10
-function foo(x : int) -> int
-    return x * 2
-end
-print foo(5)
-print x

@@ -1,5 +1,0 @@
-# Demo: foreach over string yields characters
-let word := "hello"
-foreach ch in word do
-    print ch
-end

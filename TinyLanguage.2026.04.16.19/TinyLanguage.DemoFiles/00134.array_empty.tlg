@@ -1,8 +1,0 @@
-# Demo: empty array and dynamic growth
-let data := []
-data[0] := 100
-data[1] := 200
-data[2] := 300
-print data[0]
-print data[1]
-print data[2]

@@ -1,7 +1,0 @@
-# Demo: cast to int
-let f := 9.9
-let n := (int) f
-print n
-let s := "42"
-print int(s)
-print (int) 3.5

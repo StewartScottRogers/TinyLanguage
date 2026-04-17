@@ -1,5 +1,0 @@
-# Demo: comparison with logical operators
-let x := 7
-print x > 0 and x < 10
-print x < 0 or x > 5
-print not (x == 7)

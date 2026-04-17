@@ -1,6 +1,0 @@
-# Demo: formatted table output
-print "Num  | Square | Cube"
-print "-----|--------|-----"
-for i := 1 to 8 do
-    print str(i) + "    | " + str(i*i) + "      | " + str(i*i*i)
-end

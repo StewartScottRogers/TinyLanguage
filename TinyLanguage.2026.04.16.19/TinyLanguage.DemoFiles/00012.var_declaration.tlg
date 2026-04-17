@@ -1,7 +1,0 @@
-# Demo: var variable with type annotation
-var count : int := 0
-var name : string := "Alice"
-var pi : float := 3.14
-print count
-print name
-print pi

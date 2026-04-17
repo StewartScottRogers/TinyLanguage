@@ -1,5 +1,0 @@
-# Demo: string concatenation with +
-let a := "Hello"
-let b := ", "
-let c := "World!"
-print a + b + c

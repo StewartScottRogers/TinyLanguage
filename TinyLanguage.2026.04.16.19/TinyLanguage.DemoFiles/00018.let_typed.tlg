@@ -1,9 +1,0 @@
-# Demo: let with type annotation
-let count : int := 42
-let ratio : float := 0.75
-let message : string := "typed"
-let flag : bool := true
-print count
-print ratio
-print message
-print flag

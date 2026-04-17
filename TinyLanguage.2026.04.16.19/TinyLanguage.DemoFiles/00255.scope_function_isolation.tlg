@@ -1,6 +1,0 @@
-# Demo: function cannot see call-site variables
-let globalVal := 100
-function getGlobal() -> int
-    return globalVal
-end
-print getGlobal()

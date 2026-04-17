@@ -1,3 +1,0 @@
-# Demo: greeting with variable
-let name := "TinyLanguage"
-print "Hello, " + name + "!"

@@ -1,7 +1,0 @@
-# Demo: basic module definition
-module Greeter {
-    function hello(name : string) -> string
-        return "Hello, " + name + "!"
-    end
-}
-print Greeter.hello("World")

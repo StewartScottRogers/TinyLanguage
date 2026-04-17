@@ -1,5 +1,0 @@
-# Demo: iterate string character by character
-let word := "cat"
-foreach ch in word do
-    print ch
-end

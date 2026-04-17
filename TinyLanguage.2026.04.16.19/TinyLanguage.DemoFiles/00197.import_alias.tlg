@@ -1,8 +1,0 @@
-# Demo: import with alias
-module Utilities {
-    function greetUtil(name : string) -> string
-        return "Hello, " + name
-    end
-}
-import Utilities as Utils
-print Utilities.greetUtil("World")

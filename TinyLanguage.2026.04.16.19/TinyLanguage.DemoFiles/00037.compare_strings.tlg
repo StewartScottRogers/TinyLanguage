@@ -1,5 +1,0 @@
-# Demo: string comparisons
-print "apple" < "banana"
-print "zebra" > "apple"
-print "abc" == "abc"
-print "abc" != "xyz"

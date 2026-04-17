@@ -1,8 +1,0 @@
-# Demo: pattern matching on strings
-let color := "green"
-match color {
-    "red" => print "warm"
-    "green" => print "cool"
-    "blue" => print "cold"
-    _ => print "unknown"
-}

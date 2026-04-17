@@ -1,7 +1,0 @@
-# Demo: inline conditional expression
-let x := 7
-let label := if x % 2 == 0 then "even" else "odd"
-print label
-let y := 0
-let signStr := if y > 0 then "positive" else if y < 0 then "negative" else "zero"
-print signStr

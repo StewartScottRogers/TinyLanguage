@@ -1,9 +1,0 @@
-# Demo: recursive countdown
-function countdown(n : int)
-    if n < 0 then
-        return
-    end
-    print n
-    countdown(n - 1)
-end
-countdown(10)

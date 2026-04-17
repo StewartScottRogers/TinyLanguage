@@ -1,6 +1,0 @@
-# Demo: null truthiness
-if null then
-    print "null is truthy"
-else
-    print "null is falsy"
-end

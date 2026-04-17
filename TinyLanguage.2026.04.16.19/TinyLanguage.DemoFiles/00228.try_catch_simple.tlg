@@ -1,6 +1,0 @@
-# Demo: simple try-catch
-try
-    throw "something went wrong"
-catch err
-    print "Caught: " + str(err)
-end

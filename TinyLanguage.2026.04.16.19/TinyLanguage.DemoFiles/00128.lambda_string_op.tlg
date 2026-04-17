@@ -1,5 +1,0 @@
-# Demo: lambda for string operations
-let shout := function(s : string) s + "!"
-let repeat := function(s : string) s + s
-print shout("Hello")
-print repeat("abc")

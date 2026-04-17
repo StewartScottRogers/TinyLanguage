@@ -1,5 +1,0 @@
-# Demo: greater-than-or-equal comparison
-print 5 >= 3
-print 5 >= 5
-print 4 >= 5
-print 2.0 >= 1.5

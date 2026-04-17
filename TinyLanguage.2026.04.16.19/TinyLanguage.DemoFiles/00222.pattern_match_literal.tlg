@@ -1,8 +1,0 @@
-# Demo: pattern matching on literal values
-let x := 3
-match x {
-    1 => print "one"
-    2 => print "two"
-    3 => print "three"
-    _ => print "other"
-}

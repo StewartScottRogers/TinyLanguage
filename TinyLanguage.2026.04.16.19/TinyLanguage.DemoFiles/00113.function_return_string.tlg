@@ -1,6 +1,0 @@
-# Demo: function returning string
-function greetPerson(name : string) -> string
-    return "Hello, " + name + "!"
-end
-print greetPerson("Alice")
-print greetPerson("Bob")

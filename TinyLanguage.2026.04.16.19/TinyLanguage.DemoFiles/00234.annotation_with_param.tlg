@@ -1,6 +1,0 @@
-# Demo: annotation with parameter
-@version(major = 1, minor = 0)
-function stableFunction() -> string
-    return "stable"
-end
-print stableFunction()

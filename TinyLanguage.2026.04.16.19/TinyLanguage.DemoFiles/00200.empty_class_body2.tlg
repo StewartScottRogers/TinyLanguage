@@ -1,4 +1,0 @@
-# Demo: empty class body is valid
-class EmptyClass2 {
-}
-print "empty class defined"

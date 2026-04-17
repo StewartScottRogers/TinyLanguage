@@ -1,5 +1,0 @@
-# Demo: string character indexing
-let s := "hello"
-print s[0]
-print s[1]
-print s[4]
