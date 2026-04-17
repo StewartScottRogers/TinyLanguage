@@ -925,10 +925,12 @@ public sealed class LexerUnitTests
     {
         // // must never be treated as a comment; it is floor-division.
         List<Token> tokens = Lex("7 // 2");
-        Assert.AreEqual(3, tokens.Count);
+        // 7, //, 2, EOF — four tokens total
+        Assert.AreEqual(4, tokens.Count);
         Assert.AreEqual(TokenType.IntegerLiteral, tokens[0].Type);
         Assert.AreEqual(TokenType.DoubleSlash,    tokens[1].Type);
         Assert.AreEqual(TokenType.IntegerLiteral, tokens[2].Type);
+        Assert.AreEqual(TokenType.EndOfFile,      tokens[3].Type);
         Assert.AreEqual("//", tokens[1].Value);
     }
 

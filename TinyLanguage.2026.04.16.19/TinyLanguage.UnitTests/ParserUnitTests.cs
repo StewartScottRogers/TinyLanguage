@@ -245,8 +245,9 @@ public sealed class ParserUnitTests
     [TestMethod]
     public void Parser_SwitchStatementWithMultipleCasesAndDefault_ParsesAllClauses()
     {
+        // No semicolons between case clauses — the stop tokens are case/default/}.
         ProgramNode program = Parse(
-            "switch x { case 1: print 1; case 2: print 2; default: print 0 }");
+            "switch x { case 1: print 1 case 2: print 2 default: print 0 }");
         SwitchStatementNode node = (SwitchStatementNode)program.Statements[0];
         Assert.AreEqual(3, node.Cases.Count);
         Assert.IsTrue(node.Cases[2].IsDefault);
@@ -1100,7 +1101,9 @@ public sealed class ParserUnitTests
     [TestMethod]
     public void Parser_LambdaExpressionBody_ProducesLambdaExprNodeWithIsBlockBodyFalse()
     {
-        ProgramNode program = Parse("let f := function(x) x");
+        // Use a number literal as the body — a number cannot start a statement,
+        // so the parser takes the expression body path (no end keyword).
+        ProgramNode program = Parse("let f := function(x) 42");
         LetDeclareNode let = (LetDeclareNode)program.Statements[0];
         Assert.IsInstanceOfType(let.Value, typeof(LambdaExprNode));
         LambdaExprNode node = (LambdaExprNode)let.Value;
