@@ -5,7 +5,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="**/*.tlg" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="**/*.cmd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="**/*.tlg" Exclude="bin\**;obj\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="**/*.cmd" Exclude="bin\**;obj\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
