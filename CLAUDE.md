@@ -26,12 +26,14 @@ dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 ### Single-file exe
 `TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
 
-- **After every `dotnet build`:** the build-output exe is automatically copied to `TinyLanguage.DemoFiles/` via a `CopyExeToDemoFiles` MSBuild target.
-- **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/` via a `CopySingleFileExeToDemoFiles` MSBuild target.
+- **After every `dotnet build`:** the build-output exe is automatically copied to `TinyLanguage.DemoFiles/` via the `CopyExeToDemoFiles` MSBuild target (conditioned on `'$(PublishDir)' == ''` so it fires on builds but not during publish).
+- **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/` via the `CopySingleFileExeToDemoFiles` MSBuild target.
+
+> **Important:** The `CopyExeToDemoFiles` condition must be `'$(PublishDir)' == ''`, **not** `'$(PublishSingleFile)' != 'true'`. Because `PublishSingleFile=true` is declared in the PropertyGroup it is always true at both build and publish time, so the latter condition never fires and the exe is never copied on a plain `dotnet build`.
 
 ## Architecture
 
-Five projects in the solution (`TinyLanguage.slnx`):
+Six projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed first so Visual Studio treats it as the startup project (the `.slnx` format has no explicit startup-project field; VS defaults to the first executable project). A `.vscode/launch.json` provides the same default for VS Code.
 
 | Project | Role |
 |---|---|

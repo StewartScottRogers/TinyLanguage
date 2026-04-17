@@ -58,22 +58,79 @@ Read Build.Solution.md sections: ".NET Standards", "Application Description",
 Create the full solution skeleton ONE LEVEL ABOVE the repo root (i.e. a sibling
 of the TinyLanguage repo directory, not inside it):
 - ../TinyLanguage.YYYY.MM.DD.HH/          ← sibling of Z:\repos\TinyLanguage\
-  - TinyLanguage.slnx (or .sln for SDK-style)
+  - TinyLanguage.slnx
   - TinyLanguage.Lexer/TinyLanguage.Lexer.csproj  (net10.0 classlib)
   - TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj (net10.0 classlib)
   - TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj (MSTest)
   - TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj (MSTest)
   - TinyLanguage/TinyLanguage.csproj (net10.0 console, self-contained single-file win-x64 exe)
   - TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj  (SDK-style, content-only, no output assembly)
+  - .vscode/launch.json  (VS Code debugger — targets TinyLanguage console project)
 
 Apply every coding-style rule from the spec. Do not generate any C# source yet —
-scaffold files, project references, and Directory.Build.props only.
+scaffold files, project references, Directory.Build.props, and .vscode/launch.json only.
+
+TinyLanguage.slnx must list TinyLanguage/TinyLanguage.csproj FIRST so that Visual
+Studio recognises it as the default startup project (the .slnx format has no explicit
+startup-project field; VS defaults to the first executable project in the list):
+  <Solution>
+    <Project Path="TinyLanguage\TinyLanguage.csproj" />
+    <Project Path="TinyLanguage.Lexer\TinyLanguage.Lexer.csproj" />
+    <Project Path="TinyLanguage.Interpreter\TinyLanguage.Interpreter.csproj" />
+    <Project Path="TinyLanguage.UnitTests\TinyLanguage.UnitTests.csproj" />
+    <Project Path="TinyLanguage.IntegrationTests\TinyLanguage.IntegrationTests.csproj" />
+    <Project Path="TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj" />
+  </Solution>
+
+.vscode/launch.json must target the TinyLanguage console project so VS Code F5
+launches it directly:
+  {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "TinyLanguage (demo mode)",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build",
+        "program": "${workspaceFolder}/TinyLanguage/bin/Debug/net10.0/win-x64/TinyLanguage.exe",
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "console": "internalConsole",
+        "stopAtEntry": false
+      },
+      {
+        "name": "TinyLanguage (file mode)",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build",
+        "program": "${workspaceFolder}/TinyLanguage/bin/Debug/net10.0/win-x64/TinyLanguage.exe",
+        "args": ["${input:inputFile}", "${input:outputFile}"],
+        "cwd": "${workspaceFolder}",
+        "console": "internalConsole",
+        "stopAtEntry": false
+      }
+    ],
+    "inputs": [
+      { "id": "inputFile",  "type": "promptString", "description": "Input .tlg file"  },
+      { "id": "outputFile", "type": "promptString", "description": "Output file path" }
+    ]
+  }
 
 TinyLanguage/TinyLanguage.csproj must include:
   <SelfContained>true</SelfContained>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
   <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  <!-- copy build-output exe to DemoFiles after every dotnet build (not during publish) -->
+  <!-- NOTE: use Condition="'$(PublishDir)' == ''" — NOT PublishSingleFile != true,   -->
+  <!-- because PublishSingleFile is always true in PropertyGroup and that condition    -->
+  <!-- never fires. $(PublishDir) is only set during dotnet publish.                  -->
+  <Target Name="CopyExeToDemoFiles" AfterTargets="Build" Condition="'$(PublishDir)' == ''">
+    <Copy SourceFiles="$(OutputPath)TinyLanguage.exe"
+          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(OutputPath)TinyLanguage.exe')" />
+  </Target>
   <!-- copy single-file exe to DemoFiles after Release publish only -->
   <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish"
           Condition="'$(Configuration)' == 'Release'">
@@ -285,26 +342,38 @@ Then publish the single-file exe and verify it was copied to DemoFiles:
 **Agent:** `general-purpose`
 **Prompt:**
 ```
-Merge all worktree branches. From the solution root run the Test Validation Protocol:
+Merge all worktree branches. From the solution root run the full Batch Build & Test
+Protocol below. Every step must pass before you may declare the plan complete.
 
+### Step 1 — Clean build (whole solution)
   dotnet build
-  dotnet run --project TinyLanguage
+  Accept: 0 errors, 0 warnings.
+  Verify: TinyLanguage.DemoFiles/TinyLanguage.exe exists (copied by CopyExeToDemoFiles target).
+
+### Step 2 — Unit + integration tests
   dotnet test --verbosity normal
+  Accept: Failed: 0.
+  If any test fails: read full output, identify root cause, make minimal fix, re-run
+  dotnet build → dotnet test. Repeat until Failed: 0.
+
+### Step 3 — Demo mode (interpreter end-to-end)
+  dotnet run --project TinyLanguage
+  Accept: prints "All demos completed successfully.", exit code 0.
+  If any demo fails: read the error, fix the interpreter or demo file, re-run.
+
+### Step 4 — Release publish (single-file exe)
   dotnet publish TinyLanguage -c Release
+  Accept: TinyLanguage.DemoFiles/TinyLanguage.exe is the freshly-published self-contained
+  single-file build (~36 MB). Verify with: ls -lh TinyLanguage.DemoFiles/TinyLanguage.exe
 
-Acceptance criteria (from Build.Solution.md "Acceptance Criteria"):
-  - dotnet build   → 0 errors, 0 warnings
-  - dotnet run     → "All demos completed successfully.", exit 0
-  - dotnet test    → Failed: 0
-  - dotnet publish → single-file self-contained TinyLanguage.exe (~36 MB) in TinyLanguage.DemoFiles/
+### Step 5 — Spot-check demos via the published exe
+  Run at least the first 10 .cmd files directly to confirm the published exe works:
+    TinyLanguage.DemoFiles/00001.fizzbuzz.cmd
+    TinyLanguage.DemoFiles/00002.fibonacci.cmd
+    ... (continue through 00010.*)
+  Each must exit 0 and produce a non-empty output file.
 
-If any criterion fails, apply the Fix-and-Retry Loop from the spec:
-  1. Read full error output.
-  2. Identify root cause.
-  3. Edit only minimal code needed.
-  4. Re-run dotnet build → dotnet test.
-  5. Repeat until Failed: 0.
-
+All five steps must be green. Do not declare the plan complete until they are.
 Do not refactor unrelated code. Do not alter Build.Solution.md.
 ```
 
