@@ -1,0 +1,10 @@
+# Demo: complex conditions in if
+let a := 5
+let b := 10
+let c := 15
+if a < b and b < c then
+    print "a < b < c"
+end
+if a == 5 or b == 5 then
+    print "a or b is 5"
+end

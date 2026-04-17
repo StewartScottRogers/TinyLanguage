@@ -1,0 +1,7 @@
+# Demo: for loop with break
+for i := 1 to 100 do
+    if i > 5 then
+        break
+    end
+    print i
+end

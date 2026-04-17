@@ -1,0 +1,7 @@
+# Demo: function with no parameters
+function getCurrentYear() -> int
+    return 2026
+end
+print getCurrentYear()
+let year := getCurrentYear()
+print year + 1

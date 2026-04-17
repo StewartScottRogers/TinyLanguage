@@ -1,0 +1,7 @@
+# Demo: nested ternary operators
+let x := 0
+let sign := x > 0 ? "positive" : x < 0 ? "negative" : "zero"
+print sign
+let y := -5
+let signY := y > 0 ? "positive" : y < 0 ? "negative" : "zero"
+print signY

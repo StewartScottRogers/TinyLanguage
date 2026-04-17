@@ -1,0 +1,10 @@
+# Demo: function with multiple return paths
+function abs_val(n : int) -> int
+    if n < 0 then
+        return -n
+    end
+    return n
+end
+print abs_val(-5)
+print abs_val(3)
+print abs_val(0)

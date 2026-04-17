@@ -1,0 +1,5 @@
+# Demo: number formatting with str()
+let vals := [0, 1, -1, 42, -42, 1000, 3.14, -2.71]
+foreach v in vals do
+    print str(v)
+end

@@ -1,0 +1,5 @@
+# Demo: boolean operator symbols && and ||
+print true && false
+print false || true
+print true && true
+print false || false

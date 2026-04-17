@@ -1,0 +1,17 @@
+# Demo: extended FizzBuzz with Bazz for 7
+for i := 1 to 30 do
+    let output := ""
+    if i % 3 == 0 then
+        output := output + "Fizz"
+    end
+    if i % 5 == 0 then
+        output := output + "Buzz"
+    end
+    if i % 7 == 0 then
+        output := output + "Bazz"
+    end
+    if output == "" then
+        output := str(i)
+    end
+    print output
+end

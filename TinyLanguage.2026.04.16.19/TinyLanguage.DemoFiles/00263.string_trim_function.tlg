@@ -1,0 +1,16 @@
+# Demo: ltrim removes leading spaces
+function ltrim(s : string) -> string
+    let i := 0
+    while i < len(s) and s[i] == " " do
+        i := i + 1
+    end
+    let result := ""
+    while i < len(s) do
+        result := result + s[i]
+        i := i + 1
+    end
+    return result
+end
+print ltrim("   hello")
+print ltrim("world")
+print ltrim("  spaces  ")

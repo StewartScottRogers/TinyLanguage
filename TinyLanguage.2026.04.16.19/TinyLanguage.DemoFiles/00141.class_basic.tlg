@@ -1,0 +1,14 @@
+# Demo: basic class with constructor and method
+class Point {
+    let X : int := 0
+    let Y : int := 0
+    Constructor(x : int, y : int)
+        X := x
+        Y := y
+    end
+    function toString() -> string
+        return "(" + str(X) + "," + str(Y) + ")"
+    end
+}
+let p := new Point(3, 4)
+print p.toString()

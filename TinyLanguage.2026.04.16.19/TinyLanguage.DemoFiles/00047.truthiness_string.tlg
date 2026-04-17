@@ -1,0 +1,9 @@
+# Demo: string truthiness
+if "hello" then
+    print "non-empty is truthy"
+end
+if "" then
+    print "empty is truthy"
+else
+    print "empty is falsy"
+end

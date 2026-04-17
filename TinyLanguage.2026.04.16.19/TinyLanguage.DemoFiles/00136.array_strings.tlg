@@ -1,0 +1,5 @@
+# Demo: array of strings
+let words := ["hello", "world", "foo", "bar"]
+foreach w in words do
+    print w
+end

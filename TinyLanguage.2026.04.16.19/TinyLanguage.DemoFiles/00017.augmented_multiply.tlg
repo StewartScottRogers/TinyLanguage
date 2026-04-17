@@ -1,0 +1,5 @@
+# Demo: augmented multiplication via reassignment
+let val := 2
+val := val * 3
+val := val * 4
+print val

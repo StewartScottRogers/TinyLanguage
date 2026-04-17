@@ -1,0 +1,8 @@
+# Demo: nested for loops
+for i := 1 to 5 do
+    for j := 1 to 5 do
+        if i == j then
+            print str(i) + "," + str(j)
+        end
+    end
+end

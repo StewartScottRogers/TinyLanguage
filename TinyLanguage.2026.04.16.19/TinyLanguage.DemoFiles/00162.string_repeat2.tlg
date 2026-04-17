@@ -1,0 +1,13 @@
+# Demo: repeat string n times
+function repeatStr2(s : string, n : int) -> string
+    let result := ""
+    let i := 0
+    while i < n do
+        result := result + s
+        i := i + 1
+    end
+    return result
+end
+print repeatStr2("abc", 3)
+print repeatStr2("-", 10)
+print repeatStr2("ha", 5)

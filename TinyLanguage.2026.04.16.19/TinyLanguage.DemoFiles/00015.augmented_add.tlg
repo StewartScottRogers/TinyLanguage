@@ -1,0 +1,6 @@
+# Demo: augmented addition via reassignment
+let total := 0
+total := total + 10
+total := total + 20
+total := total + 30
+print total

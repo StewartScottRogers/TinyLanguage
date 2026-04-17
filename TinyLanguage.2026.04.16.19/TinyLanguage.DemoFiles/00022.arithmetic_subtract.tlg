@@ -1,0 +1,4 @@
+# Demo: subtraction operator
+print 10 - 3
+print 0 - 5
+print 100 - 50

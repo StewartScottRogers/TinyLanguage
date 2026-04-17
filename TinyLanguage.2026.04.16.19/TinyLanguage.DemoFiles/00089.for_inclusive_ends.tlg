@@ -1,0 +1,6 @@
+# Demo: for loop is inclusive on both ends
+let sum := 0
+for i := 1 to 10 do
+    sum := sum + i
+end
+print sum

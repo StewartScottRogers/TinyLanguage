@@ -1,0 +1,14 @@
+# Demo: power function
+function powerInt(base : int, exp : int) -> int
+    if exp == 0 then
+        return 1
+    end
+    let result := 1
+    for i := 1 to exp do
+        result := result * base
+    end
+    return result
+end
+print powerInt(2, 10)
+print powerInt(3, 5)
+print powerInt(5, 0)

@@ -1,0 +1,7 @@
+# Demo: list comprehension for even numbers
+let evens := [x for x in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
+foreach n in evens do
+    if n % 2 == 0 then
+        print n
+    end
+end

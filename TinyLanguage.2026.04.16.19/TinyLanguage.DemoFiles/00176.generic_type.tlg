@@ -1,0 +1,4 @@
+# Demo: array type annotation
+var items : array := [1, 2, 3]
+print items
+print len(items)

@@ -1,0 +1,11 @@
+# Demo: absolute value function
+function absVal(n : int) -> int
+    if n < 0 then
+        return -n
+    end
+    return n
+end
+print absVal(-5)
+print absVal(5)
+print absVal(0)
+print absVal(-100)

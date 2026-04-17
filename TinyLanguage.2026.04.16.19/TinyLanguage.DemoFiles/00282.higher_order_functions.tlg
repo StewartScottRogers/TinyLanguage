@@ -1,0 +1,9 @@
+# Demo: higher-order functions
+function compose(f, g)
+    return function(x : int) f(g(x))
+end
+let double := function(x : int) x * 2
+let addOne := function(x : int) x + 1
+let doubleThenAdd := compose(addOne, double)
+print doubleThenAdd(5)
+print doubleThenAdd(10)

@@ -1,0 +1,12 @@
+# Demo: switch case with multiple statements
+let day := "Sat"
+switch day {
+    case "Sat":
+        print "Saturday"
+        print "Weekend"
+    case "Sun":
+        print "Sunday"
+        print "Weekend"
+    default:
+        print "Weekday"
+}

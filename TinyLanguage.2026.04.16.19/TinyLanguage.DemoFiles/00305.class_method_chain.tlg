@@ -1,0 +1,22 @@
+# Demo: method returning this for chaining
+class Chain {
+    let Value : int := 0
+    Constructor()
+    end
+    function add(n : int) -> Chain
+        Value := Value + n
+        return this
+    end
+    function multiply(n : int) -> Chain
+        Value := Value * n
+        return this
+    end
+    function result() -> int
+        return Value
+    end
+}
+let c := new Chain()
+c.add(5)
+c.multiply(3)
+c.add(2)
+print c.result()

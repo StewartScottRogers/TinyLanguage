@@ -1,0 +1,4 @@
+# Demo: multiplication table using for
+for i := 1 to 10 do
+    print i + " x 7 = " + str(i * 7)
+end

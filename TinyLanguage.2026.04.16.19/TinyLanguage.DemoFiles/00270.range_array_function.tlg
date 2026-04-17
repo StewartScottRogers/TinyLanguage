@@ -1,0 +1,16 @@
+# Demo: generate an array of values in a range
+function makeRange(start : int, stop : int, step : int)
+    let result := []
+    let i := start
+    let idx := 0
+    while i < stop do
+        result[idx] := i
+        idx := idx + 1
+        i := i + step
+    end
+    return result
+end
+let evens := makeRange(0, 10, 2)
+foreach n in evens do
+    print n
+end

@@ -1,0 +1,10 @@
+# Demo: count recursion depth
+function depth(n : int) -> int
+    if n <= 0 then
+        return 0
+    end
+    return 1 + depth(n - 1)
+end
+print depth(10)
+print depth(50)
+print depth(100)

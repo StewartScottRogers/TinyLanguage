@@ -1,0 +1,13 @@
+# Demo: using enum values in conditions
+enum Color {
+    Red = 1,
+    Green = 2,
+    Blue = 3
+}
+let chosen := Color.Green
+match chosen {
+    1 => print "Red chosen"
+    2 => print "Green chosen"
+    3 => print "Blue chosen"
+    _ => print "Unknown"
+}

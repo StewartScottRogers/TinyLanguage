@@ -1,0 +1,13 @@
+# Demo: throw from function
+function validate(n : int)
+    if n < 0 then
+        throw "negative value: " + str(n)
+    end
+    print n
+end
+try
+    validate(5)
+    validate(-1)
+catch err
+    print "Error: " + str(err)
+end

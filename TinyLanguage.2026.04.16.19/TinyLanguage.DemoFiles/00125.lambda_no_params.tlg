@@ -1,0 +1,3 @@
+# Demo: lambda with no parameters
+let greet := function() "Hello!"
+print greet()

@@ -1,0 +1,5 @@
+# Demo: multiplication operator
+print 4 * 5
+print 3 * 3
+print 0 * 100
+print 7 * 8

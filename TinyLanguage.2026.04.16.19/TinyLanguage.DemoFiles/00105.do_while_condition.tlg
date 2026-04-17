@@ -1,0 +1,6 @@
+# Demo: do-while with complex condition
+let x := 1
+do
+    x := x * 2
+    print x
+while x < 50 and x > 0

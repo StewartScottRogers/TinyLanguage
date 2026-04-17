@@ -1,0 +1,7 @@
+# Demo: triangle numbers up to 10
+function triangleNum2(n : int) -> int
+    return n * (n + 1) // 2
+end
+for i := 1 to 10 do
+    print triangleNum2(i)
+end

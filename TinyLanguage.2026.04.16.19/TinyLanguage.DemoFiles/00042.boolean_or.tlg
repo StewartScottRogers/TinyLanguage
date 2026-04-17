@@ -1,0 +1,5 @@
+# Demo: logical or operator
+print true or true
+print true or false
+print false or true
+print false or false

@@ -1,0 +1,15 @@
+# Demo: multiple elif branches
+let day := 3
+if day == 1 then
+    print "Monday"
+else if day == 2 then
+    print "Tuesday"
+else if day == 3 then
+    print "Wednesday"
+else if day == 4 then
+    print "Thursday"
+else if day == 5 then
+    print "Friday"
+else
+    print "Weekend"
+end

@@ -1,0 +1,5 @@
+# Demo: basic function definition and call
+function greet()
+    print "Hello from function!"
+end
+greet()

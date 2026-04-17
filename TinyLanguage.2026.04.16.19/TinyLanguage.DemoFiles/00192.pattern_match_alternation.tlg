@@ -1,0 +1,9 @@
+# Demo: pattern matching with alternation
+let n := 15
+match n {
+    0 | 1 => print "very small"
+    x when x % 15 == 0 => print "divisible by 15"
+    x when x % 3 == 0 => print "divisible by 3"
+    x when x % 5 == 0 => print "divisible by 5"
+    _ => print "other"
+}

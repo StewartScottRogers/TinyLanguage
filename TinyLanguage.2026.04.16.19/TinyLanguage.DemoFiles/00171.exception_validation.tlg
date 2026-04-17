@@ -1,0 +1,21 @@
+# Demo: throwing and catching validation errors
+function validateAgeVal(age : int) -> int
+    if age < 0 then
+        throw "Age cannot be negative"
+    end
+    if age > 150 then
+        throw "Age is unrealistically high"
+    end
+    return age
+end
+try
+    print validateAgeVal(25)
+    print validateAgeVal(-1)
+catch msg
+    print "Validation error: " + str(msg)
+end
+try
+    print validateAgeVal(200)
+catch msg
+    print "Validation error: " + str(msg)
+end

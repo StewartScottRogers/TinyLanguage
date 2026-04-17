@@ -1,0 +1,19 @@
+# Demo: check if number is power of 2
+function isPow2(n : int) -> bool
+    if n <= 0 then
+        return false
+    end
+    let remaining := n
+    while remaining > 1 do
+        if remaining % 2 != 0 then
+            return false
+        end
+        remaining := remaining // 2
+    end
+    return true
+end
+print isPow2(1)
+print isPow2(2)
+print isPow2(16)
+print isPow2(15)
+print isPow2(64)

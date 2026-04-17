@@ -1,0 +1,7 @@
+# Demo: bool() built-in function
+print bool(0)
+print bool(1)
+print bool("")
+print bool("text")
+print bool(null)
+print bool(true)

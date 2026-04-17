@@ -1,0 +1,5 @@
+# Demo: print float literals
+print 3.14
+print 0.0
+print 2.718
+print -1.5

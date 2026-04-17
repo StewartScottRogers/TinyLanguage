@@ -1,0 +1,12 @@
+# Demo: greatest common divisor via Euclidean algorithm
+function gcd(a : int, b : int) -> int
+    while b != 0 do
+        let temp := b
+        b := a % b
+        a := temp
+    end
+    return a
+end
+print gcd(48, 18)
+print gcd(100, 75)
+print gcd(7, 13)

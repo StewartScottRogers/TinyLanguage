@@ -1,0 +1,9 @@
+# Demo: enum definition
+enum Direction {
+    North,
+    South,
+    East,
+    West
+}
+print Direction.North
+print Direction.South

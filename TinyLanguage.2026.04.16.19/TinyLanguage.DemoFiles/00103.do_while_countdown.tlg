@@ -1,0 +1,6 @@
+# Demo: do-while countdown
+let n := 3
+do
+    print n
+    n := n - 1
+while n > 0

@@ -1,0 +1,9 @@
+# Demo: while with break
+let i := 0
+while i < 100 do
+    if i == 5 then
+        break
+    end
+    print i
+    i := i + 1
+end

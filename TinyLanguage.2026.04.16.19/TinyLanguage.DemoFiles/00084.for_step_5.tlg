@@ -1,0 +1,4 @@
+# Demo: for loop with step 5
+for i := 0 to 100 step 5 do
+    print i
+end

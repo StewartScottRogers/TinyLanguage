@@ -1,0 +1,7 @@
+# Demo: const declarations
+const MAX := 100
+const PI := 3.14159
+const GREETING := "Hello"
+print MAX
+print PI
+print GREETING

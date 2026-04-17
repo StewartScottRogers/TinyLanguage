@@ -1,0 +1,13 @@
+# Demo: reduce/fold pattern over array
+function reduceArr(arr, initial : int, combine)
+    let acc := initial
+    foreach item in arr do
+        acc := combine(acc, item)
+    end
+    return acc
+end
+let nums := [1, 2, 3, 4, 5]
+let sum := reduceArr(nums, 0, function(a : int, b : int) a + b)
+let product := reduceArr(nums, 1, function(a : int, b : int) a * b)
+print sum
+print product

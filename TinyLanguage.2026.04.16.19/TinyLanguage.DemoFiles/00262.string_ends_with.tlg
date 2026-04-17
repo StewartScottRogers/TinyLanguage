@@ -1,0 +1,19 @@
+# Demo: check if string ends with suffix
+function endsWith(s : string, suffix : string) -> bool
+    let sl := len(s)
+    let pl := len(suffix)
+    if pl > sl then
+        return false
+    end
+    let i := 0
+    while i < pl do
+        if s[sl - pl + i] != suffix[i] then
+            return false
+        end
+        i := i + 1
+    end
+    return true
+end
+print endsWith("hello.txt", ".txt")
+print endsWith("hello.txt", ".csv")
+print endsWith("world", "rld")

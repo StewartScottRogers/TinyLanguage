@@ -1,0 +1,5 @@
+# Demo: augmented subtraction via reassignment
+let n := 100
+n := n - 25
+n := n - 15
+print n

@@ -1,0 +1,8 @@
+# Demo: boolean variables and operations
+let flag := true
+let other := false
+print flag
+print other
+flag := not flag
+print flag
+print flag and other

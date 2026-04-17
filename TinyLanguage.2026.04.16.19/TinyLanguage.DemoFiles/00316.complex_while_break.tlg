@@ -1,0 +1,12 @@
+# Demo: while with multiple break conditions
+let i := 0
+let found := false
+while i < 100 do
+    if i * i > 50 then
+        found := true
+        break
+    end
+    i := i + 1
+end
+print i
+print found

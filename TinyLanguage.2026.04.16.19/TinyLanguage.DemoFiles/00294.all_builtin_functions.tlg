@@ -1,0 +1,13 @@
+# Demo: all built-in functions
+print len("hello")
+print len([1, 2, 3])
+print str(42)
+print str(3.14)
+print str(true)
+print str(null)
+print int("10")
+print int(3.9)
+print bool(0)
+print bool(1)
+print bool("")
+print bool("x")

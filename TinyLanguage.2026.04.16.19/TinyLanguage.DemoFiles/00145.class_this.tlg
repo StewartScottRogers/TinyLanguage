@@ -1,0 +1,14 @@
+# Demo: using this in method
+class Person {
+    let Name : string := ""
+    let Age : int := 0
+    Constructor(name : string, age : int)
+        Name := name
+        Age := age
+    end
+    function introduce() -> string
+        return "I am " + Name + ", age " + str(Age)
+    end
+}
+let p := new Person("Alice", 30)
+print p.introduce()

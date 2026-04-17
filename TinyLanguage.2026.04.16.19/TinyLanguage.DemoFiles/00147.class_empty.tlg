@@ -1,0 +1,4 @@
+# Demo: empty class body is valid
+class EmptyClass {
+}
+print "empty class created"

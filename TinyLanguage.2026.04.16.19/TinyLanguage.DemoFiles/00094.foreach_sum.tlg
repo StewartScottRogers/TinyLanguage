@@ -1,0 +1,7 @@
+# Demo: foreach to sum array
+let numbers := [10, 20, 30, 40, 50]
+let total := 0
+foreach n in numbers do
+    total := total + n
+end
+print total

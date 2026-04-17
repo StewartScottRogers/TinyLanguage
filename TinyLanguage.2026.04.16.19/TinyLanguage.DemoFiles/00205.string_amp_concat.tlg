@@ -1,0 +1,7 @@
+# Demo: string concatenation with & converts non-strings
+let n := 42
+let f := 3.14
+let b := true
+print "Number: " & n
+print "Float: " & f
+print "Bool: " & b

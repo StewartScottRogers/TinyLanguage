@@ -1,0 +1,7 @@
+# Demo: if-else statement
+let n := 7
+if n % 2 == 0 then
+    print "even"
+else
+    print "odd"
+end

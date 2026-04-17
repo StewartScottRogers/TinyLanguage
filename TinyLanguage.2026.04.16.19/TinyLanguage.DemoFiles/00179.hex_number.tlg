@@ -1,0 +1,6 @@
+# Demo: hexadecimal number literals
+print 0xFF
+print 0x10
+print 0xDEAD
+let color := 0xFF0000
+print color

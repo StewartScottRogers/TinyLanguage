@@ -1,0 +1,5 @@
+# Demo: len() function on arrays
+let arr := [1, 2, 3, 4, 5]
+print len(arr)
+let empty := []
+print len(empty)

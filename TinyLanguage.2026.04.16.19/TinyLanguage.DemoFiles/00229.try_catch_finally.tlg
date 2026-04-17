@@ -1,0 +1,8 @@
+# Demo: try-catch-finally
+try
+    throw "error"
+catch e
+    print "Caught: " + str(e)
+finally
+    print "Finally runs"
+end

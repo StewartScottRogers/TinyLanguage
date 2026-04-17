@@ -1,0 +1,5 @@
+# Demo: floor division with float operands
+print 7.0 // 2.0
+print 7.0 // 2
+print 7 // 2.0
+print -7.0 // 2.0

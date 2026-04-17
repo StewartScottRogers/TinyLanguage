@@ -1,0 +1,12 @@
+# Demo: module with import list in header
+module CoreMath {
+    function add(a : int, b : int) -> int
+        return a + b
+    end
+}
+module AppLogic import CoreMath {
+    function compute(x : int) -> int
+        return CoreMath.add(x, x)
+    end
+}
+print AppLogic.compute(21)

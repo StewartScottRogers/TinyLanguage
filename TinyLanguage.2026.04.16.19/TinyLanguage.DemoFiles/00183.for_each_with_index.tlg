@@ -1,0 +1,7 @@
+# Demo: foreach with manual index tracking
+let fruits := ["apple", "banana", "cherry"]
+let idx := 0
+foreach fruit in fruits do
+    print str(idx) + ": " + fruit
+    idx := idx + 1
+end

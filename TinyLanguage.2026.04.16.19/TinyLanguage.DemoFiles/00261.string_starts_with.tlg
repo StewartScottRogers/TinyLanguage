@@ -1,0 +1,17 @@
+# Demo: check if string starts with prefix
+function startsWith(s : string, prefix : string) -> bool
+    if len(prefix) > len(s) then
+        return false
+    end
+    let i := 0
+    while i < len(prefix) do
+        if s[i] != prefix[i] then
+            return false
+        end
+        i := i + 1
+    end
+    return true
+end
+print startsWith("hello world", "hello")
+print startsWith("hello", "world")
+print startsWith("abc", "ab")

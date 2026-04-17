@@ -1,0 +1,11 @@
+# Demo: max and min helper functions
+function maxOf(a : int, b : int) -> int
+    return if a > b then a else b
+end
+function minOf(a : int, b : int) -> int
+    return if a < b then a else b
+end
+print maxOf(3, 7)
+print maxOf(10, 2)
+print minOf(3, 7)
+print minOf(10, 2)

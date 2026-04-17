@@ -1,0 +1,7 @@
+# Demo: string comparison operations
+let s1 := "alpha"
+let s2 := "beta"
+print s1 < s2
+print s2 > s1
+print s1 == s1
+print s1 != s2

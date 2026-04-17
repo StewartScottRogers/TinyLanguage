@@ -1,0 +1,10 @@
+# Demo: pattern matching capturing variable
+let items := [1, 2, 3, 4, 5]
+foreach item in items do
+    match item {
+        1 => print "one"
+        2 => print "two"
+        x when x % 2 == 0 => print str(x) + " is even"
+        x => print str(x) + " is odd"
+    }
+end

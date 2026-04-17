@@ -1,0 +1,17 @@
+# Demo: class fields read and write
+class Counter {
+    let Value : int := 0
+    Constructor()
+    end
+    function increment()
+        Value := Value + 1
+    end
+    function get() -> int
+        return Value
+    end
+}
+let c := new Counter()
+c.increment()
+c.increment()
+c.increment()
+print c.get()

@@ -1,0 +1,22 @@
+# Demo: Sieve of Eratosthenes
+let limit := 50
+let sieve := []
+for i := 0 to limit do
+    sieve[i] := true
+end
+sieve[0] := false
+sieve[1] := false
+for i := 2 to limit do
+    if sieve[i] then
+        let j := i * 2
+        while j <= limit do
+            sieve[j] := false
+            j := j + i
+        end
+    end
+end
+for i := 2 to limit do
+    if sieve[i] then
+        print i
+    end
+end

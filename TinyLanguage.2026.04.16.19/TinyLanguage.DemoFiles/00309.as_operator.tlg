@@ -1,0 +1,7 @@
+# Demo: as type assertion operator
+let x := 42
+let n := x as int
+print n
+let s := "hello"
+let str_val := s as string
+print str_val

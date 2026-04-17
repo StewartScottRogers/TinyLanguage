@@ -1,0 +1,15 @@
+# Demo: GCD and LCM
+function gcd(a : int, b : int) -> int
+    while b != 0 do
+        let temp := b
+        b := a % b
+        a := temp
+    end
+    return a
+end
+function lcm(a : int, b : int) -> int
+    return a * b // gcd(a, b)
+end
+print gcd(12, 8)
+print lcm(4, 6)
+print gcd(100, 75)

@@ -1,0 +1,7 @@
+# Demo: let in block doesn't leak to outer scope
+let x := 10
+if true then
+    let inner := 999
+    print inner
+end
+print x

@@ -1,0 +1,8 @@
+# Demo: multiple variables in program
+let a := 1
+let b := 2
+let c := 3
+let sumAll := a + b + c
+print sumAll
+let product := a * b * c
+print product

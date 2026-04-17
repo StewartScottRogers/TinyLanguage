@@ -1,0 +1,5 @@
+# Demo: function with empty body (valid - epsilon production)
+function doNothing()
+end
+doNothing()
+print "after doNothing"

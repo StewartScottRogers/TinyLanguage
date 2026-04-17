@@ -1,0 +1,20 @@
+# Demo: class inheritance with extends
+class Animal {
+    let Name : string := ""
+    Constructor(name : string)
+        Name := name
+    end
+    function speak() -> string
+        return Name + " makes a sound"
+    end
+}
+class Dog extends Animal {
+    Constructor(name : string)
+        Name := name
+    end
+    function speak() -> string
+        return Name + " says Woof!"
+    end
+}
+let d := new Dog("Rex")
+print d.speak()

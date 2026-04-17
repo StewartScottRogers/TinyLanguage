@@ -1,0 +1,4 @@
+# Demo: unary minus precedence
+let x := 2
+print (-x) ** 2
+print -(x ** 2)

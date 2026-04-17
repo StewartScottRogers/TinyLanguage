@@ -1,0 +1,6 @@
+# Demo: array with mixed types
+let mixed := [1, "hello", 3.14, true, null]
+print len(mixed)
+foreach item in mixed do
+    print str(item)
+end

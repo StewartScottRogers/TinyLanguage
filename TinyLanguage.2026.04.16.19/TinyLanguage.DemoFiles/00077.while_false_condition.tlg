@@ -1,0 +1,6 @@
+# Demo: while that never executes
+let x := 10
+while x < 0 do
+    print "never executed"
+end
+print "done"

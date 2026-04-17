@@ -1,0 +1,9 @@
+# Demo: lambda stored in array
+let ops := [function(x : int) x + 1, function(x : int) x * 2, function(x : int) x - 1]
+let val := 5
+let f0 := ops[0]
+let f1 := ops[1]
+let f2 := ops[2]
+print f0(val)
+print f1(val)
+print f2(val)

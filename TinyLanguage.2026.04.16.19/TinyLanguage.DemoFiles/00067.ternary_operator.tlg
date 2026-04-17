@@ -1,0 +1,7 @@
+# Demo: ternary operator (?:)
+let x := 10
+let result := x > 5 ? "big" : "small"
+print result
+let n := -3
+let absN := n >= 0 ? n : -n
+print absN

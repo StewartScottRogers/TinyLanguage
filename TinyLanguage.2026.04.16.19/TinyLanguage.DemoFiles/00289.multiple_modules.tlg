@@ -1,0 +1,16 @@
+# Demo: multiple modules
+module Math {
+    function square(n : int) -> int
+        return n * n
+    end
+    function cube(n : int) -> int
+        return n * n * n
+    end
+}
+module Print {
+    function printResult(label : string, val : int)
+        print label + ": " + str(val)
+    end
+}
+Print.printResult("square(5)", Math.square(5))
+Print.printResult("cube(3)", Math.cube(3))

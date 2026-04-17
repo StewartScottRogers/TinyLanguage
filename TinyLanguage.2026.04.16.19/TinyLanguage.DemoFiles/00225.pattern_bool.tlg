@@ -1,0 +1,6 @@
+# Demo: pattern matching on booleans
+let b := true
+match b {
+    true => print "it is true"
+    false => print "it is false"
+}

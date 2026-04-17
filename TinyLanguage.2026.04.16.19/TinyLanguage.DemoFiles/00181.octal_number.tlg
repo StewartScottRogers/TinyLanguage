@@ -1,0 +1,6 @@
+# Demo: octal number literals
+print 0o17
+print 0o377
+print 0o10
+let perms := 0o755
+print perms

@@ -1,0 +1,16 @@
+# Demo: rotate array left by k positions
+function rotateLeftArr(arr, k : int)
+    let n := len(arr)
+    let result := []
+    let i := 0
+    while i < n do
+        result[i] := arr[(i + k) % n]
+        i := i + 1
+    end
+    return result
+end
+let data := [1, 2, 3, 4, 5]
+let rotated := rotateLeftArr(data, 2)
+foreach item in rotated do
+    print item
+end

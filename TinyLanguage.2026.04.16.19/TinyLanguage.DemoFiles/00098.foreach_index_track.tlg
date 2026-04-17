@@ -1,0 +1,7 @@
+# Demo: foreach with manual index tracking
+let colors := ["red", "green", "blue"]
+let idx := 0
+foreach color in colors do
+    print str(idx) + ": " + color
+    idx := idx + 1
+end

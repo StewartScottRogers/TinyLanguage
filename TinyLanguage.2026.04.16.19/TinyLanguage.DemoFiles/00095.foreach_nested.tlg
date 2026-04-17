@@ -1,0 +1,7 @@
+# Demo: nested foreach loops
+let matrix := [[1, 2], [3, 4], [5, 6]]
+foreach row in matrix do
+    foreach val in row do
+        print val
+    end
+end

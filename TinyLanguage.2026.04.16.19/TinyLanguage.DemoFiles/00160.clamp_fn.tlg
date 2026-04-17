@@ -1,0 +1,13 @@
+# Demo: clamp a value between min and max
+function clampFn(val : int, lo : int, hi : int) -> int
+    if val < lo then
+        return lo
+    end
+    if val > hi then
+        return hi
+    end
+    return val
+end
+print clampFn(5, 0, 10)
+print clampFn(-5, 0, 10)
+print clampFn(15, 0, 10)

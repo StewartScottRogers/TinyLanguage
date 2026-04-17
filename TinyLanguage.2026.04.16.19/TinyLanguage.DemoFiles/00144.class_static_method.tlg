@@ -1,0 +1,11 @@
+# Demo: static method in class
+class MathUtils {
+    static function square(n : int) -> int
+        return n * n
+    end
+    static function cube(n : int) -> int
+        return n * n * n
+    end
+}
+print MathUtils.square(4)
+print MathUtils.cube(3)

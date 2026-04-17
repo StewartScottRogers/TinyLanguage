@@ -1,0 +1,4 @@
+# Demo: number + string gives string concatenation
+print 1 + " apple"
+print "count: " + 5
+print 3.14 + " is pi"

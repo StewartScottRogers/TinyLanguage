@@ -1,0 +1,6 @@
+# Demo: annotation with parameters
+@version(major = 1, minor = 0)
+function stableFunction2() -> string
+    return "stable"
+end
+print stableFunction2()

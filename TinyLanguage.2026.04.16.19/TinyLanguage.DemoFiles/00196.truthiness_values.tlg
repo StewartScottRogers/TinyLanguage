@@ -1,0 +1,6 @@
+# Demo: truthiness of various values
+if 0 then print "0 is truthy" else print "0 is falsy" end
+if 1 then print "1 is truthy" else print "1 is falsy" end
+if "" then print "empty string is truthy" else print "empty string is falsy" end
+if "hello" then print "hello is truthy" else print "hello is falsy" end
+if null then print "null is truthy" else print "null is falsy" end

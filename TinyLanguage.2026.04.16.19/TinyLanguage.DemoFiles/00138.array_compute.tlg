@@ -1,0 +1,8 @@
+# Demo: computing with array elements
+let primes := [2, 3, 5, 7, 11, 13]
+let sum := 0
+foreach p in primes do
+    sum := sum + p
+end
+print sum
+print len(primes)

@@ -1,0 +1,3 @@
+# Demo: print boolean literals
+print true
+print false

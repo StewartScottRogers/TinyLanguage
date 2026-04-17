@@ -1,0 +1,7 @@
+# Demo: pattern matching with when guards
+let value := 42
+match value {
+    n when n < 0 => print "negative"
+    n when n == 0 => print "zero"
+    n when n > 0 => print "positive: " + str(n)
+}

@@ -1,0 +1,10 @@
+# Demo: count elements in nested structure
+function countNested(arr) -> int
+    let total := 0
+    foreach item in arr do
+        total := total + 1
+    end
+    return total
+end
+let data := [1, 2, 3, 4, 5]
+print countNested(data)

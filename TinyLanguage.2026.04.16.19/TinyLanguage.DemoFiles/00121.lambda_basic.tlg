@@ -1,0 +1,5 @@
+# Demo: basic lambda expression
+let double := function(x : int) x * 2
+let triple := function(x : int) x * 3
+print double(5)
+print triple(4)

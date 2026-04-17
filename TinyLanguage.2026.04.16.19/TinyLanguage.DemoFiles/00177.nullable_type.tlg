@@ -1,0 +1,5 @@
+# Demo: nullable type annotation
+var maybeNull : int? := null
+print maybeNull
+maybeNull := 42
+print maybeNull

@@ -1,0 +1,17 @@
+# Demo: function with multiple return paths
+function classify(n : int) -> string
+    if n < 0 then
+        return "negative"
+    end
+    if n == 0 then
+        return "zero"
+    end
+    if n % 2 == 0 then
+        return "positive even"
+    end
+    return "positive odd"
+end
+print classify(-5)
+print classify(0)
+print classify(4)
+print classify(7)

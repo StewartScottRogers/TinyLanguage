@@ -1,0 +1,5 @@
+# Demo: modulo operator
+print 10 % 3
+print 7 % 2
+print 15 % 5
+print 0 % 7

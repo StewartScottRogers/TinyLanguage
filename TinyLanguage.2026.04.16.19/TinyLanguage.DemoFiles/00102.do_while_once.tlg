@@ -1,0 +1,6 @@
+# Demo: do-while executes at least once
+let x := 100
+do
+    print "executed once"
+    x := x + 1
+while x < 5

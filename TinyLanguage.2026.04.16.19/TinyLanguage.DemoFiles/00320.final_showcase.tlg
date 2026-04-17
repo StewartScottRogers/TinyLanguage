@@ -1,0 +1,28 @@
+# Demo: final showcase combining many features
+# Fibonacci, primes check, and output
+function fib(n : int) -> int
+    if n <= 1 then
+        return n
+    end
+    return fib(n - 1) + fib(n - 2)
+end
+function isPrime(n : int) -> bool
+    if n < 2 then
+        return false
+    end
+    let i := 2
+    while i * i <= n do
+        if n % i == 0 then
+            return false
+        end
+        i := i + 1
+    end
+    return true
+end
+print "Prime Fibonacci numbers up to fib(15):"
+for i := 0 to 15 do
+    let f := fib(i)
+    if isPrime(f) then
+        print str(f)
+    end
+end

@@ -1,0 +1,8 @@
+# Demo: function taking lambda as parameter
+function apply(f, x : int) -> int
+    return f(x)
+end
+let double := function(n : int) n * 2
+let square := function(n : int) n * n
+print apply(double, 5)
+print apply(square, 4)

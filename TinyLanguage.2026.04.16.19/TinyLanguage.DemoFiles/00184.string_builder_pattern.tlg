@@ -1,0 +1,7 @@
+# Demo: building a string incrementally
+let parts := ["Hello", ", ", "World", "!"]
+let result := ""
+foreach part in parts do
+    result := result + part
+end
+print result

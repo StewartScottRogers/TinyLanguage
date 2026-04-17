@@ -1,0 +1,11 @@
+# Demo: foreach to build new array
+let src := [1, 2, 3, 4, 5]
+let doubled := []
+let i := 0
+foreach n in src do
+    doubled[i] := n * 2
+    i := i + 1
+end
+foreach val in doubled do
+    print val
+end

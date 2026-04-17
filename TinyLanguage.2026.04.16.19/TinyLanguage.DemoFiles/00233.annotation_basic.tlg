@@ -1,0 +1,6 @@
+# Demo: basic annotation on function
+@deprecated
+function oldFunction()
+    print "This is deprecated"
+end
+oldFunction()

@@ -1,0 +1,17 @@
+# Demo: word counting in a sentence
+function countWords(sentence : string) -> int
+    let count := 0
+    let inWord := false
+    foreach ch in sentence do
+        if ch == " " then
+            inWord := false
+        else if !inWord then
+            count := count + 1
+            inWord := true
+        end
+    end
+    return count
+end
+print countWords("hello world")
+print countWords("the quick brown fox")
+print countWords("one")

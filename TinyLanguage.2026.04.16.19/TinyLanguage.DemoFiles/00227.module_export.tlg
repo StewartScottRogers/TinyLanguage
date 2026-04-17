@@ -1,0 +1,8 @@
+# Demo: module export statement
+module MyModule {
+    function compute(n : int) -> int
+        return n * 2
+    end
+    export compute
+}
+print MyModule.compute(21)
