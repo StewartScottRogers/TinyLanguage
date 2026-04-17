@@ -194,6 +194,11 @@ Implement TinyLanguage.UnitTests/:
 Use MSTest only. Test class suffix: UnitTests. No "Test" in method names.
 Name pattern: Subject_Action_ExpectedOutcome.
 
+Every test must print its input and result via Console.WriteLine so the test
+log shows what was exercised, e.g.:
+  Console.WriteLine($"Input: {source}");
+  Console.WriteLine($"Result: {actual}");
+
 Run: dotnet test TinyLanguage.UnitTests
 Accept only: Failed: 0.
 ```
@@ -213,6 +218,11 @@ Read Build.Solution.md: "IntegrationTests", "Test Validation Protocol",
 Implement TinyLanguage.IntegrationTests/:
 - InterpreterIntegrationTests.cs — end-to-end programs for every language feature.
 - Use the .tlg demo files from Phase 1D as test inputs where appropriate.
+
+Every test must print its input and result via Console.WriteLine so the test
+log shows what was exercised, e.g.:
+  Console.WriteLine($"Input: {source}");
+  Console.WriteLine($"Result: {actual}");
 
 Run: dotnet test TinyLanguage.IntegrationTests
 Accept only: Failed: 0.

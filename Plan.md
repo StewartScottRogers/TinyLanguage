@@ -136,6 +136,7 @@
 | **Outputs** | `LexerUnitTests.cs`, `ParserUnitTests.cs` |
 | **Dependencies** | WU-02, WU-04 |
 | **Assignee Role** | QA Engineer |
+| **Test output rule** | Every test prints its input and result via `Console.WriteLine` |
 
 ### WU-08: Integration Tests
 | Field | Value |
@@ -145,6 +146,7 @@
 | **Outputs** | `InterpreterIntegrationTests.cs` |
 | **Dependencies** | WU-06 |
 | **Assignee Role** | QA Engineer |
+| **Test output rule** | Every test prints its input and result via `Console.WriteLine` |
 
 ### WU-09: Console Application
 | Field | Value |

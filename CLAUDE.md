@@ -58,6 +58,11 @@ From `Build.Solution.md` — follow exactly:
 - **Streams over string loads** for file I/O.
 - **Test method naming:** `Subject_Action_ExpectedOutcome` (no "Test" in the name). Test class names end in `UnitTests` or `IntegrationTests`.
 - **Test framework:** MSTest only (no XUnit, no NUnit).
+- **Test output:** Every test must print its input and result using `Console.WriteLine` so the test log shows what was exercised. Example:
+  ```csharp
+  Console.WriteLine($"Input: {source}");
+  Console.WriteLine($"Result: {actual}");
+  ```
 
 ## Disambiguation Rules
 
