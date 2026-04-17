@@ -143,6 +143,20 @@ Create 300+ .tlg demo files in TinyLanguage.DemoFiles/, zero-padded numeric pref
 (00001.fizzbuzz.tlg … etc.), covering every grammar feature exhaustively.
 Create a matching .cmd runner for each demo file.
 
+Each .cmd file must work correctly regardless of the directory it is run from:
+- Use %~dp0TinyLanguage.exe to locate the exe (same folder as the .cmd)
+- Use %~dp0<filename>.tlg to locate the input file (same folder as the .cmd)
+- Output path defaults to the CURRENT WORKING DIRECTORY (not %~dp0)
+- Do NOT cd or pushd into the .cmd file's own directory
+
+Correct template:
+  @echo off
+  if "%2"=="" (
+      %~dp0TinyLanguage.exe %~dp000001.fizzbuzz.tlg output.txt
+  ) else (
+      %~dp0TinyLanguage.exe %~dp000001.fizzbuzz.tlg %2
+  )
+
 Do NOT run them yet — the interpreter is not built.
 ```
 

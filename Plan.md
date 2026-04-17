@@ -167,6 +167,7 @@
 | **Outputs** | `TinyLanguage.DemoFiles/00001.*.tlg` … `003xx.*.tlg` + matching `.cmd` |
 | **Dependencies** | WU-04 (grammar finalized) |
 | **Assignee Role** | Content Engineer |
+| **.cmd rule** | Use `%~dp0TinyLanguage.exe` and `%~dp0<file>.tlg` so the cmd works from any directory; output goes to the caller's current directory — never `cd` into `%~dp0` |
 
 ### WU-11: Validation and Assembly
 | Field | Value |
