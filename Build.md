@@ -74,13 +74,7 @@ TinyLanguage/TinyLanguage.csproj must include:
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
   <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-  <!-- copy exe to DemoFiles after every build -->
-  <Target Name="CopyExeToDemoFiles" AfterTargets="Build">
-    <Copy SourceFiles="$(OutputPath)TinyLanguage.exe"
-          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
-          SkipUnchangedFiles="true" />
-  </Target>
-  <!-- copy single-file exe to DemoFiles after publish -->
+  <!-- copy single-file exe to DemoFiles after publish only -->
   <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish">
     <Copy SourceFiles="$(PublishDir)TinyLanguage.exe"
           DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
@@ -298,7 +292,7 @@ Merge all worktree branches. From the solution root run the Test Validation Prot
   dotnet publish TinyLanguage -c Release
 
 Acceptance criteria (from Build.Solution.md "Acceptance Criteria"):
-  - dotnet build   → 0 errors, 0 warnings; TinyLanguage.exe copied to TinyLanguage.DemoFiles/
+  - dotnet build   → 0 errors, 0 warnings
   - dotnet run     → "All demos completed successfully.", exit 0
   - dotnet test    → Failed: 0
   - dotnet publish → single-file self-contained TinyLanguage.exe (~36 MB) in TinyLanguage.DemoFiles/
