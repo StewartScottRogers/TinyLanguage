@@ -74,8 +74,9 @@ TinyLanguage/TinyLanguage.csproj must include:
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
   <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-  <!-- copy single-file exe to DemoFiles after publish only -->
-  <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish">
+  <!-- copy single-file exe to DemoFiles after Release publish only -->
+  <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish"
+          Condition="'$(Configuration)' == 'Release'">
     <Copy SourceFiles="$(PublishDir)TinyLanguage.exe"
           DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
           SkipUnchangedFiles="true" />
