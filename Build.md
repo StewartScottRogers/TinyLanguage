@@ -195,19 +195,51 @@ Create 300+ .tlg demo files in TinyLanguage.DemoFiles/, zero-padded numeric pref
 (00001.fizzbuzz.tlg … etc.), covering every grammar feature exhaustively.
 Create a matching .cmd runner for each demo file.
 
-Each .cmd file must work correctly regardless of the directory it is run from:
+Each .cmd file must work correctly regardless of the directory it is run from
+(arbitrary CWD, the script's own directory, or by double-click in Explorer).
+The script must:
 - Use %~dp0TinyLanguage.exe to locate the exe (same folder as the .cmd)
 - Use %~dp0<filename>.tlg to locate the input file (same folder as the .cmd)
-- Output path defaults to the CURRENT WORKING DIRECTORY (not %~dp0)
-- Do NOT cd or pushd into the .cmd file's own directory
+- Default the output path to %~dp0output.txt (next to the script) — a CWD-relative
+  default fails silently when invoked from a directory the user can't write to,
+  scatters output across random directories, and leaves no visible trace.
+- Accept an optional output-path override as %~1 (the natural first argument).
+  Also honour %~2 to satisfy the Build.Solution.md contract that says
+  "if an output file path is provided as a second argument to the .cmd script,
+  pass it through to TinyLanguage.exe".
+- Quote every path so directory names with spaces work.
+- Print the produced output to the console (`type "%OUTPUT%"`) so the user can
+  see results. Without this the .cmd appears to do nothing — the .exe in
+  file-processor mode writes only to the output file and prints nothing to stdout.
+- Propagate TinyLanguage.exe's exit code; on non-zero exit, write a diagnostic
+  to stderr and exit with the same code.
+- Do NOT cd or pushd into the .cmd file's own directory.
 
-Correct template:
+Correct template (each demo substitutes its own zero-padded prefix and tlg name):
   @echo off
-  if "%2"=="" (
-      %~dp0TinyLanguage.exe %~dp000001.fizzbuzz.tlg output.txt
-  ) else (
-      %~dp0TinyLanguage.exe %~dp000001.fizzbuzz.tlg %2
+  setlocal
+  set "OUTPUT=%~1"
+  if "%OUTPUT%"=="" set "OUTPUT=%~2"
+  if "%OUTPUT%"=="" set "OUTPUT=%~dp0output.txt"
+  "%~dp0TinyLanguage.exe" "%~dp000001.fizzbuzz.tlg" "%OUTPUT%"
+  if errorlevel 1 (
+      echo TinyLanguage.exe exited with code %ERRORLEVEL% 1>&2
+      exit /b %ERRORLEVEL%
   )
+  type "%OUTPUT%"
+  exit /b 0
+
+Anti-patterns that have shipped before and must not recur:
+- `if "%2"==""` as the sole argument check — silently ignores %1, so passing
+  one argument has no effect.
+- `output.txt` as a bare CWD-relative default — output appears in whatever
+  directory the user happened to be in (or in C:\Windows when double-clicked
+  by some shells), and the .cmd looks like it produced nothing.
+- No `type` of the output file — the .cmd appears to do nothing because the
+  exe is silent in file-processor mode, leading users to report "they don't
+  execute" even though every demo exits 0.
+- No `errorlevel` propagation — a parse/runtime error in the .tlg leaves the
+  .cmd exiting 0, masking real failures from any batch validation step.
 
 Do NOT run them yet — the interpreter is not built.
 ```
@@ -366,12 +398,34 @@ Protocol below. Every step must pass before you may declare the plan complete.
   Accept: TinyLanguage.DemoFiles/TinyLanguage.exe is the freshly-published self-contained
   single-file build (~36 MB). Verify with: ls -lh TinyLanguage.DemoFiles/TinyLanguage.exe
 
-### Step 5 — Spot-check demos via the published exe
-  Run at least the first 10 .cmd files directly to confirm the published exe works:
-    TinyLanguage.DemoFiles/00001.fizzbuzz.cmd
-    TinyLanguage.DemoFiles/00002.fibonacci.cmd
-    ... (continue through 00010.*)
-  Each must exit 0 and produce a non-empty output file.
+### Step 5 — Verify ALL .cmd files via the published exe
+  Run every .cmd file in TinyLanguage.DemoFiles/ — not just the first 10 — and
+  for each one verify ALL of:
+    a) exit code = 0
+    b) the output file written by the .cmd is non-empty
+    c) the .cmd printed the output to stdout (so users see something happen)
+  A previous run shipped 320 .cmd files that all exited 0 yet were effectively
+  silent because the default `output.txt` was CWD-relative and there was no
+  `type` of the output file. Spot-checking only a handful or only checking
+  exit code does not catch this — verify all three properties for all files.
+
+  Suggested PowerShell loop (run from the solution root):
+    $dir = "TinyLanguage.DemoFiles"
+    $cmds = Get-ChildItem $dir -Filter *.cmd | Sort-Object Name
+    $outDir = New-Item -ItemType Directory "$env:TEMP\tlg_validate" -Force
+    $failed = @()
+    foreach ($c in $cmds) {
+      $out = Join-Path $outDir ($c.BaseName + ".out.txt")
+      $stdout = & cmd /c $c.FullName $out 2>&1
+      if ($LASTEXITCODE -ne 0 -or -not (Test-Path $out) -or `
+          (Get-Item $out).Length -eq 0 -or [string]::IsNullOrWhiteSpace($stdout -join "")) {
+        $failed += $c.Name
+      }
+    }
+    if ($failed.Count -gt 0) { throw "Failed: $($failed -join ', ')" }
+    "All $($cmds.Count) demo .cmd files passed."
+
+  Accept only when this loop reports success for every file.
 
 All five steps must be green. Do not declare the plan complete until they are.
 Do not refactor unrelated code. Do not alter Build.Solution.md.

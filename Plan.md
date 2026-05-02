@@ -167,7 +167,7 @@
 | **Outputs** | `TinyLanguage.DemoFiles/00001.*.tlg` … `003xx.*.tlg` + matching `.cmd` |
 | **Dependencies** | WU-04 (grammar finalized) |
 | **Assignee Role** | Content Engineer |
-| **.cmd rule** | Use `%~dp0TinyLanguage.exe` and `%~dp0<file>.tlg` so the cmd works from any directory; output goes to the caller's current directory — never `cd` into `%~dp0` |
+| **.cmd rule** | Use `%~dp0TinyLanguage.exe` and `%~dp0<file>.tlg` so the cmd works from any directory. Default output to `%~dp0output.txt` (next to the script — never to a CWD-relative path, which fails silently). Accept `%~1` (or `%~2` per Build.Solution.md §1.2.7) as an output override. Quote every path. After running, `type "%OUTPUT%"` so the user sees results. Propagate `errorlevel`. Never `cd` or `pushd` into `%~dp0`. See Build.md Phase 1D for the full template. |
 
 ### WU-11: Validation and Assembly
 | Field | Value |
