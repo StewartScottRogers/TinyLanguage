@@ -121,11 +121,16 @@ TinyLanguage/TinyLanguage.csproj must include:
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
   <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-  <!-- copy build-output exe to DemoFiles after every dotnet build (not during publish) -->
-  <!-- NOTE: use Condition="'$(PublishDir)' == ''" — NOT PublishSingleFile != true,   -->
-  <!-- because PublishSingleFile is always true in PropertyGroup and that condition    -->
-  <!-- never fires. $(PublishDir) is only set during dotnet publish.                  -->
-  <Target Name="CopyExeToDemoFiles" AfterTargets="Build" Condition="'$(PublishDir)' == ''">
+  <!-- copy build-output exe to DemoFiles after every dotnet build.                 -->
+  <!-- Empirical note (SDK 10.0.300-preview): with PublishSingleFile=true in the     -->
+  <!-- PropertyGroup, $(PublishDir) is non-empty even on plain build, and            -->
+  <!-- $(IsPublishing) is empty in BOTH build and publish — neither value is a       -->
+  <!-- usable build-vs-publish discriminator. We therefore leave the outer condition -->
+  <!-- off; the inner Copy's Exists() guard is sufficient. During publish this       -->
+  <!-- target still fires after the inner Build, but CopySingleFileExeToDemoFiles    -->
+  <!-- runs after Publish and overwrites the build-output exe with the single-file   -->
+  <!-- one, so the final DemoFiles\TinyLanguage.exe is always the right one.         -->
+  <Target Name="CopyExeToDemoFiles" AfterTargets="Build">
     <Copy SourceFiles="$(OutputPath)TinyLanguage.exe"
           DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
           SkipUnchangedFiles="true"
@@ -159,6 +164,47 @@ Implement inside TinyLanguage.Lexer/:
 
 Apply every naming convention from the spec. Use only BCL. No nullable, no implicit
 usings. One type per file.
+
+TokenType MUST include EVERY keyword referenced anywhere in the BNF or in the demo
+files (TinyLanguage.DemoFiles/*.tlg). It is easy to silently miss a keyword by
+reading the BNF productions only — production names like <class_def> may not enumerate
+every contextual keyword. The non-negotiable list (keep this complete or you will
+break the parser/interpreter downstream):
+
+  Declarations:  let, var, const, enum, function, return, class, extends, implements,
+                 Constructor (capital C — exact spelling per BNF), new, static,
+                 module, import, export, as
+  Control flow:  if, then, else, end, while, do, for, to, step, foreach, in, break,
+                 continue, switch, case, default
+  I/O:           print, input
+  Exceptions:    try, catch, finally, throw
+  Patterns:      match, when
+  Logical:       and, or, not, is
+  Self-ref:      this  ← REQUIRED. Class methods reference fields via `this.field`.
+                       Demo 00158.class_this_reference.tlg and many others depend on
+                       it. Add TokenType.This and a kw-table entry for "this".
+  Type names:    int, float, string, bool, array, object, map, void
+  Literals:      null, true, false
+
+Operator/punctuation tokens MUST include `Pipe` (the `|` character) as its OWN token
+type — bare `|` outside `||` is pattern alternation in `match`, NOT a lexer Unknown
+token. The parser uses TokenType.Pipe to detect alternation in <pattern> productions.
+Demo 00247.match_alternation.tlg parses `1 | 2 | 3 => ...` and will fail with
+"Expected '=>' after pattern but found '|' (token type Pipe)" if the parser predicate
+checks TokenType.Unknown instead of TokenType.Pipe — and the predicate uses whichever
+token type the lexer emits, so emitting bare `|` as anything other than Pipe propagates
+the bug.
+
+Critical Implementation Notes (from Build.Solution.md, repeated here so they don't
+get missed):
+  Note 1  — `#` is a line comment. `//` is ALWAYS the floor-division operator and
+            NEVER a comment under any circumstance.
+  Note 2  — `:=` is the only assignment operator for variables/declarations.
+            Bare `=` is SingleEqual (valid only inside enum value lists and
+            annotation parameter lists). `=` must NOT lex as Unknown anywhere.
+  Note 5  — Reserved words always emit their keyword TokenType, never Identifier.
+  Note 16 — `static` is its own token (TokenType.Static), not fused into
+            static-function or static-class.
 
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.

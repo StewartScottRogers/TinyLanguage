@@ -26,10 +26,15 @@ dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 ### Single-file exe
 `TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
 
-- **After every `dotnet build`:** the build-output exe is automatically copied to `TinyLanguage.DemoFiles/` via the `CopyExeToDemoFiles` MSBuild target (conditioned on `'$(PublishDir)' == ''` so it fires on builds but not during publish).
-- **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/` via the `CopySingleFileExeToDemoFiles` MSBuild target.
+- **After every `dotnet build`:** the build-output exe (framework-dependent, ~160 KB) is automatically copied to `TinyLanguage.DemoFiles/` via the `CopyExeToDemoFiles` MSBuild target (`AfterTargets="Build"`, no outer condition — the inner `<Copy>` has `Condition="Exists('$(OutputPath)TinyLanguage.exe')"` which is enough).
+- **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/` via the `CopySingleFileExeToDemoFiles` MSBuild target. This runs `AfterTargets="Publish"` so it fires after the inner Build, overwriting the build-output exe with the single-file one — the final exe in `DemoFiles/` is always correct.
 
-> **Important:** The `CopyExeToDemoFiles` condition must be `'$(PublishDir)' == ''`, **not** `'$(PublishSingleFile)' != 'true'`. Because `PublishSingleFile=true` is declared in the PropertyGroup it is always true at both build and publish time, so the latter condition never fires and the exe is never copied on a plain `dotnet build`.
+> **Important — empirical MSBuild props on SDK 10.0.300-preview:** Do NOT add `Condition="'$(PublishDir)' == ''"` (or `Condition="'$(PublishSingleFile)' != 'true'"`) to `CopyExeToDemoFiles`. Both conditions appear sensible but neither actually discriminates build from publish here:
+> - `$(PublishDir)` is `bin\Debug\net10.0\win-x64\publish\` even on plain `dotnet build` once `PublishSingleFile=true` is in the PropertyGroup.
+> - `$(IsPublishing)` is empty in BOTH build and publish.
+> - `$(PublishSingleFile)` is `true` in both because it lives in the PropertyGroup.
+>
+> So an outer condition there will either always fire or never fire, never selectively. The fix is to drop the outer condition entirely. Verified by `<Message Importance="high" Text="..." />` probes during both build and publish.
 
 ## Architecture
 
