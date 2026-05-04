@@ -121,22 +121,31 @@ TinyLanguage/TinyLanguage.csproj must include:
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
   <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-  <!-- copy build-output exe to DemoFiles after every dotnet build.                 -->
-  <!-- Empirical note (SDK 10.0.300-preview): with PublishSingleFile=true in the     -->
-  <!-- PropertyGroup, $(PublishDir) is non-empty even on plain build, and            -->
-  <!-- $(IsPublishing) is empty in BOTH build and publish — neither value is a       -->
-  <!-- usable build-vs-publish discriminator. We therefore leave the outer condition -->
-  <!-- off; the inner Copy's Exists() guard is sufficient. During publish this       -->
-  <!-- target still fires after the inner Build, but CopySingleFileExeToDemoFiles    -->
-  <!-- runs after Publish and overwrites the build-output exe with the single-file   -->
-  <!-- one, so the final DemoFiles\TinyLanguage.exe is always the right one.         -->
-  <Target Name="CopyExeToDemoFiles" AfterTargets="Build">
-    <Copy SourceFiles="$(OutputPath)TinyLanguage.exe"
-          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
-          SkipUnchangedFiles="true"
-          Condition="Exists('$(OutputPath)TinyLanguage.exe')" />
-  </Target>
-  <!-- copy single-file exe to DemoFiles after Release publish only -->
+  <!-- ONLY a publish-time copy. Do NOT add an AfterTargets="Build" copy target — -->
+  <!-- prior builds shipped one and it silently broke every .cmd demo every time  -->
+  <!-- a user ran dotnet build after dotnet publish. Background:                  -->
+  <!--   * Build-output exe (~160 KB) is the framework-dependent apphost. It needs -->
+  <!--     TinyLanguage.dll beside it. The .dll lives in bin\Debug\..\, NOT in    -->
+  <!--     DemoFiles\, so the apphost there cannot start.                          -->
+  <!--   * The apphost does NOT exit non-zero on missing .dll — it prints         -->
+  <!--     "The application to execute does not exist" to stdout and exits 0.     -->
+  <!--   * .cmd files use `if errorlevel 1` to detect failure. errorlevel 0       -->
+  <!--     passes the check. `type "%OUTPUT%"` then silently fails on the missing -->
+  <!--     output file, the .cmd exits 0, and the user sees the apphost error    -->
+  <!--     flash by but no real output. Phase 5 validation that only checks       -->
+  <!--     "exit 0 + non-empty file + non-empty stdout" cannot detect this state. -->
+  <!-- Empirical (SDK 10.0.300-preview): you cannot discriminate build vs publish  -->
+  <!-- via Condition. With PublishSingleFile=true in PropertyGroup, $(PublishDir)  -->
+  <!-- is non-empty even on plain dotnet build; $(IsPublishing) is empty in BOTH;  -->
+  <!-- $(PublishSingleFile) is true in BOTH. So an outer Condition on a Build-time -->
+  <!-- target will either always fire or never fire — never selectively. The only -->
+  <!-- safe approach is to drop the build-time copy entirely.                      -->
+  <!-- Trade-off: users who want to run .cmd demos must run dotnet publish first.  -->
+  <!-- For fast dev iteration without publishing, use `dotnet run` on the          -->
+  <!-- TinyLanguage project (demo mode runs the .tlg files in-process). NOTE: XML  -->
+  <!-- comments forbid the `--` digraph, so write `dotnet run` rather than the     -->
+  <!-- equivalent flag spelling that uses two dashes — paste this comment block    -->
+  <!-- verbatim into the csproj or MSBuild rejects it with MSB4025.                -->
   <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish"
           Condition="'$(Configuration)' == 'Release'">
     <Copy SourceFiles="$(PublishDir)TinyLanguage.exe"
@@ -426,7 +435,9 @@ Protocol below. Every step must pass before you may declare the plan complete.
 ### Step 1 — Clean build (whole solution)
   dotnet build
   Accept: 0 errors, 0 warnings.
-  Verify: TinyLanguage.DemoFiles/TinyLanguage.exe exists (copied by CopyExeToDemoFiles target).
+  Note: the build does NOT copy any exe to TinyLanguage.DemoFiles\. That happens
+  only on `dotnet publish` (Step 4). After a clean checkout, DemoFiles\TinyLanguage.exe
+  may not exist yet — that is expected at this point.
 
 ### Step 2 — Unit + integration tests
   dotnet test --verbosity normal
@@ -442,29 +453,54 @@ Protocol below. Every step must pass before you may declare the plan complete.
 ### Step 4 — Release publish (single-file exe)
   dotnet publish TinyLanguage -c Release
   Accept: TinyLanguage.DemoFiles/TinyLanguage.exe is the freshly-published self-contained
-  single-file build (~36 MB). Verify with: ls -lh TinyLanguage.DemoFiles/TinyLanguage.exe
+  single-file build (~36 MB). Verify size > 30 MB:
+    PowerShell: (Get-Item TinyLanguage.DemoFiles\TinyLanguage.exe).Length -gt 30000000
+  Bash:        [ "$(stat -c%s TinyLanguage.DemoFiles/TinyLanguage.exe)" -gt 30000000 ]
+  If size is ~160 KB instead, that is the framework-dependent apphost — check
+  TinyLanguage.csproj has NOT regrown an AfterTargets="Build" copy target (see the
+  csproj comments for the long history). The .cmd demos cannot work with the apphost.
 
 ### Step 5 — Verify ALL .cmd files via the published exe
+  *** GUARD FIRST: re-verify that DemoFiles\TinyLanguage.exe is still ~36 MB        ***
+  *** (not the 160 KB apphost) immediately before the loop. If anything between     ***
+  *** Step 4 and Step 5 ran `dotnet build` (e.g. test phase that re-triggered       ***
+  *** dependency build, IDE auto-build, an agent cleanup step), the publish exe    ***
+  *** could have been clobbered. Re-publish if so before proceeding.                ***
+
   Run every .cmd file in TinyLanguage.DemoFiles/ — not just the first 10 — and
   for each one verify ALL of:
     a) exit code = 0
     b) the output file written by the .cmd is non-empty
     c) the .cmd printed the output to stdout (so users see something happen)
-  A previous run shipped 320 .cmd files that all exited 0 yet were effectively
-  silent because the default `output.txt` was CWD-relative and there was no
-  `type` of the output file. Spot-checking only a handful or only checking
-  exit code does not catch this — verify all three properties for all files.
+    d) stdout does NOT contain the apphost-failure signature
+       "The application to execute does not exist" — see the csproj comments for
+       why this can pass criteria (a)-(c) yet still be broken: the apphost prints
+       this error and exits with code 0, the .cmd's `type` then silently emits an
+       empty file, and naive validation accepts it.
+
+  History of validation false-positives (none of these recur if (a)-(d) are all
+  checked, but the loop must check all four):
+  - 320 .cmd files exited 0 but produced no visible output because the default
+    `output.txt` was CWD-relative and there was no `type` of the output file.
+    Caught by criterion (c).
+  - 476 .cmd files exited 0, produced an output file, AND printed to stdout, but
+    the stdout was the apphost-not-finding-its-dll error from a build-clobbered
+    DemoFiles\TinyLanguage.exe. Caught by criterion (d).
 
   Suggested PowerShell loop (run from the solution root):
     $dir = "TinyLanguage.DemoFiles"
+    if ((Get-Item "$dir\TinyLanguage.exe").Length -lt 30000000) {
+      throw "DemoFiles\TinyLanguage.exe is too small ($([math]::Round((Get-Item "$dir\TinyLanguage.exe").Length/1MB, 2)) MB) — re-run dotnet publish TinyLanguage -c Release"
+    }
     $cmds = Get-ChildItem $dir -Filter *.cmd | Sort-Object Name
     $outDir = New-Item -ItemType Directory "$env:TEMP\tlg_validate" -Force
     $failed = @()
     foreach ($c in $cmds) {
       $out = Join-Path $outDir ($c.BaseName + ".out.txt")
-      $stdout = & cmd /c $c.FullName $out 2>&1
+      $stdout = ($(& cmd /c $c.FullName $out 2>&1) -join "`n")
       if ($LASTEXITCODE -ne 0 -or -not (Test-Path $out) -or `
-          (Get-Item $out).Length -eq 0 -or [string]::IsNullOrWhiteSpace($stdout -join "")) {
+          (Get-Item $out).Length -eq 0 -or [string]::IsNullOrWhiteSpace($stdout) -or `
+          $stdout -match 'The application to execute does not exist') {
         $failed += $c.Name
       }
     }
@@ -472,6 +508,15 @@ Protocol below. Every step must pass before you may declare the plan complete.
     "All $($cmds.Count) demo .cmd files passed."
 
   Accept only when this loop reports success for every file.
+
+  Optional but recommended: spot-check the OUTPUT CORRECTNESS of well-known demos
+  (none of the criteria above catch wrong-but-non-empty output). At minimum:
+    00001.hello_world      → "Hello, World!"
+    00036.fizzbuzz         → 1, 2, Fizz, ..., FizzBuzz at 15
+    00075.function_iterative_factorial → 1, 1, 120, 3628800
+    00079.function_gcd     → 6, 1, 25
+    00104.class_extends    → "Animal Rex", "Rex says woof"
+    00226.module_basic     → 7
 
 All five steps must be green. Do not declare the plan complete until they are.
 Do not refactor unrelated code. Do not alter Build.Solution.md.
