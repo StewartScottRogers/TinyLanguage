@@ -164,10 +164,11 @@
 |---|---|
 | **Title** | Generate 300+ Demo .tlg Files and Matching .cmd Scripts |
 | **Inputs** | Sec 1.2.7, 1.5.8, full BNF |
-| **Outputs** | `TinyLanguage.DemoFiles/00001.*.tlg` … `003xx.*.tlg` + matching `.cmd` |
+| **Outputs** | `TinyLanguage.DemoFiles/00001.*.tlg` … `004xx.*.tlg` + matching `.cmd` |
 | **Dependencies** | WU-04 (grammar finalized) |
 | **Assignee Role** | Content Engineer |
 | **.cmd rule** | Use `%~dp0TinyLanguage.exe` and `%~dp0<file>.tlg` so the cmd works from any directory. Default output to `%~dp0output.txt` (next to the script — never to a CWD-relative path, which fails silently). Accept `%~1` (or `%~2` per Build.Solution.md §1.2.7) as an output override. Quote every path. After running, `type "%OUTPUT%"` so the user sees results. Propagate `errorlevel`. Never `cd` or `pushd` into `%~dp0`. See Build.md Phase 1D for the full template. |
+| **Tier split** | Two tiers, both produced in this WU: **Tier A — Feature-coverage demos (00001..00399)**: short single-feature .tlg files (≤ ~15 lines) that exercise one BNF production each. **Tier B — Advanced data-structure demos (00400..00499+, ≥ 50 files)**: 30–200-line programs that define an advanced data structure (singly/doubly linked list, stack, queue, deque, ring buffer, LRU cache, BST, AVL/RB tree, heap/priority queue, trie, segment/Fenwick tree, hash map/set, open-addressing table, graph adjacency list, union-find) and exercise it via at least three named subroutines and ≥ 8 mixed mutation/query operations. Tier B also covers algorithms over those structures (BFS, DFS, Dijkstra, topological sort, quicksort, mergesort, heapsort, binary search, Sieve, LCS, knapsack, edit distance, postfix eval, shunting-yard). Output must be deterministic; subroutines must be called, not just defined; each Tier B file starts with a 3-line header comment naming the data structure, the subroutines, and the workload. See Build.md Phase 1D "Tier B requirements" for the full specification. |
 
 ### WU-11: Validation and Assembly
 | Field | Value |
@@ -304,9 +305,24 @@ The generated folder is created as a **sibling of the repo** (one level above), 
 └── TinyLanguage.DemoFiles/
     ├── TinyLanguage.DemoFiles.shproj
     ├── TinyLanguage.DemoFiles.projitems
-    ├── 00001.fizzbuzz.tlg
-    ├── 00001.fizzbuzz.cmd
+    │
+    ├── 00001.fizzbuzz.tlg            # Tier A — feature-coverage demos
+    ├── 00001.fizzbuzz.cmd            #          (00001..00399, one feature each, ≤ ~15 lines)
     ├── 00002.fibonacci.tlg
     ├── 00002.fibonacci.cmd
-    └── ... (300+ pairs)
+    ├── ... (≥ 250 Tier A pairs)
+    │
+    ├── 00410.linked_list_singly.tlg  # Tier B — advanced data structure demos
+    ├── 00410.linked_list_singly.cmd  #          (00400..00499+, ≥ 50 pairs, 30–200 lines each)
+    ├── 00420.stack_balanced_brackets.tlg
+    ├── 00420.stack_balanced_brackets.cmd
+    ├── 00425.bst_inorder_traversal.tlg
+    ├── 00425.bst_inorder_traversal.cmd
+    ├── 00440.heap_priority_queue.tlg
+    ├── 00440.heap_priority_queue.cmd
+    ├── 00450.hash_map_chaining.tlg
+    ├── 00450.hash_map_chaining.cmd
+    ├── 00460.graph_bfs_dfs.tlg
+    ├── 00460.graph_bfs_dfs.cmd
+    └── ... (≥ 50 Tier B pairs — see Build.md Phase 1D for required coverage)
 ```

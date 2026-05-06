@@ -246,9 +246,127 @@ Accept only: 0 errors, 0 warnings.
 Read Build.Solution.md sections: "Tiny Language Demonstration Suite",
 "TinyLanguage Syntax", the full BNF Grammar, and all 23 Implementation Notes.
 
-Create 300+ .tlg demo files in TinyLanguage.DemoFiles/, zero-padded numeric prefix
-(00001.fizzbuzz.tlg … etc.), covering every grammar feature exhaustively.
-Create a matching .cmd runner for each demo file.
+The demo suite must be split into TWO TIERS, both produced by this phase:
+
+  TIER A — FEATURE-COVERAGE DEMOS (00001..00399)
+    Short, focused .tlg files that exercise individual grammar features in
+    isolation (one feature per file). Goal: prove every BNF production and
+    every Implementation Note is reachable from real source. These are the
+    classic per-feature demos (e.g. 00001.fizzbuzz, 00010.if_statement,
+    00026.function_no_params) — keep them small (≤ ~15 lines each) so a
+    failure points at a single grammar feature.
+
+  TIER B — ADVANCED DATA STRUCTURE & ALGORITHM DEMOS (00400..00499+)
+    Substantial, multi-subroutine .tlg programs that BUILD an advanced data
+    structure and EXERCISE it with a meaningful workload. These prove the
+    interpreter holds up under real, idiomatic programs — not just one-liners.
+    See the "Tier B requirements" block below for the full specification.
+
+Both tiers together must total 300+ .tlg files in TinyLanguage.DemoFiles/,
+zero-padded numeric prefix (00001.fizzbuzz.tlg … etc.). Each .tlg file must
+have a matching .cmd runner using the template below.
+
+### Tier B requirements — advanced data structures + subroutines
+
+Each Tier B demo MUST satisfy ALL of the following:
+
+1. **Defines a data structure as a class** (or, where a class is unsuitable,
+   as a set of cooperating top-level functions over an array). The data
+   structure must be the focus of the program, not a side-effect.
+2. **Exposes at least three named subroutines** (functions or methods) that
+   operate on the structure — e.g. `Insert`, `Remove`, `Find`, `Traverse`,
+   `Size`. Inline procedural code with no functions is NOT acceptable for
+   Tier B.
+3. **Exercises the structure with a non-trivial workload** — at least 8
+   distinct operations against the structure, mixing mutation and query.
+4. **Prints a deterministic, asserted-against-able output sequence** that
+   reflects each operation's result. The output must be reproducible byte-
+   for-byte across runs (no clocks, no random numbers, no hash-order
+   leakage). Phase 5's .cmd validation only checks "non-empty + exit 0";
+   non-determinism would slip through and rot later.
+5. **Uses at least four distinct grammar features beyond `let`/`print`** —
+   pick from: classes, methods, `this`, recursion, `for`/`while`/`foreach`,
+   arrays, array element assignment, exception handling, pattern matching,
+   ternary, switch, lambdas, modules, default parameters, `break`/`continue`.
+6. **File length: 30–200 lines.** Below 30 it is not "complex"; above 200
+   becomes a maintenance liability and slows down `dotnet run` demo mode.
+7. **Header comment** at the top of every Tier B .tlg file: one line naming
+   the data structure, one line listing the subroutines defined, one line
+   describing the workload. Example:
+     # Data structure: singly linked list
+     # Subroutines: PushFront, PushBack, Remove, Find, Length, Print
+     # Workload: build list of 10 ints, remove odd values, print survivors
+
+REQUIRED Tier B coverage — every item below must have at least one demo.
+Pick filenames in the 00400+ range; names must be descriptive
+(e.g. `00410.linked_list_singly.tlg`, `00425.bst_inorder_traversal.tlg`):
+
+  Linear structures
+  - Singly linked list (PushFront, PushBack, Remove, Find, Length, Print)
+  - Doubly linked list (insert before/after, remove, forward+reverse traversal)
+  - Stack (Push, Pop, Peek, IsEmpty) — exercised with balanced-bracket check
+  - Queue (Enqueue, Dequeue, Peek) — exercised with FIFO ordering proof
+  - Deque (PushFront, PushBack, PopFront, PopBack)
+  - Ring / circular buffer (fixed capacity, wrap-around, overwrite policy)
+  - Dynamic array / vector (Append, Get, Set, Remove, Resize)
+  - LRU cache (doubly linked list + lookup index, Get/Put with eviction)
+
+  Trees
+  - Binary search tree (Insert, Find, InOrder traversal — sorted output)
+  - BST deletion (the three cases: leaf, one child, two children)
+  - AVL or red-black tree (self-balancing — show heights stay O(log n))
+  - Min-heap / max-heap (Insert, ExtractMin/Max, Peek, Heapify)
+  - Priority queue using the heap (proves item ordering by priority)
+  - Trie (Insert, Contains, StartsWith over a small word list)
+  - Segment tree or Fenwick tree (range sum / range update)
+
+  Hashing & sets
+  - Hash map with chaining (Put, Get, Remove, collision handling)
+  - Hash set built on the hash map (Add, Contains, Remove)
+  - Open-addressing hash table (linear or quadratic probing)
+
+  Graphs
+  - Graph as adjacency list (AddVertex, AddEdge, Neighbors)
+  - BFS traversal (level-order from a source vertex)
+  - DFS traversal (preorder + postorder)
+  - Topological sort over a DAG
+  - Connected components (undirected graph)
+  - Dijkstra shortest path (small weighted graph, deterministic output)
+  - Union-find / disjoint-set with path compression (Find, Union, Connected)
+
+  Algorithms exercising the above
+  - Quicksort, mergesort, heapsort (each as its own demo)
+  - Binary search over a sorted array (iterative + recursive variants)
+  - Sieve of Eratosthenes (returns primes ≤ N as a list)
+  - Longest-common-subsequence DP (table-based, prints length and one LCS)
+  - 0/1 knapsack DP
+  - Edit distance (Levenshtein) DP
+  - Reverse a string in-place using a stack
+  - Palindrome check using a deque
+  - Postfix evaluator (operator stack)
+  - Infix → postfix (shunting-yard) using stacks
+  - JSON-ish pretty-printer over nested arrays + maps (recursive)
+
+A recommended Tier B file count is ≥ 50 (out of the 300+ total). Anything
+on this list that the language cannot express should be flagged with a
+comment in the demo file (`# NOT IMPLEMENTABLE: <reason>`) AND the demo
+omitted — do not invent a watered-down replacement that no longer
+exercises the data structure.
+
+Anti-patterns specific to Tier B that have shipped before and must not recur:
+- A "linked list" demo that is just `arr := [1,2,3]; print arr` with no
+  Node class — that is a Tier A array-literal demo, not a Tier B demo.
+- A "BST" demo whose only operation is `Insert` — query and traversal
+  must also be exercised, otherwise correctness is unobservable.
+- Subroutines defined but never called — Tier B is about exercise, not
+  definition.
+- Non-deterministic output (e.g. iterating a hash map by insertion order
+  on one platform but by bucket order on another). If the structure is
+  inherently unordered, sort the keys before printing.
+- A demo that prints "ok" with no values — the printed output must let
+  a reader reconstruct what the structure did, not just claim success.
+
+Create a matching .cmd runner for each demo file (both tiers).
 
 Each .cmd file must work correctly regardless of the directory it is run from
 (arbitrary CWD, the script's own directory, or by double-click in Explorer).
