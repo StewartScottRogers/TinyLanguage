@@ -22,6 +22,9 @@ namespace TinyLanguage.Lexer
         void VisitEnumDefNode(EnumDefNode node);
         void VisitEnumValueNode(EnumValueNode node);
         void VisitArrayElementAssignNode(ArrayElementAssignNode node);
+        void VisitMemberAssignNode(MemberAssignNode node);
+        void VisitIndexedAssignNode(IndexedAssignNode node);
+        void VisitExpressionStatementNode(ExpressionStatementNode node);
         void VisitIfStatementNode(IfStatementNode node);
         void VisitWhileStatementNode(WhileStatementNode node);
         void VisitForStatementNode(ForStatementNode node);

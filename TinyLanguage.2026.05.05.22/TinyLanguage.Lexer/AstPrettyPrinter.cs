@@ -139,6 +139,36 @@ namespace TinyLanguage.Lexer
             indentLevel--;
         }
 
+        public void VisitMemberAssignNode(MemberAssignNode node)
+        {
+            WriteLine($"MemberAssignNode [line={node.Line}]");
+            indentLevel++;
+            WriteLine("target:");
+            VisitChild(node.Target);
+            WriteLine("value:");
+            VisitChild(node.ValueExpr);
+            indentLevel--;
+        }
+
+        public void VisitIndexedAssignNode(IndexedAssignNode node)
+        {
+            WriteLine($"IndexedAssignNode [line={node.Line}]");
+            indentLevel++;
+            WriteLine("target:");
+            VisitChild(node.Target);
+            WriteLine("value:");
+            VisitChild(node.ValueExpr);
+            indentLevel--;
+        }
+
+        public void VisitExpressionStatementNode(ExpressionStatementNode node)
+        {
+            WriteLine($"ExpressionStatementNode [line={node.Line}]");
+            indentLevel++;
+            VisitChild(node.Expression);
+            indentLevel--;
+        }
+
         public void VisitIfStatementNode(IfStatementNode node)
         {
             bool hasElse = node.ElseStatements.Count > 0;
