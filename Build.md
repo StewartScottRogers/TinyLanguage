@@ -3,9 +3,66 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
-> **Output location:** The generated solution folder (`TinyLanguage.YYYY.MM.DD.HH/`) is
-> created as a **sibling of this repo**, not inside it. For example, if this repo is at
-> `Z:\repos\TinyLanguage\`, the output goes to `Z:\repos\TinyLanguage.2026.04.16.19\`.
+> ## Output location — non-negotiable
+>
+> The generated .NET solution folder is delivered to a **fixed canonical absolute path**
+> that is a **sibling of this orchestrator repo**, never inside it and never inside a
+> git worktree. Concretely:
+>
+> - Orchestrator repo:  `Z:\repos\TinyLanguage\`            *(this checkout)*
+> - Final solution:     `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`   *(its sibling)*
+>
+> The solution folder is **not tracked** by this orchestrator repo's git history. It
+> is a standalone, self-contained .NET solution that an end user can `dotnet build`,
+> `dotnet test`, and ship without any reference back to this orchestrator. You can
+> verify by running `git status` from inside the orchestrator repo after delivery —
+> nothing under `..\TinyLanguage.YYYY.MM.DD.HH\` should appear, because that path is
+> outside the repo's working tree entirely.
+>
+> ### .NET solution structural standards (enforced)
+>
+> The solution folder MUST conform to the following layout — these are standard .NET
+> conventions and the build, test, and publish commands assume them. Any layout
+> deviation is a phase failure:
+>
+> 1. `TinyLanguage.slnx` lives at the **root** of the solution folder. Solution-level
+>    files (`Directory.Build.props`, `.vscode/launch.json`) sit alongside it.
+> 2. Every project lives in its **own subdirectory** at the solution root, named the
+>    same as the project. Each project's `.csproj` is inside its own subdirectory.
+> 3. **`TinyLanguage.DemoFiles/` is a project subdirectory of the solution folder** —
+>    NOT a sibling of the solution, NOT inside one of the source projects, NOT in
+>    `bin/`, NOT in any user temp/AppData path. Its absolute path is exactly
+>    `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\`. The `.tlg` files,
+>    matching `.cmd` files, the published `TinyLanguage.exe`, and the
+>    `TinyLanguage.DemoFiles.csproj` are all inside that one directory.
+> 4. Project-to-project `<ProjectReference>` paths use **solution-relative paths**
+>    (e.g. `..\TinyLanguage.Lexer\TinyLanguage.Lexer.csproj`), never absolute paths
+>    and never paths that escape the solution folder.
+> 5. Per-project `bin/` and `obj/` directories are the default .NET convention — do
+>    not redirect output to a centralised `artifacts/` folder unless the spec requires
+>    it. Build artefacts are gitignore-able; nothing under `bin/` or `obj/` ever needs
+>    to be hand-edited.
+> 6. The solution is **self-contained**: every reference, every Content item, every
+>    `<Copy>` in MSBuild targets resolves to a path under the solution root. No
+>    target may reach into the orchestrator repo or into any agent worktree.
+>
+> ### Why this matters (why prior runs got it wrong)
+>
+> Worktree-isolated agents ran with their CWD inside a git worktree
+> (`Z:\repos\TinyLanguage\.claude\worktrees\agent-<id>\`) and naively interpreted
+> "sibling of the repo" relative to the worktree, producing a solution at
+> `Z:\repos\TinyLanguage\.claude\worktrees\agent-<id>\TinyLanguage.YYYY.MM.DD.HH\`.
+> That path is buried inside the orchestrator repo, gets cleaned up on worktree
+> removal, and is invisible to a user looking at `Z:\repos\`. The fix has two parts,
+> both required:
+>
+> a) Every agent prompt that mentions the solution path uses the **absolute canonical
+>    path** `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` — never a relative `..\` form,
+>    never "sibling of the repo" without naming the path.
+> b) Phase 5 ends with an explicit **delivery step** that copies the assembled
+>    solution from the merge worktree to the canonical absolute path and verifies
+>    the canonical path contains a buildable solution. The orchestration is NOT
+>    complete until that delivery step passes.
 
 ---
 
@@ -19,7 +76,7 @@ Read Build.md and execute the full orchestration plan using parallel agents.
 
 Claude Code will decompose `Build.Solution.md` into the work units below, spin up
 specialised sub-agents (some in parallel git worktrees), track progress with Tasks,
-and assemble the final solution.
+and assemble the final solution at the canonical sibling path defined above.
 
 ---
 
@@ -55,17 +112,37 @@ Each agent runs in an **isolated git worktree** (`isolation: "worktree"`).
 Read Build.Solution.md sections: ".NET Standards", "Application Description",
 "File System Structure".
 
-Create the full solution skeleton ONE LEVEL ABOVE the repo root (i.e. a sibling
-of the TinyLanguage repo directory, not inside it):
-- ../TinyLanguage.YYYY.MM.DD.HH/          ← sibling of Z:\repos\TinyLanguage\
-  - TinyLanguage.slnx
-  - TinyLanguage.Lexer/TinyLanguage.Lexer.csproj  (net10.0 classlib)
-  - TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj (net10.0 classlib)
-  - TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj (MSTest)
-  - TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj (MSTest)
-  - TinyLanguage/TinyLanguage.csproj (net10.0 console, self-contained single-file win-x64 exe)
-  - TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj  (SDK-style, content-only, no output assembly)
-  - .vscode/launch.json  (VS Code debugger — targets TinyLanguage console project)
+Output target: the **canonical absolute path** `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`,
+which is a sibling of the orchestrator repo at `Z:\repos\TinyLanguage\`. Substitute
+the actual UTC year/month/day/hour. Use this absolute path verbatim in every file
+operation; do NOT use relative `..\` forms — those resolve to whatever the agent's
+CWD happens to be (inside a git worktree, this gives the wrong location).
+
+If you are running inside a git worktree (your CWD is something like
+`Z:\repos\TinyLanguage\.claude\worktrees\agent-<id>\`), still write to the
+canonical absolute path. The orchestrator repo's `.gitignore` excludes the
+canonical path explicitly so you do not pollute the worktree's git index.
+
+Create the full solution skeleton at `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` with
+this layout (all paths relative to that solution root):
+
+  TinyLanguage.slnx                                    ← solution file at the root
+  Directory.Build.props                                ← solution-wide MSBuild props
+  .vscode/launch.json                                  ← IDE debugger config
+  TinyLanguage/TinyLanguage.csproj                     ← console (net10.0, self-contained single-file win-x64 exe)
+  TinyLanguage.Lexer/TinyLanguage.Lexer.csproj         ← classlib (net10.0)
+  TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj  ← classlib (net10.0)
+  TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj      ← MSTest
+  TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj  ← MSTest
+  TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj      ← SDK-style content-only project,
+                                                              **lives INSIDE the solution folder**
+                                                              as a peer of the source projects.
+                                                              Never outside, never under bin/,
+                                                              never under any user temp path.
+
+All `<ProjectReference>` entries in csproj files use solution-relative paths (e.g.
+`..\TinyLanguage.Lexer\TinyLanguage.Lexer.csproj`). No absolute paths. No paths
+that escape the solution folder.
 
 Apply every coding-style rule from the spec. Do not generate any C# source yet —
 scaffold files, project references, Directory.Build.props, and .vscode/launch.json only.
@@ -636,7 +713,71 @@ Protocol below. Every step must pass before you may declare the plan complete.
     00104.class_extends    → "Animal Rex", "Rex says woof"
     00226.module_basic     → 7
 
-All five steps must be green. Do not declare the plan complete until they are.
+### Step 6 — DELIVER to the canonical sibling path  *(non-negotiable final step)*
+
+Up to this point the assembled solution may live inside a merge worktree at
+`Z:\repos\TinyLanguage\.claude\worktrees\agent-<phase5-id>\TinyLanguage.YYYY.MM.DD.HH\`.
+A worktree is **ephemeral orchestration scratch space**, not a deliverable. The
+plan is NOT complete until the solution is at the canonical path
+`Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` (sibling of the orchestrator repo) AND
+that canonical copy has been re-validated end-to-end.
+
+  6a. If the solution at the canonical sibling path already exists from prior
+      work, REMOVE IT FIRST so the delivery is a clean copy. Use Remove-Item
+      with -Recurse and -Force; do NOT delete anything outside that exact path.
+        $canonical = "Z:\repos\TinyLanguage.YYYY.MM.DD.HH"
+        if (Test-Path $canonical) { Remove-Item -Recurse -Force $canonical }
+
+  6b. Copy the worktree's solution folder to the canonical path. Use robocopy
+      because it is the standard Windows tool for reliable directory mirroring,
+      it preserves timestamps, and it skips bin/ and obj/ cleanly:
+        robocopy `
+          "Z:\repos\TinyLanguage\.claude\worktrees\agent-<phase5-id>\TinyLanguage.YYYY.MM.DD.HH" `
+          "Z:\repos\TinyLanguage.YYYY.MM.DD.HH" `
+          /MIR /XD bin obj .vs /XF *.user
+      robocopy returns 0–7 for success (1 = files copied, 0 = nothing to do).
+      Treat exit code >= 8 as failure.
+
+  6c. Verify the structural standards from the preamble hold at the canonical path:
+        - $canonical\TinyLanguage.slnx                     exists
+        - $canonical\Directory.Build.props                  exists
+        - $canonical\TinyLanguage\TinyLanguage.csproj       exists
+        - $canonical\TinyLanguage.Lexer\...csproj           exists
+        - $canonical\TinyLanguage.Interpreter\...csproj     exists
+        - $canonical\TinyLanguage.UnitTests\...csproj       exists
+        - $canonical\TinyLanguage.IntegrationTests\...csproj exists
+        - $canonical\TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj exists
+        - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 300 files
+        - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
+      Fail loudly with a specific path if any of these is missing.
+
+  6d. Re-run the full build, test, demo, publish chain at the canonical path
+      from a CLEAN shell (do not rely on any state still warm in the worktree):
+        cd Z:\repos\TinyLanguage.YYYY.MM.DD.HH
+        dotnet build              # Accept: 0 errors, 0 warnings
+        dotnet test               # Accept: Failed: 0
+        dotnet run --project TinyLanguage   # Accept: "All demos completed successfully.", exit 0
+        dotnet publish TinyLanguage -c Release
+        # Verify TinyLanguage.DemoFiles\TinyLanguage.exe is the ~36 MB self-contained build
+        # at the canonical location — NOT inside any worktree.
+
+  6e. Re-run the .cmd validation loop from Step 5, this time pointed at
+      `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\` (the canonical
+      DemoFiles path). All N .cmd files must still pass criteria (a)–(d).
+
+  6f. Confirm the orchestrator repo is unchanged: `git status` from
+      `Z:\repos\TinyLanguage\` reports a clean working tree (modulo any
+      orchestration metadata commits). The canonical solution path is OUTSIDE
+      this repo's working tree, so it must not appear in `git status` output.
+
+  6g. Sanity check: list the absolute paths so the user can see exactly where
+      the deliverable lives. The expected output:
+        Solution root:  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\
+        Demo files:     Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\
+        Published exe:  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\TinyLanguage.exe
+
+All six steps must be green. Do not declare the plan complete until Step 6f
+confirms the canonical path holds the buildable, fully-validated solution.
 Do not refactor unrelated code. Do not alter Build.Solution.md.
 ```
 

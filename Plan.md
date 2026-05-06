@@ -79,10 +79,11 @@
 |---|---|
 | **Title** | Create .NET 10.0 Solution and Project Files |
 | **Inputs** | Sec 1.1.1, 1.2.1–1.2.7 |
-| **Outputs** | `.sln`, all `.csproj`, `.shproj`, `.projitems`, `Directory.Build.props` |
+| **Outputs** | `TinyLanguage.slnx`, all six `.csproj`, `Directory.Build.props`, `.vscode/launch.json` — all created at the **canonical absolute path** `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` (sibling of the orchestrator repo). NOT inside any worktree, NOT inside the orchestrator repo. See Build.md "Output location — non-negotiable". |
 | **Dependencies** | None |
 | **Assignee Role** | Build Engineer |
-| **Exe requirement** | `TinyLanguage.csproj` must set `SelfContained=true`, `RuntimeIdentifier=win-x64`, `PublishSingleFile=true`, `EnableCompressionInSingleFile=true`, and include MSBuild targets to copy the exe to `TinyLanguage.DemoFiles/` after every build and after publish |
+| **Path discipline** | Use the absolute canonical path verbatim in every file operation. Project subdirectories (`TinyLanguage/`, `TinyLanguage.Lexer/`, `TinyLanguage.Interpreter/`, `TinyLanguage.UnitTests/`, `TinyLanguage.IntegrationTests/`, `TinyLanguage.DemoFiles/`) are direct children of the solution root. `<ProjectReference>` paths are solution-relative (e.g. `..\TinyLanguage.Lexer\...csproj`). |
+| **Exe requirement** | `TinyLanguage.csproj` must set `SelfContained=true`, `RuntimeIdentifier=win-x64`, `PublishSingleFile=true`, `EnableCompressionInSingleFile=true`, and include only an `AfterTargets="Publish"` copy target that places the self-contained exe inside `TinyLanguage.DemoFiles/` (a peer subdirectory of the solution root). NO `AfterTargets="Build"` copy target — that has historically silently broken every `.cmd` demo (see Build.md Phase 1A history block). |
 
 ### WU-02: Token Types and Lexer
 | Field | Value |
@@ -173,11 +174,12 @@
 ### WU-11: Validation and Assembly
 | Field | Value |
 |---|---|
-| **Title** | Execute Build, Test, Demo Validation and Fix-and-Retry Loop |
+| **Title** | Execute Build, Test, Demo Validation, Deliver, and Fix-and-Retry Loop |
 | **Inputs** | Sec 1.3.2–1.3.4, 1.6.6, 1.7 |
-| **Outputs** | Green build, green tests, green demo |
+| **Outputs** | Green build, green tests, green demo, **and a buildable solution at the canonical absolute path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`** (sibling of the orchestrator repo). The work unit is NOT complete while the solution lives only inside a worktree at `Z:\repos\TinyLanguage\.claude\worktrees\agent-<id>\TinyLanguage.YYYY.MM.DD.HH\`. |
 | **Dependencies** | WU-07, WU-08, WU-09, WU-10 |
 | **Assignee Role** | Build Engineer |
+| **Delivery requirement** | After Steps 1–5 are green inside the merge worktree, run Build.md Phase 5 Step 6 (robocopy from worktree to canonical path, structural verification, full re-build/re-test/re-publish at the canonical path, .cmd validation against the canonical DemoFiles, and `git status` confirmation that the orchestrator repo is unaffected). Only when Step 6 reports the canonical path holds a clean buildable solution may this WU be marked complete. |
 
 ---
 
@@ -203,13 +205,33 @@ WU-01 (Scaffold)
 
 ## 4. Project Directory Layout
 
-The generated folder is created as a **sibling of the repo** (one level above), e.g.
-`Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` alongside `Z:\repos\TinyLanguage\`.
+The generated solution folder is delivered to the **canonical absolute path**
+`Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` — a sibling of the orchestrator repo at
+`Z:\repos\TinyLanguage\`. It is NOT inside the orchestrator repo, NOT inside any
+git worktree under `.claude/worktrees/`, and NOT tracked by the orchestrator's
+git history. See Build.md "Output location — non-negotiable" for the full
+contract, including the delivery step in Phase 5 that copies from the merge
+worktree to the canonical path and re-validates end-to-end.
+
+**Standard .NET solution structure** (enforced — see Build.md preamble):
+- The solution file (`TinyLanguage.slnx`) sits at the **root** of the solution
+  folder, alongside `Directory.Build.props` and `.vscode/`.
+- Every project lives in its **own subdirectory** named after the project, with
+  its `.csproj` file inside that subdirectory.
+- **`TinyLanguage.DemoFiles/` is a project subdirectory of the solution folder**
+  at `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\`. The `.tlg`
+  files, the matching `.cmd` runners, the `TinyLanguage.DemoFiles.csproj`, and
+  (after `dotnet publish`) the self-contained `TinyLanguage.exe` all live in
+  that one directory. Demo files MUST NOT be placed outside the solution folder,
+  inside any other project, inside `bin/`, or in any user temp/AppData path.
+- All `<ProjectReference>` paths are solution-relative
+  (e.g. `..\TinyLanguage.Lexer\TinyLanguage.Lexer.csproj`) — never absolute,
+  never escaping the solution root.
 
 ```
-..\TinyLanguage.2026.04.16.19\   (sibling of the TinyLanguage repo)
+Z:\repos\TinyLanguage.YYYY.MM.DD.HH\        (canonical absolute path; sibling of the repo)
 
-├── TinyLanguage.sln
+├── TinyLanguage.slnx                       (solution file at the root)
 ├── Directory.Build.props
 │
 ├── TinyLanguage/
@@ -302,9 +324,17 @@ The generated folder is created as a **sibling of the repo** (one level above), 
 │   ├── TinyLanguage.IntegrationTests.csproj
 │   └── InterpreterIntegrationTests.cs
 │
-└── TinyLanguage.DemoFiles/
-    ├── TinyLanguage.DemoFiles.shproj
-    ├── TinyLanguage.DemoFiles.projitems
+└── TinyLanguage.DemoFiles/                 # Project subdirectory of the solution.
+    │                                        # Absolute path:
+    │                                        #   Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\
+    │                                        # NEVER outside the solution folder.
+    ├── TinyLanguage.DemoFiles.csproj        # SDK-style content-only csproj per Build.Solution.md §1.2.7
+    │                                        # (NOT a SharedProject .shproj — that fragility was retired.)
+    │
+    ├── TinyLanguage.exe                     # ~36 MB self-contained single-file build,
+    │                                        # placed here by the AfterTargets="Publish" copy target
+    │                                        # in TinyLanguage/TinyLanguage.csproj. Present after
+    │                                        # `dotnet publish TinyLanguage -c Release`.
     │
     ├── 00001.fizzbuzz.tlg            # Tier A — feature-coverage demos
     ├── 00001.fizzbuzz.cmd            #          (00001..00399, one feature each, ≤ ~15 lines)
@@ -326,3 +356,13 @@ The generated folder is created as a **sibling of the repo** (one level above), 
     ├── 00460.graph_bfs_dfs.cmd
     └── ... (≥ 50 Tier B pairs — see Build.md Phase 1D for required coverage)
 ```
+
+> **Path discipline** — the orchestration agents must use the canonical absolute
+> path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` for every file operation, never a
+> relative `..\` form. Inside a git worktree, a relative `..\` resolves to the
+> wrong location (typically a sibling of the worktree, not a sibling of the
+> orchestrator repo). The Phase 5 delivery step (Build.md Phase 5 Step 6) is the
+> only place a robocopy from the merge worktree to the canonical path is
+> permitted — and even there, the source and destination are both spelled out
+> as full absolute paths, with explicit verification that the canonical path
+> ends up holding a buildable solution.
