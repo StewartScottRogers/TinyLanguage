@@ -1,0 +1,4 @@
+﻿function multiply(a : int, b : int) -> int
+  return a * b
+end
+print multiply(6, 7)

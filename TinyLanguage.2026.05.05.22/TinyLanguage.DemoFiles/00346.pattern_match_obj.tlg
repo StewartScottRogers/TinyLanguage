@@ -1,0 +1,15 @@
+﻿class Shape {
+  let kind := "unknown"
+  Constructor(k)
+    this.kind := k
+  end
+}
+let shapes := [new Shape("circle"), new Shape("square"), new Shape("triangle")]
+foreach s in shapes do
+  match s.kind {
+    "circle" => print "round shape"
+    "square" => print "four sides"
+    "triangle" => print "three sides"
+    _ => print "unknown"
+  }
+end

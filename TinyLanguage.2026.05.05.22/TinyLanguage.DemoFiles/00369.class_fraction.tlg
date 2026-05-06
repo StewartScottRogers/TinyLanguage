@@ -1,0 +1,32 @@
+﻿class Fraction {
+  let num := 0
+  let den := 1
+  Constructor(n, d)
+    this.num := n
+    this.den := d
+  end
+  function gcd(a, b)
+    while b != 0 do
+      let t := b
+      b := a % b
+      a := t
+    end
+    return a
+  end
+  function simplify()
+    let g := this.gcd(this.num, this.den)
+    return new Fraction(this.num // g, this.den // g)
+  end
+  function multiply(other)
+    return new Fraction(this.num * other.num, this.den * other.den)
+  end
+  function toString()
+    return str(this.num) & "/" & str(this.den)
+  end
+}
+let a := new Fraction(2, 4)
+let simple := a.simplify()
+print simple.toString()
+let b := new Fraction(3, 5)
+let prod := a.multiply(b)
+print prod.toString()

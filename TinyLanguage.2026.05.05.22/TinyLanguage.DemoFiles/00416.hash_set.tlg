@@ -1,0 +1,118 @@
+﻿# Data structure: hash set built on top of a hash map
+# Subroutines: Add, Remove, Contains, Size, ToSortedArray
+# Workload: add 12 items including 3 duplicates, remove 2, check contains, print sorted
+
+class HashSet {
+  let keys := []
+  let present := []
+  let capacity := 11
+  let size := 0
+
+  function hash(key)
+    let h := 0
+    foreach ch in key do
+      let code := 0
+      if ch == "a" then code := 1 end
+      if ch == "b" then code := 2 end
+      if ch == "c" then code := 3 end
+      if ch == "d" then code := 4 end
+      if ch == "e" then code := 5 end
+      if ch == "f" then code := 6 end
+      if ch == "g" then code := 7 end
+      if ch == "h" then code := 8 end
+      if ch == "i" then code := 9 end
+      h := (h * 17 + code) % this.capacity
+    end
+    return h
+  end
+
+  Constructor()
+    for i := 0 to 10 do
+      this.keys[i] := ""
+      this.present[i] := false
+    end
+  end
+
+  function Add(key)
+    let idx := this.hash(key)
+    let start := idx
+    while this.present[idx] and this.keys[idx] != key do
+      idx := (idx + 1) % this.capacity
+      if idx == start then throw "set full" end
+    end
+    if not this.present[idx] then
+      this.keys[idx] := key
+      this.present[idx] := true
+      this.size := this.size + 1
+    end
+  end
+
+  function Contains(key)
+    let idx := this.hash(key)
+    let start := idx
+    while this.present[idx] do
+      if this.keys[idx] == key then return true end
+      idx := (idx + 1) % this.capacity
+      if idx == start then return false end
+    end
+    return false
+  end
+
+  function Remove(key)
+    let idx := this.hash(key)
+    let start := idx
+    while this.present[idx] do
+      if this.keys[idx] == key then
+        this.present[idx] := false
+        this.size := this.size - 1
+        return
+      end
+      idx := (idx + 1) % this.capacity
+      if idx == start then return end
+    end
+  end
+
+  function Size()
+    return this.size
+  end
+
+  function ToSortedArray()
+    let arr := []
+    let ai := 0
+    for i := 0 to this.capacity - 1 do
+      if this.present[i] then
+        arr[ai] := this.keys[i]
+        ai := ai + 1
+      end
+    end
+    let n := ai
+    for i := 0 to n - 2 do
+      for j := 0 to n - 2 - i do
+        if arr[j] > arr[j + 1] then
+          let tmp := arr[j]
+          arr[j] := arr[j + 1]
+          arr[j + 1] := tmp
+        end
+      end
+    end
+    return arr
+  end
+}
+
+let hs := new HashSet()
+let words := ["cat", "dog", "bird", "cat", "fish", "dog", "frog", "cat", "bee", "ant"]
+foreach w in words do
+  hs.Add(w)
+end
+print "Size (should be 7): " & str(hs.Size())
+print "Contains cat: " & str(hs.Contains("cat"))
+print "Contains whale: " & str(hs.Contains("whale"))
+hs.Remove("cat")
+hs.Remove("fish")
+print "Size after 2 removes: " & str(hs.Size())
+print "Contains cat: " & str(hs.Contains("cat"))
+let sorted := hs.ToSortedArray()
+print "Sorted contents:"
+foreach item in sorted do
+  print item
+end

@@ -1,0 +1,77 @@
+﻿# Data structure: undirected graph for connected component finding
+# Subroutines: AddEdge, FindComponents, ComponentOf, DFS, ComponentCount
+# Workload: 10-vertex graph with 3 components, find component of each vertex
+
+class ComponentGraph {
+  let adj := []
+  let adjSize := []
+  let n := 0
+
+  Constructor(numVerts)
+    this.n := numVerts
+    for i := 0 to numVerts - 1 do
+      this.adj[i] := []
+      this.adjSize[i] := 0
+    end
+  end
+
+  function AddEdge(u, v)
+    this.adj[u][this.adjSize[u]] := v
+    this.adjSize[u] := this.adjSize[u] + 1
+    this.adj[v][this.adjSize[v]] := u
+    this.adjSize[v] := this.adjSize[v] + 1
+  end
+
+  function dfsLabel(v, comp, label, visited)
+    visited[v] := true
+    comp[v] := label
+    for i := 0 to this.adjSize[v] - 1 do
+      let u := this.adj[v][i]
+      if not visited[u] then
+        this.dfsLabel(u, comp, label, visited)
+      end
+    end
+  end
+
+  function FindComponents()
+    let visited := []
+    let comp := []
+    for i := 0 to this.n - 1 do
+      visited[i] := false
+      comp[i] := -1
+    end
+    let label := 0
+    for i := 0 to this.n - 1 do
+      if not visited[i] then
+        this.dfsLabel(i, comp, label, visited)
+        label := label + 1
+      end
+    end
+    return comp
+  end
+
+  function ComponentCount()
+    let comp := this.FindComponents()
+    let maxLabel := 0
+    for i := 0 to this.n - 1 do
+      if comp[i] > maxLabel then maxLabel := comp[i] end
+    end
+    return maxLabel + 1
+  end
+}
+
+let g := new ComponentGraph(10)
+g.AddEdge(0, 1)
+g.AddEdge(0, 2)
+g.AddEdge(1, 2)
+g.AddEdge(3, 4)
+g.AddEdge(5, 6)
+g.AddEdge(5, 7)
+g.AddEdge(6, 8)
+
+print "Component count: " & str(g.ComponentCount())
+let comp := g.FindComponents()
+print "Component labels:"
+for i := 0 to 9 do
+  print "  vertex " & str(i) & " -> component " & str(comp[i])
+end

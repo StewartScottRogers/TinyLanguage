@@ -1,0 +1,19 @@
+﻿class Comparable {
+  function compareTo(other)
+    return 0
+  end
+}
+class IntValue implements Comparable {
+  let value := 0
+  Constructor(v)
+    this.value := v
+  end
+  function compareTo(other)
+    return this.value - other.value
+  end
+}
+let a := new IntValue(5)
+let b := new IntValue(3)
+print a.compareTo(b)
+print b.compareTo(a)
+print a.compareTo(a)

@@ -1,0 +1,21 @@
+﻿class StringBuffer {
+  let data := ""
+  function append(s)
+    this.data := this.data & s
+  end
+  function prepend(s)
+    this.data := s & this.data
+  end
+  function toString()
+    return this.data
+  end
+  function length()
+    return len(this.data)
+  end
+}
+let buf := new StringBuffer()
+buf.append("World")
+buf.prepend("Hello, ")
+buf.append("!")
+print buf.toString()
+print buf.length()

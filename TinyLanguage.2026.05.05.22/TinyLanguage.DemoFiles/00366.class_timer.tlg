@@ -1,0 +1,24 @@
+﻿class Timer {
+  let startVal := 0
+  let elapsed := 0
+  let running := false
+  function start(t)
+    this.startVal := t
+    this.running := true
+  end
+  function stop(t)
+    if this.running then
+      this.elapsed := this.elapsed + (t - this.startVal)
+      this.running := false
+    end
+  end
+  function getElapsed()
+    return this.elapsed
+  end
+}
+let timer := new Timer()
+timer.start(0)
+timer.stop(5)
+timer.start(10)
+timer.stop(15)
+print timer.getElapsed()

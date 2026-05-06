@@ -1,0 +1,12 @@
+﻿function copyArr(arr)
+  let result := []
+  for i := 0 to len(arr) - 1 do
+    result[i] := arr[i]
+  end
+  return result
+end
+let orig := [1, 2, 3, 4, 5]
+let copy := copyArr(orig)
+copy[0] := 99
+print orig[0]
+print copy[0]

@@ -1,0 +1,12 @@
+﻿let i : int := 1
+let f : float := 1.0
+let s : string := "one"
+let b : bool := true
+let a : array := [1, 2, 3]
+let o : object := null
+print i
+print f
+print s
+print b
+print len(a)
+print o

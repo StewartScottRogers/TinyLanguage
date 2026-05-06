@@ -1,0 +1,60 @@
+﻿# Data structure: 2D DP table for 0/1 Knapsack
+# Subroutines: Knapsack, MaxValue, PickedItems, BuildDP
+# Workload: 8 items with weights and values, capacity 15, find max value and selected items
+
+function BuildDP(weights, values, capacity)
+  let n := len(weights)
+  let dp := []
+  for i := 0 to n do
+    dp[i] := []
+    for w := 0 to capacity do
+      dp[i][w] := 0
+    end
+  end
+  for i := 1 to n do
+    for w := 0 to capacity do
+      dp[i][w] := dp[i - 1][w]
+      if weights[i - 1] <= w then
+        let withItem := dp[i - 1][w - weights[i - 1]] + values[i - 1]
+        if withItem > dp[i][w] then
+          dp[i][w] := withItem
+        end
+      end
+    end
+  end
+  return dp
+end
+
+function MaxValue(weights, values, capacity)
+  let dp := BuildDP(weights, values, capacity)
+  return dp[len(weights)][capacity]
+end
+
+function PickedItems(weights, values, capacity)
+  let dp := BuildDP(weights, values, capacity)
+  let n := len(weights)
+  let selected := []
+  let si := 0
+  let w := capacity
+  for i := n to 1 step -1 do
+    if dp[i][w] != dp[i - 1][w] then
+      selected[si] := i - 1
+      si := si + 1
+      w := w - weights[i - 1]
+    end
+  end
+  return selected
+end
+
+let weights := [2, 3, 4, 5, 1, 6, 3, 2]
+let values  := [3, 4, 5, 6, 2, 7, 4, 3]
+let capacity := 15
+
+let maxVal := MaxValue(weights, values, capacity)
+print "Max value: " & str(maxVal)
+
+let picked := PickedItems(weights, values, capacity)
+print "Selected item indices:"
+foreach idx in picked do
+  print "  item " & str(idx) & " (w=" & str(weights[idx]) & ", v=" & str(values[idx]) & ")"
+end

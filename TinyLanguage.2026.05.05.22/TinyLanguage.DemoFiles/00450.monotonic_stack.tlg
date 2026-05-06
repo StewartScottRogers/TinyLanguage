@@ -1,0 +1,73 @@
+﻿# Data structure: monotonic decreasing stack for Next Greater Element
+# Subroutines: NextGreater, PrevSmaller, LargestRectangle
+# Workload: compute NGE for 8-element array, prev-smaller for same, largest rectangle
+
+class MonoStack {
+  let data := []
+  let top := -1
+
+  function Push(x)
+    this.top := this.top + 1
+    this.data[this.top] := x
+  end
+
+  function Pop()
+    if this.top < 0 then throw "empty" end
+    let v := this.data[this.top]
+    this.top := this.top - 1
+    return v
+  end
+
+  function Peek()
+    if this.top < 0 then return -1 end
+    return this.data[this.top]
+  end
+
+  function IsEmpty()
+    return this.top < 0
+  end
+}
+
+function NextGreater(arr)
+  let n := len(arr)
+  let result := []
+  for i := 0 to n - 1 do
+    result[i] := -1
+  end
+  let stk := new MonoStack()
+  for i := 0 to n - 1 do
+    while not stk.IsEmpty() and arr[stk.Peek()] < arr[i] do
+      let idx := stk.Pop()
+      result[idx] := arr[i]
+    end
+    stk.Push(i)
+  end
+  return result
+end
+
+function LargestRectangle(heights)
+  let n := len(heights)
+  let stk := new MonoStack()
+  let maxArea := 0
+  for i := 0 to n do
+    let h := if i == n then 0 else heights[i]
+    while not stk.IsEmpty() and heights[stk.Peek()] > h do
+      let height := heights[stk.Pop()]
+      let width := if stk.IsEmpty() then i else i - stk.Peek() - 1
+      let area := height * width
+      if area > maxArea then maxArea := area end
+    end
+    stk.Push(i)
+  end
+  return maxArea
+end
+
+let arr := [4, 5, 2, 25, 7, 8, 6, 3]
+let nge := NextGreater(arr)
+print "Next Greater Elements:"
+for i := 0 to 7 do
+  print str(arr[i]) & " -> " & str(nge[i])
+end
+
+let heights := [2, 1, 5, 6, 2, 3]
+print "Largest Rectangle in histogram: " & str(LargestRectangle(heights))

@@ -1,0 +1,10 @@
+﻿let operations := []
+operations[0] := function(x) x + 10
+operations[1] := function(x) x * 2
+operations[2] := function(x) x - 5
+let val := 100
+for i := 0 to 2 do
+  let op := operations[i]
+  val := op(val)
+  print val
+end

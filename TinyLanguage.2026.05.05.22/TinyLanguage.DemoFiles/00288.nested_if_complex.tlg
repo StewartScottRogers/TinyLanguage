@@ -1,0 +1,32 @@
+﻿function quadrant(x, y)
+  if x > 0 then
+    if y > 0 then
+      return "Q1"
+    else
+      if y < 0 then
+        return "Q4"
+      else
+        return "positive X axis"
+      end
+    end
+  else
+    if x < 0 then
+      if y > 0 then
+        return "Q2"
+      else
+        if y < 0 then
+          return "Q3"
+        else
+          return "negative X axis"
+        end
+      end
+    else
+      return "origin"
+    end
+  end
+end
+print quadrant(1, 1)
+print quadrant(-1, 1)
+print quadrant(-1, -1)
+print quadrant(1, -1)
+print quadrant(0, 0)

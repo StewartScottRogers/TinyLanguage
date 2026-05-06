@@ -1,0 +1,11 @@
+﻿function abs(x)
+  return x >= 0 ? x : -x
+end
+function max2(a, b)
+  return a >= b ? a : b
+end
+function min2(a, b)
+  return a <= b ? a : b
+end
+print max2(abs(-5), abs(3))
+print min2(abs(-7), abs(2))

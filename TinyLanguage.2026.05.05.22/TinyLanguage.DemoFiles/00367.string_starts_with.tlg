@@ -1,0 +1,11 @@
+﻿function startsWith(s, prefix)
+  let plen := len(prefix)
+  if len(s) < plen then return false end
+  for i := 0 to plen - 1 do
+    if s[i] != prefix[i] then return false end
+  end
+  return true
+end
+print startsWith("hello world", "hello")
+print startsWith("hello world", "world")
+print startsWith("hello", "hello world")

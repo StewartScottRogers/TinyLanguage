@@ -1,0 +1,89 @@
+﻿# Data structure: undirected graph as adjacency list
+# Subroutines: AddVertex, AddEdge, Neighbors, HasEdge, VertexCount, EdgeCount
+# Workload: build 6-vertex graph, add 8 edges, verify neighbors and edge existence
+
+class Graph {
+  let adj := []
+  let adjSize := []
+  let vertexCount := 0
+  let edgeCount := 0
+
+  function AddVertex()
+    let id := this.vertexCount
+    this.adj[id] := []
+    this.adjSize[id] := 0
+    this.vertexCount := this.vertexCount + 1
+    return id
+  end
+
+  function AddEdge(u, v)
+    this.adj[u][this.adjSize[u]] := v
+    this.adjSize[u] := this.adjSize[u] + 1
+    this.adj[v][this.adjSize[v]] := u
+    this.adjSize[v] := this.adjSize[v] + 1
+    this.edgeCount := this.edgeCount + 1
+  end
+
+  function Neighbors(v)
+    let result := []
+    let sz := this.adjSize[v]
+    for i := 0 to sz - 1 do
+      result[i] := this.adj[v][i]
+    end
+    let n := sz
+    for i := 0 to n - 2 do
+      for j := 0 to n - 2 - i do
+        if result[j] > result[j + 1] then
+          let tmp := result[j]
+          result[j] := result[j + 1]
+          result[j + 1] := tmp
+        end
+      end
+    end
+    return result
+  end
+
+  function HasEdge(u, v)
+    let sz := this.adjSize[u]
+    for i := 0 to sz - 1 do
+      if this.adj[u][i] == v then return true end
+    end
+    return false
+  end
+
+  function VertexCount()
+    return this.vertexCount
+  end
+
+  function EdgeCount()
+    return this.edgeCount
+  end
+}
+
+let g := new Graph()
+g.AddVertex()
+g.AddVertex()
+g.AddVertex()
+g.AddVertex()
+g.AddVertex()
+g.AddVertex()
+
+g.AddEdge(0, 1)
+g.AddEdge(0, 2)
+g.AddEdge(1, 3)
+g.AddEdge(1, 4)
+g.AddEdge(2, 4)
+g.AddEdge(3, 5)
+g.AddEdge(4, 5)
+g.AddEdge(2, 3)
+
+print "Vertices: " & str(g.VertexCount())
+print "Edges: " & str(g.EdgeCount())
+print "Neighbors of 1:"
+let n1 := g.Neighbors(1)
+foreach v in n1 do print v end
+print "Neighbors of 4:"
+let n4 := g.Neighbors(4)
+foreach v in n4 do print v end
+print "HasEdge(0,1): " & str(g.HasEdge(0, 1))
+print "HasEdge(0,5): " & str(g.HasEdge(0, 5))

@@ -1,0 +1,7 @@
+﻿try
+  let x := 5
+  let result := x % 2.0
+  print result
+catch e
+  print "type error: " & e
+end

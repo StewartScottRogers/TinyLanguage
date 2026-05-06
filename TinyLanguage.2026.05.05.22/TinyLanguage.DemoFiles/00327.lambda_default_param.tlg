@@ -1,0 +1,3 @@
+﻿let greet := function(name := "World") "Hello, " & name
+print greet()
+print greet("Alice")

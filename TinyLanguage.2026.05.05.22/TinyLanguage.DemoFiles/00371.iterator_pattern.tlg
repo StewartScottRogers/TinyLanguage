@@ -1,0 +1,22 @@
+﻿class Range {
+  let current := 0
+  let stop := 0
+  let step := 1
+  Constructor(start, s, step)
+    this.current := start
+    this.stop := s
+    this.step := step
+  end
+  function hasNext()
+    return this.current < this.stop
+  end
+  function next()
+    let v := this.current
+    this.current := this.current + this.step
+    return v
+  end
+}
+let r := new Range(0, 10, 2)
+while r.hasNext() do
+  print r.next()
+end

@@ -1,0 +1,11 @@
+﻿for i := 1 to 3 do
+  let j := 1
+  while j <= 3 do
+    if i == j then
+      print "diagonal"
+    else
+      print i + j
+    end
+    j := j + 1
+  end
+end

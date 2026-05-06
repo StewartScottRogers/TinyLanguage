@@ -1,0 +1,12 @@
+﻿function reduce(arr, f, init)
+  let acc := init
+  foreach item in arr do
+    acc := f(acc, item)
+  end
+  return acc
+end
+let nums := [1, 2, 3, 4, 5]
+let sum := reduce(nums, function(a, b) a + b, 0)
+let product := reduce(nums, function(a, b) a * b, 1)
+print sum
+print product

@@ -1,0 +1,6 @@
+﻿try
+  let x := 5
+  print x
+finally
+  print "finally"
+end

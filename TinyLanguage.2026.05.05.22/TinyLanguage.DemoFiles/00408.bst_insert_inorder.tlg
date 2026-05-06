@@ -1,0 +1,87 @@
+﻿# Data structure: binary search tree
+# Subroutines: Insert, Find, InOrder, Min, Max
+# Workload: insert 10 values, find existing/missing, traverse in-order (should be sorted)
+
+class BSTNode {
+  let val := 0
+  let left := null
+  let right := null
+  Constructor(v)
+    this.val := v
+  end
+}
+
+class BST {
+  let root := null
+
+  function Insert(v)
+    this.root := this.insertNode(this.root, v)
+  end
+
+  function insertNode(node, v)
+    if node == null then
+      return new BSTNode(v)
+    end
+    if v < node.val then
+      node.left := this.insertNode(node.left, v)
+    else
+      if v > node.val then
+        node.right := this.insertNode(node.right, v)
+      end
+    end
+    return node
+  end
+
+  function Find(v)
+    return this.findNode(this.root, v)
+  end
+
+  function findNode(node, v)
+    if node == null then return false end
+    if v == node.val then return true end
+    if v < node.val then return this.findNode(node.left, v) end
+    return this.findNode(node.right, v)
+  end
+
+  function InOrder()
+    this.inOrderNode(this.root)
+  end
+
+  function inOrderNode(node)
+    if node == null then return end
+    this.inOrderNode(node.left)
+    print node.val
+    this.inOrderNode(node.right)
+  end
+
+  function Min()
+    if this.root == null then throw "empty tree" end
+    let cur := this.root
+    while cur.left != null do
+      cur := cur.left
+    end
+    return cur.val
+  end
+
+  function Max()
+    if this.root == null then throw "empty tree" end
+    let cur := this.root
+    while cur.right != null do
+      cur := cur.right
+    end
+    return cur.val
+  end
+}
+
+let bst := new BST()
+let values := [5, 3, 7, 1, 4, 6, 8, 2, 9, 0]
+foreach v in values do
+  bst.Insert(v)
+end
+
+print "InOrder traversal (sorted 0-9):"
+bst.InOrder()
+print "Find 4: " & str(bst.Find(4))
+print "Find 10: " & str(bst.Find(10))
+print "Min: " & str(bst.Min())
+print "Max: " & str(bst.Max())

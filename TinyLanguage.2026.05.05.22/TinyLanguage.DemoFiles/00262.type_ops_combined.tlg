@@ -1,0 +1,21 @@
+﻿let vals := [1, 2.5, "hello", true, null]
+for i := 0 to 4 do
+  let v := vals[i]
+  if v is int then
+    print "int: " & str(v)
+  else
+    if v is float then
+      print "float: " & str(v)
+    else
+      if v is string then
+        print "string: " & str(v)
+      else
+        if v is bool then
+          print "bool: " & str(v)
+        else
+          print "null"
+        end
+      end
+    end
+  end
+end

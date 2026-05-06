@@ -1,0 +1,4 @@
+﻿let x := null
+if x == null then
+  print "x is null"
+end

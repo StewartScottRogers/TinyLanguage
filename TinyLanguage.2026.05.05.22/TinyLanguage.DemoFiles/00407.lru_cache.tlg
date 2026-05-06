@@ -1,0 +1,123 @@
+﻿# Data structure: LRU cache (doubly-linked list + array-based lookup index)
+# Subroutines: Get, Put, Evict, MoveToFront, Size
+# Workload: put 6 keys into capacity-4 cache, trigger 2 evictions, get existing and missing keys
+
+class CacheNode {
+  let key := ""
+  let value := 0
+  let prev := null
+  let next := null
+  Constructor(k, v)
+    this.key := k
+    this.value := v
+  end
+}
+
+class LRUCache {
+  let capacity := 0
+  let size := 0
+  let head := null
+  let tail := null
+  let keys := []
+  let nodes := []
+  let keyCount := 0
+
+  Constructor(cap)
+    this.capacity := cap
+  end
+
+  function findNode(key)
+    for i := 0 to this.keyCount - 1 do
+      if this.keys[i] == key then return this.nodes[i] end
+    end
+    return null
+  end
+
+  function removeNode(node)
+    if node.prev != null then
+      node.prev.next := node.next
+    else
+      this.head := node.next
+    end
+    if node.next != null then
+      node.next.prev := node.prev
+    else
+      this.tail := node.prev
+    end
+    node.prev := null
+    node.next := null
+  end
+
+  function addToFront(node)
+    node.next := this.head
+    node.prev := null
+    if this.head != null then
+      this.head.prev := node
+    end
+    this.head := node
+    if this.tail == null then
+      this.tail := node
+    end
+  end
+
+  function Get(key)
+    let node := this.findNode(key)
+    if node == null then return -1 end
+    this.removeNode(node)
+    this.addToFront(node)
+    return node.value
+  end
+
+  function Put(key, value)
+    let existing := this.findNode(key)
+    if existing != null then
+      existing.value := value
+      this.removeNode(existing)
+      this.addToFront(existing)
+      return
+    end
+    if this.size >= this.capacity then
+      let lru := this.tail
+      this.removeNode(lru)
+      let newKeys := []
+      let newNodes := []
+      let ni := 0
+      for i := 0 to this.keyCount - 1 do
+        if this.keys[i] != lru.key then
+          newKeys[ni] := this.keys[i]
+          newNodes[ni] := this.nodes[i]
+          ni := ni + 1
+        end
+      end
+      this.keys := newKeys
+      this.nodes := newNodes
+      this.keyCount := ni
+      this.size := this.size - 1
+    end
+    let node := new CacheNode(key, value)
+    this.addToFront(node)
+    this.keys[this.keyCount] := key
+    this.nodes[this.keyCount] := node
+    this.keyCount := this.keyCount + 1
+    this.size := this.size + 1
+  end
+
+  function Size()
+    return this.size
+  end
+}
+
+let cache := new LRUCache(4)
+cache.Put("a", 1)
+cache.Put("b", 2)
+cache.Put("c", 3)
+cache.Put("d", 4)
+print "Size: " & str(cache.Size())
+print "Get a: " & str(cache.Get("a"))
+cache.Put("e", 5)
+print "Get b (evicted?): " & str(cache.Get("b"))
+cache.Put("f", 6)
+print "Get c (evicted?): " & str(cache.Get("c"))
+print "Get e: " & str(cache.Get("e"))
+print "Get f: " & str(cache.Get("f"))
+print "Final size: " & str(cache.Size())

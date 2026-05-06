@@ -1,0 +1,13 @@
+﻿function classify(n)
+  match n {
+    x when x < -100 => return "very negative"
+    x when x < 0 => return "negative"
+    0 => return "zero"
+    x when x <= 100 => return "positive"
+    _ => return "very positive"
+  }
+end
+let tests := [-200, -50, 0, 75, 200]
+foreach t in tests do
+  print str(t) & ": " & classify(t)
+end

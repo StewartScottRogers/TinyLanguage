@@ -1,0 +1,96 @@
+﻿# Data structure: binary search tree with deletion
+# Subroutines: Insert, Delete, Find, InOrder, minNode
+# Workload: insert 9 values, delete leaf (case 1), delete node with one child (case 2), delete node with two children (case 3)
+
+class BSTNode2 {
+  let val := 0
+  let left := null
+  let right := null
+  Constructor(v)
+    this.val := v
+  end
+}
+
+class BSTDelete {
+  let root := null
+
+  function Insert(v)
+    this.root := this.ins(this.root, v)
+  end
+
+  function ins(node, v)
+    if node == null then return new BSTNode2(v) end
+    if v < node.val then node.left := this.ins(node.left, v)
+    else if v > node.val then node.right := this.ins(node.right, v) end
+    return node
+  end
+
+  function Delete(v)
+    this.root := this.del(this.root, v)
+  end
+
+  function minNode(node)
+    while node.left != null do node := node.left end
+    return node
+  end
+
+  function del(node, v)
+    if node == null then return null end
+    if v < node.val then
+      node.left := this.del(node.left, v)
+    else if v > node.val then
+      node.right := this.del(node.right, v)
+    else
+      if node.left == null then return node.right end
+      if node.right == null then return node.left end
+      let successor := this.minNode(node.right)
+      node.val := successor.val
+      node.right := this.del(node.right, successor.val)
+    end
+    return node
+  end
+
+  function Find(v)
+    let cur := this.root
+    while cur != null do
+      if v == cur.val then return true end
+      if v < cur.val then cur := cur.left
+      else cur := cur.right end
+    end
+    return false
+  end
+
+  function InOrder()
+    this.io(this.root)
+  end
+
+  function io(node)
+    if node == null then return end
+    this.io(node.left)
+    print node.val
+    this.io(node.right)
+  end
+}
+
+let bst := new BSTDelete()
+let vals := [5, 3, 8, 1, 4, 7, 9, 2, 6]
+foreach v in vals do
+  bst.Insert(v)
+end
+print "Initial in-order:"
+bst.InOrder()
+
+bst.Delete(2)
+print "After deleting 2 (leaf):"
+bst.InOrder()
+
+bst.Delete(1)
+print "After deleting 1 (one child):"
+bst.InOrder()
+
+bst.Delete(5)
+print "After deleting 5 (two children):"
+bst.InOrder()
+
+print "Find 5: " & str(bst.Find(5))
+print "Find 6: " & str(bst.Find(6))

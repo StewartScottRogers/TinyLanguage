@@ -1,0 +1,8 @@
+﻿function sumTo(n)
+  if n <= 0 then
+    return 0
+  end
+  return n + sumTo(n - 1)
+end
+print sumTo(100)
+print sumTo(50)

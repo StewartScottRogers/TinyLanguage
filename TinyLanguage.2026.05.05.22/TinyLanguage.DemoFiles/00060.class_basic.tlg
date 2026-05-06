@@ -1,0 +1,12 @@
+﻿class Animal {
+  let name := "unknown"
+  Constructor(n)
+    this.name := n
+  end
+  function speak()
+    print "..."
+  end
+}
+let a := new Animal("Rex")
+print a.name
+a.speak()

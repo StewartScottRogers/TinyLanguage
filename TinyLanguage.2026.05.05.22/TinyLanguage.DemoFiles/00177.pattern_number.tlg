@@ -1,0 +1,9 @@
+﻿function fizzOdd(n)
+  match n % 3 {
+    0 => return "fizz"
+    _ => return str(n)
+  }
+end
+print fizzOdd(3)
+print fizzOdd(4)
+print fizzOdd(9)

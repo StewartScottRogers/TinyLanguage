@@ -1,0 +1,6 @@
+﻿let items := ["a", "b", "c", "d"]
+let idx := 0
+foreach item in items do
+  print str(idx) & ": " & item
+  idx := idx + 1
+end

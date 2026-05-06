@@ -1,0 +1,91 @@
+﻿# Data structure: directed graph for DFS
+# Subroutines: AddEdge, DFSPreOrder, DFSPostOrder, HasPath
+# Workload: 6-node directed graph, DFS pre+post order from vertex 0, path queries
+
+class DFSGraph {
+  let adj := []
+  let adjSize := []
+  let n := 0
+
+  Constructor(numVerts)
+    this.n := numVerts
+    for i := 0 to numVerts - 1 do
+      this.adj[i] := []
+      this.adjSize[i] := 0
+    end
+  end
+
+  function AddEdge(u, v)
+    this.adj[u][this.adjSize[u]] := v
+    this.adjSize[u] := this.adjSize[u] + 1
+  end
+
+  function dfsHelper(v, visited, pre, post, preIdx, postIdx)
+    visited[v] := true
+    pre[preIdx[0]] := v
+    preIdx[0] := preIdx[0] + 1
+    for i := 0 to this.adjSize[v] - 1 do
+      let u := this.adj[v][i]
+      if not visited[u] then
+        this.dfsHelper(u, visited, pre, post, preIdx, postIdx)
+      end
+    end
+    post[postIdx[0]] := v
+    postIdx[0] := postIdx[0] + 1
+  end
+
+  function DFSPreOrder(start)
+    let visited := []
+    let pre := []
+    let post := []
+    for i := 0 to this.n - 1 do
+      visited[i] := false
+    end
+    let preIdx := [0]
+    let postIdx := [0]
+    this.dfsHelper(start, visited, pre, post, preIdx, postIdx)
+    let result := []
+    for i := 0 to preIdx[0] - 1 do
+      result[i] := pre[i]
+    end
+    return result
+  end
+
+  function HasPath(src, dst)
+    let visited := []
+    for i := 0 to this.n - 1 do
+      visited[i] := false
+    end
+    return this.dfsFindPath(src, dst, visited)
+  end
+
+  function dfsFindPath(v, dst, visited)
+    if v == dst then return true end
+    visited[v] := true
+    for i := 0 to this.adjSize[v] - 1 do
+      let u := this.adj[v][i]
+      if not visited[u] then
+        if this.dfsFindPath(u, dst, visited) then return true end
+      end
+    end
+    return false
+  end
+}
+
+let g := new DFSGraph(6)
+g.AddEdge(0, 1)
+g.AddEdge(0, 2)
+g.AddEdge(1, 3)
+g.AddEdge(1, 4)
+g.AddEdge(2, 4)
+g.AddEdge(4, 5)
+
+print "DFS Pre-Order from 0:"
+let pre := g.DFSPreOrder(0)
+foreach v in pre do
+  print v
+end
+
+print "HasPath(0, 5): " & str(g.HasPath(0, 5))
+print "HasPath(3, 5): " & str(g.HasPath(3, 5))
+print "HasPath(5, 0): " & str(g.HasPath(5, 0))

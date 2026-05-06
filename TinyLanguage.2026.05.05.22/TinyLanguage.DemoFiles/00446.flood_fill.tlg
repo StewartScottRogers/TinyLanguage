@@ -1,0 +1,73 @@
+﻿# Data structure: 2D grid for flood fill (BFS-based)
+# Subroutines: FloodFill, BFSFill, CountRegion, PrintGrid
+# Workload: fill 3 regions in 8x8 grid, count cells in each, verify correct fills
+
+function gridGet(grid, rows, cols, r, c)
+  return grid[r * cols + c]
+end
+
+function gridSet(grid, rows, cols, r, c, val)
+  grid[r * cols + c] := val
+end
+
+function FloodFill(grid, rows, cols, startR, startC, targetColor, fillColor)
+  if targetColor == fillColor then return end
+  if startR < 0 or startR >= rows or startC < 0 or startC >= cols then return end
+  if gridGet(grid, rows, cols, startR, startC) != targetColor then return end
+  let queue := []
+  let qHead := 0
+  let qTail := 0
+  queue[qTail] := startR * cols + startC
+  qTail := qTail + 1
+  gridSet(grid, rows, cols, startR, startC, fillColor)
+  let dr := [-1, 1, 0, 0]
+  let dc := [0, 0, -1, 1]
+  while qHead < qTail do
+    let cell := queue[qHead]
+    qHead := qHead + 1
+    let r := cell // cols
+    let c := cell % cols
+    for i := 0 to 3 do
+      let nr := r + dr[i]
+      let nc := c + dc[i]
+      if nr >= 0 and nr < rows and nc >= 0 and nc < cols then
+        if gridGet(grid, rows, cols, nr, nc) == targetColor then
+          gridSet(grid, rows, cols, nr, nc, fillColor)
+          queue[qTail] := nr * cols + nc
+          qTail := qTail + 1
+        end
+      end
+    end
+  end
+end
+
+function CountCells(grid, color)
+  let count := 0
+  foreach cell in grid do
+    if cell == color then count := count + 1 end
+  end
+  return count
+end
+
+let rows := 6
+let cols := 6
+let grid := []
+let initial := [
+  0,0,0,0,0,0,
+  0,1,1,0,0,0,
+  0,1,0,0,1,0,
+  0,1,1,0,1,0,
+  0,0,0,0,1,0,
+  0,0,0,0,0,0
+]
+for i := 0 to 35 do
+  grid[i] := initial[i]
+end
+
+print "Cells with value 1 before fill: " & str(CountCells(grid, 1))
+FloodFill(grid, rows, cols, 1, 1, 1, 2)
+print "After filling region at (1,1) with 2:"
+print "Cells with value 2: " & str(CountCells(grid, 2))
+FloodFill(grid, rows, cols, 2, 4, 1, 3)
+print "After filling region at (2,4) with 3:"
+print "Cells with value 3: " & str(CountCells(grid, 3))

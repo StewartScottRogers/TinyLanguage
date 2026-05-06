@@ -1,0 +1,2 @@
+﻿let double := function(x : int) -> int x * 2
+print double(5)

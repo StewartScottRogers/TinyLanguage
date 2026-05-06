@@ -1,0 +1,5 @@
+﻿let n := 7
+let f := (float) n
+let back := (int) f
+print f
+print back

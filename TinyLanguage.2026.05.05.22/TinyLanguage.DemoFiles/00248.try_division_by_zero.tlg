@@ -1,0 +1,6 @@
+﻿try
+  let result := 10 / 0
+  print result
+catch e
+  print "Caught: " & e
+end

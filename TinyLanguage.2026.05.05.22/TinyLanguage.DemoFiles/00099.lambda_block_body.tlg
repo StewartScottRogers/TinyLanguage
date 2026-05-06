@@ -1,0 +1,5 @@
+﻿let greet := function(name)
+  let msg := "Hello, " & name
+  print msg
+end
+greet("World")

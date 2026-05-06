@@ -1,0 +1,6 @@
+﻿function compute(x)
+  return x * x + 1
+end
+@log
+let result := compute(7)
+print result
