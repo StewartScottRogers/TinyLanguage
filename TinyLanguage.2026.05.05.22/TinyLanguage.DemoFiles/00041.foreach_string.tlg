@@ -1,4 +1,0 @@
-﻿let s := "hello"
-foreach ch in s do
-  print ch
-end

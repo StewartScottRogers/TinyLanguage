@@ -1,6 +1,0 @@
-﻿@deprecated
-@log(level = "warn")
-function oldFunction()
-  return "legacy"
-end
-print oldFunction()

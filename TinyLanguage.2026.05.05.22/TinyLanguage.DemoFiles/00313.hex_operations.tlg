@@ -1,7 +1,0 @@
-﻿let h1 := 0xFF
-let h2 := 0x0F
-print h1
-print h2
-print h1 + h2
-print h1 & h2
-print h1 - h2

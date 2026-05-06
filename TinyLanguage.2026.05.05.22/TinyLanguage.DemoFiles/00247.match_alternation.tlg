@@ -1,7 +1,0 @@
-﻿let x := 2
-match x {
-  1 | 2 | 3 => print "low"
-  4 | 5 | 6 => print "mid"
-  7 | 8 | 9 => print "high"
-  _ => print "out of range"
-}

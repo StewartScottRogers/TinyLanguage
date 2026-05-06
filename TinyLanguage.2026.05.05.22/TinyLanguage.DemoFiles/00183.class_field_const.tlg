@@ -1,7 +1,0 @@
-﻿class Config {
-  const VERSION := "1.0.0"
-  const MAX_SIZE := 100
-}
-let cfg := new Config()
-print cfg.VERSION
-print cfg.MAX_SIZE

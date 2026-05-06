@@ -1,8 +1,0 @@
-﻿module StringUtils {
-  function upper(s)
-    return s & " (UPPER)"
-  end
-  export upper
-}
-import StringUtils as SU
-print StringUtils.upper("hello")

@@ -1,8 +1,0 @@
-﻿module MathMod {
-  function add(a, b)
-    return a + b
-  end
-  export add
-}
-let result := MathMod.add(3, 4)
-print result

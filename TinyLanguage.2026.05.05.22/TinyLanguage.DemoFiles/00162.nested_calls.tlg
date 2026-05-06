@@ -1,7 +1,0 @@
-﻿function square(x)
-  return x * x
-end
-function sumSquares(a, b)
-  return square(a) + square(b)
-end
-print sumSquares(3, 4)

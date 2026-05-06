@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <RootNamespace>TinyLanguage.Lexer</RootNamespace>
-    <AssemblyName>TinyLanguage.Lexer</AssemblyName>
-  </PropertyGroup>
-</Project>

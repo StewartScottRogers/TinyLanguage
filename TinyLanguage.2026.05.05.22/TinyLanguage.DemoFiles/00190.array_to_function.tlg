@@ -1,9 +1,0 @@
-﻿function sumArr(arr)
-  let total := 0
-  foreach item in arr do
-    total := total + item
-  end
-  return total
-end
-let nums := [1, 2, 3, 4, 5]
-print sumArr(nums)

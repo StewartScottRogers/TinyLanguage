@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="TinyLanguage\TinyLanguage.csproj" />
-  <Project Path="TinyLanguage.Lexer\TinyLanguage.Lexer.csproj" />
-  <Project Path="TinyLanguage.Interpreter\TinyLanguage.Interpreter.csproj" />
-  <Project Path="TinyLanguage.UnitTests\TinyLanguage.UnitTests.csproj" />
-  <Project Path="TinyLanguage.IntegrationTests\TinyLanguage.IntegrationTests.csproj" />
-  <Project Path="TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj" />
-</Solution>

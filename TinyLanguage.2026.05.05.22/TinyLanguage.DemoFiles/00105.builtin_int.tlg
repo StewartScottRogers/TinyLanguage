@@ -1,3 +1,0 @@
-﻿let f := 3.9
-let n := int(f)
-print n

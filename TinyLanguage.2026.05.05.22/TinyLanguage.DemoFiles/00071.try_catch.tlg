@@ -1,5 +1,0 @@
-﻿try
-  throw "something went wrong"
-catch e
-  print "caught: " & e
-end

@@ -1,6 +1,0 @@
-﻿let x := 2
-match x {
-  1 | 2 | 3 => print "small"
-  4 | 5 | 6 => print "medium"
-  _ => print "large"
-}

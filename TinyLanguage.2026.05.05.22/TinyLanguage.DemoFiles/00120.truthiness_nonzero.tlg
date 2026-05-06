@@ -1,5 +1,0 @@
-﻿if 42 then
-  print "truthy"
-else
-  print "falsy"
-end

@@ -1,9 +1,0 @@
-function hanoi(n, source, target, via)
-  if n == 0 then
-    return
-  end
-  hanoi(n - 1, source, via, target)
-  print "Move disk " & str(n) & " from " & source & " to " & target
-  hanoi(n - 1, via, target, source)
-end
-hanoi(3, "A", "C", "B")

@@ -1,4 +1,0 @@
-﻿let words := ["apple", "banana", "cherry"]
-foreach word in words do
-  print word
-end

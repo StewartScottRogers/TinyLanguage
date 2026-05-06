@@ -1,3 +1,0 @@
-﻿let n := 5
-let f := (float) n
-print f

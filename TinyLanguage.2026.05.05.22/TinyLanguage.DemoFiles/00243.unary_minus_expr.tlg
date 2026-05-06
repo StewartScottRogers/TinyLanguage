@@ -1,6 +1,0 @@
-﻿let x := 5
-let negX := -x
-let negLit := -42
-print negX
-print negLit
-print -(-x)

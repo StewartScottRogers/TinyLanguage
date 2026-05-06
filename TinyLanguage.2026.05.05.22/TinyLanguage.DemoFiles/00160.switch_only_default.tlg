@@ -1,4 +1,0 @@
-﻿let x := 42
-switch x {
-  default: print "default case"
-}

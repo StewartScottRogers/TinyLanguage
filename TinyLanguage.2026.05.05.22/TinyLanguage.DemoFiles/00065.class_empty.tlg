@@ -1,3 +1,0 @@
-﻿class Empty {
-}
-print "class with empty body parsed ok"

@@ -1,5 +1,0 @@
-﻿let b := true
-match b {
-  true => print "yes"
-  false => print "no"
-}

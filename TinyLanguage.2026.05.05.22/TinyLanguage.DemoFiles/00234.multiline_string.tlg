@@ -1,2 +1,0 @@
-﻿let s := "First line\nSecond line\nThird line"
-print s

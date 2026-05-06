@@ -1,8 +1,0 @@
-﻿let i := 0
-while i < 10 do
-  i := i + 1
-  if i % 2 == 0 then
-    continue
-  end
-  print i
-end

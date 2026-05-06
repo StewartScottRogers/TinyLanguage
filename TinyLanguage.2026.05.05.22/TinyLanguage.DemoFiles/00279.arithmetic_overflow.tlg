@@ -1,4 +1,0 @@
-﻿let big := 9223372036854775807
-print big
-let maxMinus1 := 9223372036854775807 - 1
-print maxMinus1

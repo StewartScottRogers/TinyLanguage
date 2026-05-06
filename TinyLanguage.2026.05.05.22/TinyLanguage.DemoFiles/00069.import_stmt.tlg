@@ -1,8 +1,0 @@
-﻿module Calc {
-  function square(x)
-    return x * x
-  end
-  export square
-}
-import Calc
-print Calc.square(7)

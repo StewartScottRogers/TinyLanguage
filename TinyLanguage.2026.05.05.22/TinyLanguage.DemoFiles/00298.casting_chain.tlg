@@ -1,8 +1,0 @@
-﻿let x := 3
-let f := (float) x
-let s := str(f)
-let b := bool(x)
-print x
-print f
-print s
-print b

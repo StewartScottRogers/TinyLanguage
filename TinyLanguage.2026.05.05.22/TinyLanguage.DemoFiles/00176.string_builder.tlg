@@ -1,9 +1,0 @@
-﻿function buildRepeat(s, n)
-  let result := ""
-  for i := 1 to n do
-    result := result & s
-  end
-  return result
-end
-print buildRepeat("ab", 5)
-print buildRepeat("x", 10)

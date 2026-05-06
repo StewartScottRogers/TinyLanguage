@@ -1,5 +1,0 @@
-﻿let x := 5
-let inRange := x >= 1 and x <= 10
-let outRange := x < 0 or x > 100
-print inRange
-print outRange

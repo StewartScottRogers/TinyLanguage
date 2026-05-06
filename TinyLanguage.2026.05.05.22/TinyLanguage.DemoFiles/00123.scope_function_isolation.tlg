@@ -1,5 +1,0 @@
-﻿let global := 100
-function test()
-  return global
-end
-print test()

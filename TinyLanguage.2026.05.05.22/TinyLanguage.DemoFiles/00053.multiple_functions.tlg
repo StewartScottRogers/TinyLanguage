@@ -1,8 +1,0 @@
-﻿function square(x)
-  return x * x
-end
-function cube(x)
-  return x * x * x
-end
-print square(4)
-print cube(3)

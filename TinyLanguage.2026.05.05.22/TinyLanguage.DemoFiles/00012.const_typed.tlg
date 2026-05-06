@@ -1,2 +1,0 @@
-﻿const MAX : int := 100
-print MAX

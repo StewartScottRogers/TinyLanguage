@@ -1,6 +1,0 @@
-﻿let x := 3
-match x {
-  1 | 2 => print "one or two"
-  3 | 4 | 5 => print "three to five"
-  _ => print "other"
-}

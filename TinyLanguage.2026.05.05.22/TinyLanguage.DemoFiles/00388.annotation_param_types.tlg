@@ -1,5 +1,0 @@
-﻿@metadata(version = 2, name = "test", enabled = true)
-function annotatedFunc(x)
-  return x * 2
-end
-print annotatedFunc(21)

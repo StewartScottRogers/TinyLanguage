@@ -1,2 +1,0 @@
-﻿var n : int := 99
-print n

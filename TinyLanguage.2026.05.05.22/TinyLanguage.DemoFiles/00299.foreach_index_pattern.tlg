@@ -1,8 +1,0 @@
-﻿let arr := ["a", "b", "c", "d", "e"]
-let i := 0
-foreach item in arr do
-  if i % 2 == 0 then
-    print item
-  end
-  i := i + 1
-end

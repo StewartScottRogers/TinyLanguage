@@ -1,8 +1,0 @@
-﻿let i := 0
-while true do
-  if i >= 5 then
-    break
-  end
-  print i
-  i := i + 1
-end

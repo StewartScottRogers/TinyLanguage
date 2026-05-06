@@ -1,9 +1,0 @@
-﻿function compose(f, g)
-  return function(x) f(g(x))
-end
-let addOne := function(x) x + 1
-let double := function(x) x * 2
-let doubleAddOne := compose(addOne, double)
-let addOneDouble := compose(double, addOne)
-print doubleAddOne(5)
-print addOneDouble(5)

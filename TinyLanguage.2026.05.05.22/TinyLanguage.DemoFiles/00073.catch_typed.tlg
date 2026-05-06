@@ -1,5 +1,0 @@
-﻿try
-  throw "error message"
-catch (e : string)
-  print "string error: " & e
-end

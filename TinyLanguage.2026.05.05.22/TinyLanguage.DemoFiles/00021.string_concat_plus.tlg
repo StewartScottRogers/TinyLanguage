@@ -1,3 +1,0 @@
-﻿let s := "Value: "
-let n := 42
-print s + n

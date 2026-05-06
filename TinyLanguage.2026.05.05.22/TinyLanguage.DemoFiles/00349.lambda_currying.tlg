@@ -1,8 +1,0 @@
-﻿function makeAdder(n)
-  return function(x) x + n
-end
-let add5 := makeAdder(5)
-let add10 := makeAdder(10)
-print add5(3)
-print add10(3)
-print add5(add10(1))

@@ -1,6 +1,0 @@
-﻿let s := "hello"
-match s {
-  "hello" => print "greeting"
-  "bye" => print "farewell"
-  _ => print "unknown"
-}

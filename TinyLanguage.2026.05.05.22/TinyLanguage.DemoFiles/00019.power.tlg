@@ -1,3 +1,0 @@
-﻿let baseVal := 2
-let expVal := 10
-print baseVal ** expVal

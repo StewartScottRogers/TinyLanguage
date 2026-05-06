@@ -1,5 +1,0 @@
-﻿let a := 5
-let b := 3
-print a + b is int
-let f := 1.5
-print f + 1.0 is float

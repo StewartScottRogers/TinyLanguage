@@ -1,9 +1,0 @@
-﻿let data := [10, 5, 20, 3, 15]
-let found := -1
-foreach item in data do
-  if item > 12 then
-    found := item
-    break
-  end
-end
-print found

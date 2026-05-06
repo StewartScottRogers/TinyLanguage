@@ -1,5 +1,0 @@
-﻿if 0 then
-  print "truthy"
-else
-  print "falsy"
-end

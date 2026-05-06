@@ -1,3 +1,0 @@
-﻿let s := "Hello, World!"
-print len(s)
-print str(42) & " is the answer"

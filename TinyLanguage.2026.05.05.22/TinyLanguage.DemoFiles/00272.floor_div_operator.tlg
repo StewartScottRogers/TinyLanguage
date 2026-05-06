@@ -1,5 +1,0 @@
-﻿# // is always floor division, never a comment
-let a := 15
-let b := 4
-print a // b
-print -15 // 4

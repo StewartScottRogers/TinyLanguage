@@ -1,3 +1,0 @@
-﻿let x := 42
-let n := x as int
-print n

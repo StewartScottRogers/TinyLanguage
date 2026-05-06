@@ -1,2 +1,0 @@
-﻿let m : map<string, int> := null
-print "map type annotation parsed"

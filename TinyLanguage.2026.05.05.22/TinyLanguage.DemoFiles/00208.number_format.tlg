@@ -1,6 +1,0 @@
-﻿let n := 1000000
-print n
-let f := 3.141592653
-print f
-let big := 2 ** 32
-print big

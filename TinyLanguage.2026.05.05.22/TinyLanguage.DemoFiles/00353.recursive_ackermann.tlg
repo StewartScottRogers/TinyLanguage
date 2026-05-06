@@ -1,9 +1,0 @@
-﻿function ackermann(m, n)
-  if m == 0 then return n + 1 end
-  if n == 0 then return ackermann(m - 1, 1) end
-  return ackermann(m - 1, ackermann(m, n - 1))
-end
-print ackermann(0, 0)
-print ackermann(1, 1)
-print ackermann(2, 2)
-print ackermann(3, 3)

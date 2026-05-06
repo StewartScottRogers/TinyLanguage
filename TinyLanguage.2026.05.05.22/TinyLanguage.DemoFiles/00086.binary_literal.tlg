@@ -1,2 +1,0 @@
-﻿let b := 0b1010
-print b

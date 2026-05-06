@@ -1,4 +1,0 @@
-﻿const maxSize : int := 1000
-const pi : float := 3.14159
-print maxSize
-print pi

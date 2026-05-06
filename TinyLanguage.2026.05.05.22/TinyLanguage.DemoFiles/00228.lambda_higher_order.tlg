@@ -1,6 +1,0 @@
-﻿function applyTwice(f, x)
-  return f(f(x))
-end
-let addFive := function(x) x + 5
-print applyTwice(addFive, 0)
-print applyTwice(addFive, 10)

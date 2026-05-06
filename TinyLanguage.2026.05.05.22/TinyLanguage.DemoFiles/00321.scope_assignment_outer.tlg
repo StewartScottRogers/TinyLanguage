@@ -1,5 +1,0 @@
-﻿let x := 10
-if true then
-  x := 20
-end
-print x

@@ -1,8 +1,0 @@
-﻿let matrix := [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-let total := 0
-foreach row in matrix do
-  foreach item in row do
-    total := total + item
-  end
-end
-print total

@@ -1,8 +1,0 @@
-﻿function double(x)
-  return x * 2
-end
-function quadruple(x)
-  return double(double(x))
-end
-print quadruple(3)
-print quadruple(5)

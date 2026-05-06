@@ -1,7 +1,0 @@
-﻿function createMsg(prefix := "INFO", body := "no message", suffix := ".")
-  return prefix & ": " & body & suffix
-end
-print createMsg()
-print createMsg("ERROR")
-print createMsg("WARN", "disk full")
-print createMsg("DEBUG", "entering function", "!")

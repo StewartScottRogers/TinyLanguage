@@ -1,6 +1,0 @@
-﻿let a := true
-let b := false
-print not a
-print not b
-print not (a and b)
-print not (a or b)

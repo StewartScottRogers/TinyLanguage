@@ -1,3 +1,0 @@
-﻿@validate(min = 1, max = 10, required = true)
-let score := 7
-print score

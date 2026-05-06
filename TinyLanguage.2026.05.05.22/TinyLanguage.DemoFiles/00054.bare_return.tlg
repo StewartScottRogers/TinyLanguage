@@ -1,5 +1,0 @@
-﻿function doNothing()
-  return
-end
-doNothing()
-print "done"

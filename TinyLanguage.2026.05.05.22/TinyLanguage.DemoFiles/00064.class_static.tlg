@@ -1,6 +1,0 @@
-﻿class MathHelper {
-  static function Pi()
-    return 3.14159
-  end
-}
-print MathHelper.Pi()

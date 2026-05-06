@@ -1,3 +1,0 @@
-﻿let s := "42"
-let n := int(s)
-print n + 8

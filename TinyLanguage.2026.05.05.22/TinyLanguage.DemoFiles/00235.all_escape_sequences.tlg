@@ -1,8 +1,0 @@
-﻿let newline := "line1\nline2"
-let tab := "col1\tcol2"
-let backslash := "path\\dir"
-let dquote := "say \"hello\""
-print newline
-print tab
-print backslash
-print dquote

@@ -1,5 +1,0 @@
-﻿let x := null
-match x {
-  null => print "is null"
-  _ => print "not null"
-}
