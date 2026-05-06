@@ -1,15 +1,15 @@
 ﻿class Counter {
   let value := 0
-  let step := 1
+  let stepValue := 1
   Constructor(start, s)
     this.value := start
-    this.step := s
+    this.stepValue := s
   end
   function increment()
-    this.value := this.value + this.step
+    this.value := this.value + this.stepValue
   end
   function decrement()
-    this.value := this.value - this.step
+    this.value := this.value - this.stepValue
   end
   function reset()
     this.value := 0

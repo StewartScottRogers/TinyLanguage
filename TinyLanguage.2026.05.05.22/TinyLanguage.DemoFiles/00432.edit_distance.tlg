@@ -1,4 +1,4 @@
-﻿# Data structure: 2D DP table for Levenshtein edit distance
+# Data structure: 2D DP table for Levenshtein edit distance
 # Subroutines: EditDistance, OperationsNeeded, BuildDP
 # Workload: compute edit distance for 5 string pairs, verify triangle inequality
 
@@ -9,9 +9,15 @@ function BuildEditDP(s1, s2)
   for i := 0 to m do
     dp[i] := []
     for j := 0 to n do
-      if i == 0 then dp[i][j] := j
-      else if j == 0 then dp[i][j] := i
-      else dp[i][j] := 0 end
+      if i == 0 then
+        dp[i][j] := j
+      else
+        if j == 0 then
+          dp[i][j] := i
+        else
+          dp[i][j] := 0
+        end
+      end
     end
   end
   for i := 1 to m do
@@ -22,9 +28,15 @@ function BuildEditDP(s1, s2)
         let a := dp[i - 1][j] + 1
         let b := dp[i][j - 1] + 1
         let c := dp[i - 1][j - 1] + 1
-        if a <= b and a <= c then dp[i][j] := a
-        else if b <= c then dp[i][j] := b
-        else dp[i][j] := c end
+        if a <= b and a <= c then
+          dp[i][j] := a
+        else
+          if b <= c then
+            dp[i][j] := b
+          else
+            dp[i][j] := c
+          end
+        end
       end
     end
   end

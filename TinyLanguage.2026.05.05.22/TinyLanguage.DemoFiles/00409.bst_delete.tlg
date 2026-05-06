@@ -1,4 +1,4 @@
-﻿# Data structure: binary search tree with deletion
+# Data structure: binary search tree with deletion
 # Subroutines: Insert, Delete, Find, InOrder, minNode
 # Workload: insert 9 values, delete leaf (case 1), delete node with one child (case 2), delete node with two children (case 3)
 
@@ -20,8 +20,13 @@ class BSTDelete {
 
   function ins(node, v)
     if node == null then return new BSTNode2(v) end
-    if v < node.val then node.left := this.ins(node.left, v)
-    else if v > node.val then node.right := this.ins(node.right, v) end
+    if v < node.val then
+      node.left := this.ins(node.left, v)
+    else
+      if v > node.val then
+        node.right := this.ins(node.right, v)
+      end
+    end
     return node
   end
 
@@ -38,14 +43,16 @@ class BSTDelete {
     if node == null then return null end
     if v < node.val then
       node.left := this.del(node.left, v)
-    else if v > node.val then
-      node.right := this.del(node.right, v)
     else
-      if node.left == null then return node.right end
-      if node.right == null then return node.left end
-      let successor := this.minNode(node.right)
-      node.val := successor.val
-      node.right := this.del(node.right, successor.val)
+      if v > node.val then
+        node.right := this.del(node.right, v)
+      else
+        if node.left == null then return node.right end
+        if node.right == null then return node.left end
+        let successor := this.minNode(node.right)
+        node.val := successor.val
+        node.right := this.del(node.right, successor.val)
+      end
     end
     return node
   end
@@ -54,8 +61,11 @@ class BSTDelete {
     let cur := this.root
     while cur != null do
       if v == cur.val then return true end
-      if v < cur.val then cur := cur.left
-      else cur := cur.right end
+      if v < cur.val then
+        cur := cur.left
+      else
+        cur := cur.right
+      end
     end
     return false
   end

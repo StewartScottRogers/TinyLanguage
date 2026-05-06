@@ -1,4 +1,4 @@
-﻿# Data structure: stack for postfix expression evaluation
+# Data structure: stack for postfix expression evaluation
 # Subroutines: Push, Pop, Peek, Evaluate, ParseToken
 # Workload: evaluate 6 postfix expressions, verify results
 
@@ -62,10 +62,19 @@ function Evaluate(tokens)
       if isOperator(tok) then
         let b := stk.Pop()
         let a := stk.Pop()
-        if tok == "+" then stk.Push(a + b)
-        else if tok == "-" then stk.Push(a - b)
-        else if tok == "*" then stk.Push(a * b)
-        else if tok == "/" then stk.Push(a / b) end
+        if tok == "+" then
+          stk.Push(a + b)
+        else
+          if tok == "-" then
+            stk.Push(a - b)
+          else
+            if tok == "*" then
+              stk.Push(a * b)
+            else
+              stk.Push(a / b)
+            end
+          end
+        end
       end
     end
   end

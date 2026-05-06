@@ -1,4 +1,4 @@
-﻿class Event {
+class Event {
   let handlers := []
   let count := 0
   function subscribe(h)
@@ -12,6 +12,6 @@
   end
 }
 let clickEvent := new Event()
-clickEvent.subscribe(function(d) print "Handler1: " & d)
-clickEvent.subscribe(function(d) print "Handler2: " & str(len(d)))
+clickEvent.subscribe(function(d) print "Handler1: " & d end)
+clickEvent.subscribe(function(d) print "Handler2: " & str(len(d)) end)
 clickEvent.fire("button clicked")

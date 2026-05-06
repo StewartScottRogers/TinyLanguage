@@ -1,4 +1,15 @@
-﻿let x := 0
-let result := false && (x := 1) == 1
-print result
-print x
+let count := 0
+
+function bump()
+  count := count + 1
+  return false
+end
+
+# With &&, if left side is false the right side should not be called.
+# bump() returns false, so bump() && bump() short-circuits after first call.
+if bump() && bump() then
+  print "both called"
+else
+  print "short-circuited"
+end
+print "count: " & str(count)

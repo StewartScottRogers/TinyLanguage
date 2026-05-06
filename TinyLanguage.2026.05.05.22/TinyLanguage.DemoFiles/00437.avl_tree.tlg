@@ -1,4 +1,4 @@
-﻿# Data structure: AVL tree (self-balancing BST)
+# Data structure: AVL tree (self-balancing BST)
 # Subroutines: Insert, Height, BalanceFactor, RotateLeft, RotateRight, InOrder
 # Workload: insert 10 elements, verify heights stay O(log n), traverse in-order
 
@@ -53,9 +53,15 @@ end
 
 function avlInsert(node, v)
   if node == null then return new AVLNode(v) end
-  if v < node.val then node.left := avlInsert(node.left, v)
-  else if v > node.val then node.right := avlInsert(node.right, v)
-  else return node end
+  if v < node.val then
+    node.left := avlInsert(node.left, v)
+  else
+    if v > node.val then
+      node.right := avlInsert(node.right, v)
+    else
+      return node
+    end
+  end
   updateHeight(node)
   let bf := balanceFactor(node)
   if bf > 1 and v < node.left.val then return rotateRight(node) end

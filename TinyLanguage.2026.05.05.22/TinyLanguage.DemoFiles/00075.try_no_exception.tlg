@@ -1,6 +1,7 @@
 ﻿try
   let x := 5
   print x
+catch err
 finally
   print "finally"
 end

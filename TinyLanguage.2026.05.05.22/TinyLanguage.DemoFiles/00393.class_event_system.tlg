@@ -1,4 +1,4 @@
-﻿class EventEmitter {
+class EventEmitter {
   let listeners := []
   let count := 0
   function on(handler)
@@ -12,7 +12,7 @@
   end
 }
 let emitter := new EventEmitter()
-emitter.on(function(e, d) print "Listener1: " & e & " - " & str(d))
-emitter.on(function(e, d) print "Listener2 count: " & str(d * 2))
+emitter.on(function(e, d) print "Listener1: " & e & " - " & str(d) end)
+emitter.on(function(e, d) print "Listener2 count: " & str(d * 2) end)
 emitter.emit("click", 5)
 emitter.emit("keypress", 42)

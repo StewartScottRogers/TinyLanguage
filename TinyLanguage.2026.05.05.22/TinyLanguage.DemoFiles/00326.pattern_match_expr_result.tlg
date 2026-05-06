@@ -1,7 +1,8 @@
-﻿function describe(x)
-  let r := match x {
-    0 => "zero"
-    _ => "nonzero"
+function describe(x)
+  let r := null
+  match x {
+    0 => r := "zero"
+    _ => r := "nonzero"
   }
   return r
 end

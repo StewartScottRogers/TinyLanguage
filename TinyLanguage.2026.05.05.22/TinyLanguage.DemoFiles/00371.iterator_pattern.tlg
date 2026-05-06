@@ -1,18 +1,18 @@
-﻿class Range {
+class Range {
   let current := 0
   let stop := 0
-  let step := 1
-  Constructor(start, s, step)
+  let stride := 1
+  Constructor(start, s, st)
     this.current := start
     this.stop := s
-    this.step := step
+    this.stride := st
   end
   function hasNext()
     return this.current < this.stop
   end
   function next()
     let v := this.current
-    this.current := this.current + this.step
+    this.current := this.current + this.stride
     return v
   end
 }

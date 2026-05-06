@@ -5,13 +5,13 @@
     return false
   end
   for i := 0 to slen - tlen do
-    let match := true
+    let isMatch := true
     for j := 0 to tlen - 1 do
       if s[i + j] != target[j] then
-        match := false
+        isMatch := false
       end
     end
-    if match then
+    if isMatch then
       return true
     end
   end

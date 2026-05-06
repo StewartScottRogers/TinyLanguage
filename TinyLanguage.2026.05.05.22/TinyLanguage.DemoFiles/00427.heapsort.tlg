@@ -1,16 +1,16 @@
-﻿# Data structure: array sorted via heapsort (in-place)
+# Data structure: array sorted via heapsort (in-place)
 # Subroutines: HeapSort, BuildMaxHeap, SiftDown, isSorted
 # Workload: sort 10-element array, verify order, sort already-sorted array
 
-function SiftDown(arr, root, end)
+function SiftDown(arr, root, last)
   while true do
     let left := 2 * root + 1
     let right := 2 * root + 2
     let largest := root
-    if left <= end and arr[left] > arr[largest] then
+    if left <= last and arr[left] > arr[largest] then
       largest := left
     end
-    if right <= end and arr[right] > arr[largest] then
+    if right <= last and arr[right] > arr[largest] then
       largest := right
     end
     if largest == root then return end
@@ -32,13 +32,13 @@ end
 
 function HeapSort(arr)
   BuildMaxHeap(arr)
-  let end := len(arr) - 1
-  while end > 0 do
+  let last := len(arr) - 1
+  while last > 0 do
     let tmp := arr[0]
-    arr[0] := arr[end]
-    arr[end] := tmp
-    end := end - 1
-    SiftDown(arr, 0, end)
+    arr[0] := arr[last]
+    arr[last] := tmp
+    last := last - 1
+    SiftDown(arr, 0, last)
   end
 end
 

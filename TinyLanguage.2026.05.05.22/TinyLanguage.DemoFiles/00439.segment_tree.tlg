@@ -1,4 +1,4 @@
-﻿# Data structure: segment tree for range sum queries and point updates
+# Data structure: segment tree for range sum queries and point updates
 # Subroutines: Build, Update, Query, RangeSum
 # Workload: build from 8-element array, 4 range queries, 3 point updates, re-query
 
@@ -14,14 +14,14 @@ class SegmentTree {
     this.build(arr, 0, 0, this.n - 1)
   end
 
-  function build(arr, node, start, end)
-    if start == end then
+  function build(arr, node, start, last)
+    if start == last then
       this.tree[node] := arr[start]
       return
     end
-    let mid := (start + end) // 2
+    let mid := (start + last) // 2
     this.build(arr, 2 * node + 1, start, mid)
-    this.build(arr, 2 * node + 2, mid + 1, end)
+    this.build(arr, 2 * node + 2, mid + 1, last)
     this.tree[node] := this.tree[2 * node + 1] + this.tree[2 * node + 2]
   end
 
@@ -29,16 +29,16 @@ class SegmentTree {
     this.update(0, 0, this.n - 1, idx, val)
   end
 
-  function update(node, start, end, idx, val)
-    if start == end then
+  function update(node, start, last, idx, val)
+    if start == last then
       this.tree[node] := val
       return
     end
-    let mid := (start + end) // 2
+    let mid := (start + last) // 2
     if idx <= mid then
       this.update(2 * node + 1, start, mid, idx, val)
     else
-      this.update(2 * node + 2, mid + 1, end, idx, val)
+      this.update(2 * node + 2, mid + 1, last, idx, val)
     end
     this.tree[node] := this.tree[2 * node + 1] + this.tree[2 * node + 2]
   end
@@ -47,12 +47,12 @@ class SegmentTree {
     return this.query(0, 0, this.n - 1, lo, hi)
   end
 
-  function query(node, start, end, lo, hi)
-    if hi < start or end < lo then return 0 end
-    if lo <= start and end <= hi then return this.tree[node] end
-    let mid := (start + end) // 2
+  function query(node, start, last, lo, hi)
+    if hi < start or last < lo then return 0 end
+    if lo <= start and last <= hi then return this.tree[node] end
+    let mid := (start + last) // 2
     return this.query(2 * node + 1, start, mid, lo, hi) +
-           this.query(2 * node + 2, mid + 1, end, lo, hi)
+           this.query(2 * node + 2, mid + 1, last, lo, hi)
   end
 }
 
