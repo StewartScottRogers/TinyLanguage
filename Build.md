@@ -66,6 +66,51 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 
 ---
 
+## Deliberate deviations from Build.Solution.md
+
+`Build.Solution.md` is the locked specification, but a small number of points
+have been deliberately overridden by the project owner. Phase 1D, Phase 4B, and
+Phase 5 prompts below already incorporate these overrides. They are recorded
+here so that if a future run consults Build.Solution.md directly, the deltas
+are not silently re-introduced.
+
+### 1. `TinyLanguage.exe` has no demo mode
+
+`Build.Solution.md` §"Console Application (TinyLanguage.exe)" describes a
+"Demo mode (no arguments)" that walks `TinyLanguage.DemoFiles\` and prints
+`All demos completed successfully.` That is a test/demo harness, not part of
+the language interpreter — the project owner removed it. The exe has exactly
+two modes:
+
+  - `TinyLanguage.exe`                         → read source from stdin, write to stdout
+  - `TinyLanguage.exe <input.tlg> <output.txt>` → read input file, write output file
+
+Anything else prints a usage line to stderr and exits 1. There is no
+`Console.IsInputRedirected` branching — zero args is unconditionally stdin
+mode (this avoids the non-TTY shell trap where `IsInputRedirected` returns
+true and the exe falls into a piped-from-empty-stdin path).
+
+### 2. The demo-walking job lives in `run-all-demos.cmd`
+
+The "iterate every `.tlg`, print banners, finish with `All demos completed
+successfully.`" behavior moves into a stand-alone aggregator script:
+
+  `TinyLanguage.DemoFiles\run-all-demos.cmd`
+
+Phase 1D produces this file alongside the per-demo `.cmd` files. Phase 5's
+validation calls it instead of `dotnet run --project TinyLanguage` for the
+end-to-end demo check.
+
+### 3. Phase 5 acceptance shifts accordingly
+
+Phase 5 Step 3 (formerly: `dotnet run --project TinyLanguage` prints
+"All demos completed successfully.") becomes:
+`TinyLanguage.DemoFiles\run-all-demos.cmd` prints "All demos completed
+successfully." and exits 0. The per-`.cmd` validation loop in Step 5 is
+unchanged — those scripts use file mode (two args).
+
+---
+
 ## How to Run This Plan
 
 Open Claude Code in this directory and paste:
@@ -491,7 +536,59 @@ Anti-patterns that have shipped before and must not recur:
 - No `errorlevel` propagation — a parse/runtime error in the .tlg leaves the
   .cmd exiting 0, masking real failures from any batch validation step.
 
-Do NOT run them yet — the interpreter is not built.
+Also produce ONE additional aggregator script in TinyLanguage.DemoFiles/:
+
+  run-all-demos.cmd
+
+This replaces the demo-mode behaviour that USED to live inside TinyLanguage.exe
+(see "Deliberate deviations from Build.Solution.md" at the top of this file —
+the exe is now interpreter-only). The aggregator must:
+
+- Walk every *.tlg in its own directory in alphabetic order (use
+  `dir /b /a-d /on "%DEMO_DIR%*.tlg"` — the bare `for %%F in (...)` form does
+  NOT guarantee alphabetic order on Windows).
+- For each demo: print `=== <filename> ===`, run it through
+  %~dp0TinyLanguage.exe in file-processor mode (writing to a single reusable
+  temp output path), `type` the output, then print `--- end <filename> ---`.
+- After the loop, print exactly: `All demos completed successfully.` and exit 0.
+- On any non-zero exe exit during the loop, print a `run-all-demos: <demo>
+  failed with exit code N` diagnostic to stderr and exit with the same code.
+- Pre-flight that %~dp0TinyLanguage.exe exists; if missing, print a stderr
+  message instructing `dotnet publish TinyLanguage -c Release` and exit 1.
+- CWD-independent — must work from any directory or by double-click. Use
+  %~dp0 and %TEMP% throughout.
+- Use `setlocal enabledelayedexpansion` so `!errorlevel!` works inside the
+  for-loop body.
+
+Correct template:
+
+  @echo off
+  setlocal enabledelayedexpansion
+  set "DEMO_DIR=%~dp0"
+  set "EXE=%DEMO_DIR%TinyLanguage.exe"
+  set "TMPOUT=%TEMP%\tinylanguage_run_all_demos.out.txt"
+
+  if not exist "%EXE%" (
+      echo TinyLanguage.exe not found at %EXE% 1>&2
+      echo Run: dotnet publish TinyLanguage -c Release 1>&2
+      exit /b 1
+  )
+
+  for /f "usebackq delims=" %%F in (`dir /b /a-d /on "%DEMO_DIR%*.tlg"`) do (
+      echo === %%F ===
+      "%EXE%" "%DEMO_DIR%%%F" "%TMPOUT%"
+      if errorlevel 1 (
+          echo run-all-demos: %%F failed with exit code !errorlevel! 1>&2
+          exit /b 1
+      )
+      type "%TMPOUT%"
+      echo --- end %%F ---
+  )
+
+  echo All demos completed successfully.
+  exit /b 0
+
+Do NOT run any of them yet — the interpreter is not built.
 ```
 
 ---
@@ -599,22 +696,46 @@ Accept only: Failed: 0.
 **Isolation:** worktree
 **Prompt:**
 ```
-Read Build.Solution.md: "Console Application (TinyLanguage.exe)".
+Read Build.Solution.md "Console Application (TinyLanguage.exe)" for context, but
+follow the override at the top of Build.md ("Deliberate deviations from
+Build.Solution.md") for the actual behaviour. Build.Solution.md's "Demo mode
+(no arguments)" is REMOVED in this project — the exe is interpreter-only and
+the demo-walking job lives in TinyLanguage.DemoFiles\run-all-demos.cmd.
 
-Implement TinyLanguage/Program.cs:
-- File-processor mode (two args: input path, output path).
-- Piped I/O support (stdin / stdout).
-- Demo mode (no args): run all .tlg files from TinyLanguage.DemoFiles,
-  print headers + output + separators, exit 0 printing
-  "All demos completed successfully." or exit 1 on any failure.
-- Errors → stderr, exit code 1. Success → exit code 0.
+Implement TinyLanguage/Program.cs with exactly two modes:
 
-Run: dotnet run --project TinyLanguage
-Accept only: "All demos completed successfully." printed, exit code 0.
+  TinyLanguage.exe                            → read source from stdin,
+                                                 write program output to stdout
+  TinyLanguage.exe <input.tlg> <output.txt>   → read source from input file,
+                                                 write program output to output file
+
+Anything else (one arg that isn't part of a recognised pattern, or 3+ args)
+prints a usage line to stderr and exits 1. Errors → stderr, exit 1; success → 0.
+
+Do NOT branch on Console.IsInputRedirected for the no-args case. Empirically
+that returns true in non-TTY shells (CI runners, IDE consoles, the
+orchestration's Bash harness), surrendering the no-args slot whenever the
+host doesn't give the exe a real terminal. Zero args is unconditionally
+"read from stdin"; piped input via shell redirection (`exe < file.tlg`)
+falls into that path naturally.
+
+Do NOT add a `LocateDemoDirectory`, do NOT walk TinyLanguage.DemoFiles\, do
+NOT print `=== filename ===` banners, do NOT print "All demos completed
+successfully." Those concerns belong to run-all-demos.cmd, not Program.cs.
+
+Run: dotnet build
+Accept: 0 errors, 0 warnings.
 
 Then publish the single-file exe and verify it was copied to DemoFiles:
   dotnet publish TinyLanguage -c Release
-  (TinyLanguage.exe must appear in TinyLanguage.DemoFiles/ — self-contained, ~36 MB, no runtime required)
+  (TinyLanguage.exe must appear in TinyLanguage.DemoFiles/ — self-contained,
+   ~36 MB, no runtime required)
+
+Smoke-test:
+  echo print "hi" | TinyLanguage.exe                     → prints "hi", exit 0
+  TinyLanguage.exe TinyLanguage.DemoFiles/00001.hello_world.tlg out.txt
+                                                          → out.txt contains "Hello, World!", exit 0
+  TinyLanguage.exe foo                                    → usage on stderr, exit 1
 ```
 
 ---
@@ -640,10 +761,21 @@ Protocol below. Every step must pass before you may declare the plan complete.
   If any test fails: read full output, identify root cause, make minimal fix, re-run
   dotnet build → dotnet test. Repeat until Failed: 0.
 
-### Step 3 — Demo mode (interpreter end-to-end)
-  dotnet run --project TinyLanguage
+### Step 3 — Run all demos (interpreter end-to-end)
+  Build.Solution.md's "Demo mode (no arguments)" is removed in this project
+  (see "Deliberate deviations from Build.Solution.md" at the top of Build.md).
+  The end-to-end demo walk lives in TinyLanguage.DemoFiles\run-all-demos.cmd
+  produced by Phase 1D.
+
+  Step 3 requires the published exe from Step 4 — interleave Step 4 first if
+  this is a fresh build:
+    dotnet publish TinyLanguage -c Release      # populates DemoFiles\TinyLanguage.exe
+    TinyLanguage.DemoFiles\run-all-demos.cmd
+
   Accept: prints "All demos completed successfully.", exit code 0.
-  If any demo fails: read the error, fix the interpreter or demo file, re-run.
+  If any demo fails: read the error from stderr (run-all-demos prints
+  `run-all-demos: <demo> failed with exit code N`), fix the interpreter or
+  demo file, rebuild + republish, re-run.
 
 ### Step 4 — Release publish (single-file exe)
   dotnet publish TinyLanguage -c Release
@@ -751,15 +883,19 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
       Fail loudly with a specific path if any of these is missing.
 
-  6d. Re-run the full build, test, demo, publish chain at the canonical path
-      from a CLEAN shell (do not rely on any state still warm in the worktree):
+  6d. Re-run the full build, test, publish, and run-all-demos chain at the
+      canonical path from a CLEAN shell (do not rely on any state still warm
+      in the worktree). Note: publish must run BEFORE run-all-demos.cmd —
+      the aggregator needs the published TinyLanguage.exe sitting inside
+      DemoFiles\.
         cd Z:\repos\TinyLanguage.YYYY.MM.DD.HH
         dotnet build              # Accept: 0 errors, 0 warnings
         dotnet test               # Accept: Failed: 0
-        dotnet run --project TinyLanguage   # Accept: "All demos completed successfully.", exit 0
         dotnet publish TinyLanguage -c Release
         # Verify TinyLanguage.DemoFiles\TinyLanguage.exe is the ~36 MB self-contained build
         # at the canonical location — NOT inside any worktree.
+        TinyLanguage.DemoFiles\run-all-demos.cmd
+        # Accept: prints "All demos completed successfully.", exit 0
 
   6e. Re-run the .cmd validation loop from Step 5, this time pointed at
       `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\` (the canonical

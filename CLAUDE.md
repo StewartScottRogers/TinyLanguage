@@ -11,9 +11,10 @@ TinyLanguage is a complete .NET 10.0 implementation of a small programming langu
 ```bash
 dotnet build                                    # Must succeed with 0 errors, 0 warnings
 dotnet test --verbosity normal                  # Must report Failed: 0
-dotnet run --project TinyLanguage               # Demo mode: runs all demo files; exit 0, prints "All demos completed successfully."
+dotnet publish TinyLanguage -c Release          # Produces single-file self-contained TinyLanguage.exe (must run before run-all-demos)
+TinyLanguage.DemoFiles\run-all-demos.cmd        # Walks every .tlg, prints "All demos completed successfully.", exit 0
+echo print "hi" | dotnet run --project TinyLanguage   # stdin mode (no args): read source from stdin, write to stdout
 dotnet run --project TinyLanguage -- input.tlg output.txt  # File-processor mode
-dotnet publish TinyLanguage -c Release          # Produces single-file self-contained TinyLanguage.exe
 ```
 
 Run a single test class:
@@ -21,14 +22,16 @@ Run a single test class:
 dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 ```
 
-**Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `dotnet run` demo mode → exit 0.
+**Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `TinyLanguage.DemoFiles\run-all-demos.cmd` → exit 0.
+
+> **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Two modes: zero args = read source from stdin and write to stdout; two args = file-processor mode. The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
 
 ### Single-file exe
 `TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
 
 - **After `dotnet publish TinyLanguage -c Release`:** the single-file, self-contained exe (~36 MB, no runtime required) is copied to `TinyLanguage.DemoFiles/TinyLanguage.exe` via the `CopySingleFileExeToDemoFiles` MSBuild target (`AfterTargets="Publish"`, `Condition="'$(Configuration)' == 'Release'"`). This is the **only** exe-copy step. Plain `dotnet build` does NOT copy any exe to `DemoFiles/`.
 - **Working with `.cmd` demos requires a prior publish.** The `.cmd` files in `TinyLanguage.DemoFiles/` invoke `%~dp0TinyLanguage.exe`, so they need the self-contained exe sitting beside them. After cloning or after a clean, run `dotnet publish TinyLanguage -c Release` once to populate it. After that, `dotnet build` is safe — the publish-time copy is left untouched.
-- **For fast dev iteration without publishing:** use `dotnet run --project TinyLanguage` (demo mode runs every `.tlg` directly through the in-process interpreter with no `.cmd` round-trip).
+- **For fast dev iteration without publishing:** pipe a `.tlg` file into `dotnet run --project TinyLanguage` (zero-args = stdin mode), or pass two args (`dotnet run --project TinyLanguage -- input.tlg output.txt`). The demo aggregator (`run-all-demos.cmd`) requires the published exe and so requires a prior `dotnet publish`.
 
 > **History — why this is structured this way (do not "fix" it back):** an earlier version of `TinyLanguage.csproj` also had a `CopyExeToDemoFiles` target with `AfterTargets="Build"` that copied the framework-dependent build-output exe (~160 KB) to `DemoFiles/`. That looked harmless but was a silent foot-gun: the apphost there had no companion `TinyLanguage.dll` (the .dll stayed in `bin\Debug\..\`), so when `.cmd` demos ran, the apphost printed `"The application to execute does not exist: '...\TinyLanguage.dll'"` to stdout AND **exited with code 0**. The `.cmd`'s `if errorlevel 1` check did not fire, `type "%OUTPUT%"` silently failed on the missing output file, and the `.cmd` exited 0. Result: every `dotnet build` run AFTER a `dotnet publish` silently broke every `.cmd` demo, while exit codes still claimed success. Phase 5's "exit 0 + non-empty file + non-empty stdout" validation passed at the moment it ran (publish was the last operation) but any subsequent build broke things. The fix is structural: only copy on publish, and require users to publish at least once. Empirical MSBuild props on SDK 10.0.300-preview made it impossible to discriminate build-vs-publish from a `Condition` (`$(PublishDir)` is non-empty even on plain build with `PublishSingleFile=true`; `$(IsPublishing)` is empty in BOTH cases; `$(PublishSingleFile)` is true in both), so adding an outer condition could not save the build-time target — removing it was the only safe move.
 
