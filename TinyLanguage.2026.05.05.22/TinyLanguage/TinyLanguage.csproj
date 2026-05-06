@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TinyLanguage</RootNamespace>
+    <AssemblyName>TinyLanguage</AssemblyName>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TinyLanguage.Lexer\TinyLanguage.Lexer.csproj" />
+    <ProjectReference Include="..\TinyLanguage.Interpreter\TinyLanguage.Interpreter.csproj" />
+  </ItemGroup>
+  <!--
+    ONLY a publish-time copy. Do NOT add an AfterTargets="Build" copy target.
+    Prior builds shipped one and it silently broke every .cmd demo every time
+    a user ran dotnet build after dotnet publish. Background:
+      Build-output exe (~160 KB) is the framework-dependent apphost. It needs
+      TinyLanguage.dll beside it. The .dll lives in bin\Debug\..\, NOT in
+      DemoFiles\, so the apphost there cannot start.
+      The apphost does NOT exit non-zero on missing .dll: it prints
+      "The application to execute does not exist" to stdout and exits 0.
+      .cmd files use "if errorlevel 1" to detect failure. errorlevel 0
+      passes the check. "type %OUTPUT%" then silently fails on the missing
+      output file; the .cmd exits 0 and the user sees the apphost error
+      flash by but no real output. Phase 5 validation that only checks
+      "exit 0 + non-empty file + non-empty stdout" cannot detect this state.
+    Empirical (SDK 10.0.300-preview): you cannot discriminate build vs publish
+    via Condition. With PublishSingleFile=true in PropertyGroup, $(PublishDir)
+    is non-empty even on plain dotnet build; $(IsPublishing) is empty in BOTH;
+    $(PublishSingleFile) is true in BOTH. So an outer Condition on a Build-time
+    target will either always fire or never fire. The only safe approach is to
+    drop the build-time copy entirely.
+    Trade-off: users who want to run .cmd demos must run dotnet publish first.
+    For fast dev iteration without publishing, use dotnet run on the
+    TinyLanguage project (demo mode runs the .tlg files in-process).
+  -->
+  <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish"
+          Condition="'$(Configuration)' == 'Release'">
+    <Copy SourceFiles="$(PublishDir)TinyLanguage.exe"
+          DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>
