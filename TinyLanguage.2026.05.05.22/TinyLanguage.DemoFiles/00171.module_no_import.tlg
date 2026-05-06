@@ -1,0 +1,14 @@
+﻿module Counter {
+  let count := 0
+  function increment()
+    count := count + 1
+  end
+  function get()
+    return count
+  end
+  export increment
+  export get
+}
+Counter.increment()
+Counter.increment()
+print Counter.get()

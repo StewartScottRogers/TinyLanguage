@@ -1,0 +1,14 @@
+﻿function classify(x)
+  match x {
+    n when n < 0 and n > -10 => return "small negative"
+    n when n < 0 => return "large negative"
+    0 => return "zero"
+    n when n < 10 => return "small positive"
+    _ => return "large positive"
+  }
+end
+print classify(-5)
+print classify(-100)
+print classify(0)
+print classify(7)
+print classify(99)

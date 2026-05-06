@@ -1,0 +1,17 @@
+﻿function isPrime(n)
+  if n < 2 then
+    return false
+  end
+  let i := 2
+  while i * i <= n do
+    if n % i == 0 then
+      return false
+    end
+    i := i + 1
+  end
+  return true
+end
+print isPrime(2)
+print isPrime(17)
+print isPrime(20)
+print isPrime(97)

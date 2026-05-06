@@ -1,0 +1,13 @@
+﻿function power(base, exp)
+  if exp == 0 then
+    return 1
+  end
+  if exp % 2 == 0 then
+    let half := power(base, exp // 2)
+    return half * half
+  end
+  return base * power(base, exp - 1)
+end
+print power(2, 0)
+print power(2, 10)
+print power(3, 5)

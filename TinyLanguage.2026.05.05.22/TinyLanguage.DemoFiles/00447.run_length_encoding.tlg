@@ -1,0 +1,67 @@
+﻿# Data structure: list of (char, count) pairs for RLE
+# Subroutines: Encode, Decode, Compress, CompressRatio
+# Workload: encode 5 strings, decode back, verify round-trip, compute ratios
+
+class RLERun {
+  let ch := ""
+  let count := 0
+  Constructor(c, n)
+    this.ch := c
+    this.count := n
+  end
+}
+
+function Encode(s)
+  let runs := []
+  let runIdx := 0
+  if len(s) == 0 then return runs end
+  let cur := s[0]
+  let cnt := 1
+  let i := 1
+  while i < len(s) do
+    if s[i] == cur then
+      cnt := cnt + 1
+    else
+      runs[runIdx] := new RLERun(cur, cnt)
+      runIdx := runIdx + 1
+      cur := s[i]
+      cnt := 1
+    end
+    i := i + 1
+  end
+  runs[runIdx] := new RLERun(cur, cnt)
+  runIdx := runIdx + 1
+  return runs
+end
+
+function Decode(runs)
+  let result := ""
+  foreach run in runs do
+    for i := 1 to run.count do
+      result := result & run.ch
+    end
+  end
+  return result
+end
+
+function EncodeString(s)
+  let runs := Encode(s)
+  let result := ""
+  foreach run in runs do
+    if run.count > 1 then
+      result := result & str(run.count) & run.ch
+    else
+      result := result & run.ch
+    end
+  end
+  return result
+end
+
+let inputs := ["aaabbbcc", "aabbccdd", "aaaaaaaaaa", "abcd", "aaabbaaa"]
+foreach s in inputs do
+  let encoded := EncodeString(s)
+  let runs := Encode(s)
+  let decoded := Decode(runs)
+  print "'" & s & "' -> '" & encoded & "' -> '" & decoded & "'"
+  print "  roundtrip ok: " & str(s == decoded)
+end

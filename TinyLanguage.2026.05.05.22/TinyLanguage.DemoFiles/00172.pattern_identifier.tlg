@@ -1,0 +1,6 @@
+﻿let x := 42
+match x {
+  n when n > 100 => print "large"
+  n when n > 10 => print "medium"
+  n => print "small"
+}

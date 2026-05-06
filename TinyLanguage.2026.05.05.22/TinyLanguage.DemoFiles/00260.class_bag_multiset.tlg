@@ -1,0 +1,30 @@
+﻿class Bag {
+  let items := []
+  let size := 0
+  function add(x)
+    this.items[this.size] := x
+    this.size := this.size + 1
+  end
+  function count(x)
+    let c := 0
+    for i := 0 to this.size - 1 do
+      if this.items[i] == x then
+        c := c + 1
+      end
+    end
+    return c
+  end
+  function total()
+    return this.size
+  end
+}
+let bag := new Bag()
+bag.add(1)
+bag.add(2)
+bag.add(1)
+bag.add(3)
+bag.add(1)
+print bag.total()
+print bag.count(1)
+print bag.count(2)
+print bag.count(4)

@@ -1,0 +1,8 @@
+﻿for i := 1 to 5 do
+  switch i {
+    case 1: print "one"
+    case 2: print "two"
+    case 3: print "three"
+    default: print "many"
+  }
+end

@@ -1,0 +1,14 @@
+﻿function test(throwIt)
+  try
+    if throwIt then
+      throw "error"
+    end
+    print "no error"
+  catch e
+    print "caught: " & e
+  finally
+    print "finally always"
+  end
+end
+test(false)
+test(true)

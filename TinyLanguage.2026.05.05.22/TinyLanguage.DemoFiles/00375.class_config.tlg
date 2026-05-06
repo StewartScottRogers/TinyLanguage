@@ -1,0 +1,32 @@
+﻿class Config {
+  let settings := []
+  let keys := []
+  let count := 0
+  function set(key, value)
+    for i := 0 to this.count - 1 do
+      if this.keys[i] == key then
+        this.settings[i] := value
+        return
+      end
+    end
+    this.keys[this.count] := key
+    this.settings[this.count] := value
+    this.count := this.count + 1
+  end
+  function get(key)
+    for i := 0 to this.count - 1 do
+      if this.keys[i] == key then
+        return this.settings[i]
+      end
+    end
+    return null
+  end
+}
+let cfg := new Config()
+cfg.set("host", "localhost")
+cfg.set("port", "8080")
+cfg.set("debug", "true")
+print cfg.get("host")
+print cfg.get("port")
+print cfg.get("debug")
+print cfg.get("missing")

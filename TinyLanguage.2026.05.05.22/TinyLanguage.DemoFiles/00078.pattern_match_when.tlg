@@ -1,0 +1,6 @@
+﻿let n := 7
+match n {
+  x when x > 5 => print "greater than 5"
+  x when x > 0 => print "positive"
+  _ => print "non-positive"
+}

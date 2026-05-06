@@ -1,0 +1,29 @@
+﻿class HeapNode {
+  let value := 0
+  let priority := 0
+  Constructor(v, p)
+    this.value := v
+    this.priority := p
+  end
+  function toString()
+    return "(" & str(this.value) & ", P" & str(this.priority) & ")"
+  end
+}
+let nodes := [
+  new HeapNode(1, 3),
+  new HeapNode(2, 1),
+  new HeapNode(3, 2)
+]
+let n := len(nodes)
+for i := 0 to n - 2 do
+  for j := 0 to n - 2 - i do
+    if nodes[j].priority > nodes[j + 1].priority then
+      let tmp := nodes[j]
+      nodes[j] := nodes[j + 1]
+      nodes[j + 1] := tmp
+    end
+  end
+end
+foreach node in nodes do
+  print node.toString()
+end

@@ -1,0 +1,66 @@
+﻿# Data structure: ring/circular buffer (fixed capacity with overwrite policy)
+# Subroutines: Write, Read, IsFull, IsEmpty, Size
+# Workload: fill to capacity, overwrite oldest on overflow, read all, verify wrap-around
+
+class RingBuffer {
+  let data := []
+  let capacity := 0
+  let readIdx := 0
+  let writeIdx := 0
+  let count := 0
+
+  Constructor(cap)
+    this.capacity := cap
+    for i := 0 to cap - 1 do
+      this.data[i] := 0
+    end
+  end
+
+  function Write(x)
+    this.data[this.writeIdx] := x
+    this.writeIdx := (this.writeIdx + 1) % this.capacity
+    if this.count < this.capacity then
+      this.count := this.count + 1
+    else
+      this.readIdx := (this.readIdx + 1) % this.capacity
+    end
+  end
+
+  function Read()
+    if this.count == 0 then throw "buffer empty" end
+    let v := this.data[this.readIdx]
+    this.readIdx := (this.readIdx + 1) % this.capacity
+    this.count := this.count - 1
+    return v
+  end
+
+  function IsFull()
+    return this.count == this.capacity
+  end
+
+  function IsEmpty()
+    return this.count == 0
+  end
+
+  function Size()
+    return this.count
+  end
+}
+
+let rb := new RingBuffer(4)
+print "Empty: " & str(rb.IsEmpty())
+
+rb.Write(10)
+rb.Write(20)
+rb.Write(30)
+rb.Write(40)
+print "Full: " & str(rb.IsFull())
+print "Size: " & str(rb.Size())
+
+rb.Write(50)
+rb.Write(60)
+print "After overwrites, size: " & str(rb.Size())
+print "Contents (should be 30,40,50,60):"
+while not rb.IsEmpty() do
+  print rb.Read()
+end

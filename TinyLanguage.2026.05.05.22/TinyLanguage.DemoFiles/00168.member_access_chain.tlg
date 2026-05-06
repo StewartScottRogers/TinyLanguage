@@ -1,0 +1,11 @@
+﻿class Node {
+  let value := 0
+  let label := "x"
+  Constructor(v, l)
+    this.value := v
+    this.label := l
+  end
+}
+let n := new Node(42, "answer")
+print n.value
+print n.label

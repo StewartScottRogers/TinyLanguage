@@ -1,0 +1,16 @@
+﻿class Printable {
+  function printSelf()
+    print "printable"
+  end
+}
+class Document implements Printable {
+  let title := "untitled"
+  Constructor(t)
+    this.title := t
+  end
+  function printSelf()
+    print "Document: " & this.title
+  end
+}
+let doc := new Document("Report")
+doc.printSelf()

@@ -1,0 +1,9 @@
+﻿let power := 1
+let base := 2
+let exp := 8
+let i := 0
+while i < exp do
+  power := power * base
+  i := i + 1
+end
+print power

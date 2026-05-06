@@ -1,0 +1,7 @@
+﻿function sum(arr, i)
+  if i >= len(arr) then return 0 end
+  return arr[i] + sum(arr, i + 1)
+end
+print sum([1, 2, 3, 4, 5], 0)
+print sum([], 0)
+print sum([42], 0)

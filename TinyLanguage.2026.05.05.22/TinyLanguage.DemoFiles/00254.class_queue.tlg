@@ -1,0 +1,35 @@
+﻿class Queue {
+  let data := []
+  let head := 0
+  let tail := 0
+  function enqueue(x)
+    this.data[this.tail] := x
+    this.tail := this.tail + 1
+  end
+  function dequeue()
+    if this.head == this.tail then
+      return null
+    end
+    let v := this.data[this.head]
+    this.head := this.head + 1
+    return v
+  end
+  function size()
+    return this.tail - this.head
+  end
+  function isEmpty()
+    return this.head == this.tail
+  end
+}
+let q := new Queue()
+q.enqueue(1)
+q.enqueue(2)
+q.enqueue(3)
+print q.size()
+print q.dequeue()
+print q.dequeue()
+print q.size()
+q.enqueue(4)
+print q.dequeue()
+print q.dequeue()
+print q.isEmpty()

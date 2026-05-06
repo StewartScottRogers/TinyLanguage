@@ -1,0 +1,27 @@
+﻿class Option {
+  let value := null
+  let isSome := false
+  static function some(v)
+    let o := new Option()
+    o.value := v
+    o.isSome := true
+    return o
+  end
+  static function none()
+    return new Option()
+  end
+  function unwrap()
+    if not this.isSome then throw "unwrap on None" end
+    return this.value
+  end
+  function unwrapOr(def)
+    if not this.isSome then return def end
+    return this.value
+  end
+}
+let a := Option.some(42)
+let b := Option.none()
+print a.unwrap()
+print b.unwrapOr(0)
+print a.isSome
+print b.isSome

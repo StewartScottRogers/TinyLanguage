@@ -1,0 +1,6 @@
+﻿let a := 3
+let b := 7
+let max := if a > b then a else b
+print max
+let min := if a < b then a else b
+print min

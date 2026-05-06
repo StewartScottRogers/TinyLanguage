@@ -1,0 +1,7 @@
+﻿print bool(null)
+print bool(0)
+print bool("")
+print bool(1)
+print bool("hello")
+print bool(0.0)
+print bool(0.1)

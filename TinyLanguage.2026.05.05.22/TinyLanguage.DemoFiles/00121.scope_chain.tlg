@@ -1,0 +1,7 @@
+﻿let x := 10
+if true then
+  let y := 20
+  print x
+  print y
+end
+print x

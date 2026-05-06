@@ -1,0 +1,61 @@
+﻿# Data structure: array sorted via heapsort (in-place)
+# Subroutines: HeapSort, BuildMaxHeap, SiftDown, isSorted
+# Workload: sort 10-element array, verify order, sort already-sorted array
+
+function SiftDown(arr, root, end)
+  while true do
+    let left := 2 * root + 1
+    let right := 2 * root + 2
+    let largest := root
+    if left <= end and arr[left] > arr[largest] then
+      largest := left
+    end
+    if right <= end and arr[right] > arr[largest] then
+      largest := right
+    end
+    if largest == root then return end
+    let tmp := arr[root]
+    arr[root] := arr[largest]
+    arr[largest] := tmp
+    root := largest
+  end
+end
+
+function BuildMaxHeap(arr)
+  let n := len(arr)
+  let start := (n - 2) // 2
+  while start >= 0 do
+    SiftDown(arr, start, n - 1)
+    start := start - 1
+  end
+end
+
+function HeapSort(arr)
+  BuildMaxHeap(arr)
+  let end := len(arr) - 1
+  while end > 0 do
+    let tmp := arr[0]
+    arr[0] := arr[end]
+    arr[end] := tmp
+    end := end - 1
+    SiftDown(arr, 0, end)
+  end
+end
+
+function isSorted(arr)
+  let n := len(arr)
+  for i := 0 to n - 2 do
+    if arr[i] > arr[i + 1] then return false end
+  end
+  return true
+end
+
+let a := [7, 2, 9, 1, 5, 3, 8, 4, 6, 10]
+HeapSort(a)
+print "Heapsorted:"
+foreach x in a do print x end
+print "Is sorted: " & str(isSorted(a))
+
+let b := [1, 2, 3, 4, 5]
+HeapSort(b)
+print "Already sorted stays sorted: " & str(isSorted(b))

@@ -1,0 +1,14 @@
+﻿let result := []
+let idx := 0
+function flattenInto(arr)
+  foreach item in arr do
+    result[idx] := item
+    idx := idx + 1
+  end
+end
+flattenInto([1, 2, 3])
+flattenInto([4, 5])
+flattenInto([6, 7, 8, 9])
+foreach item in result do
+  print item
+end

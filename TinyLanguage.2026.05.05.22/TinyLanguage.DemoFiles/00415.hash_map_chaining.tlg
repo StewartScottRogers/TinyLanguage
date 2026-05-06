@@ -1,0 +1,123 @@
+﻿# Data structure: hash map with separate chaining for collision resolution
+# Subroutines: Put, Get, Remove, Contains, Size, HashCode
+# Workload: insert 10 key-value pairs with deliberate collisions, get all, remove 3, verify size
+
+class KVNode {
+  let key := ""
+  let value := 0
+  let next := null
+  Constructor(k, v)
+    this.key := k
+    this.value := v
+  end
+}
+
+class HashMap {
+  let buckets := []
+  let capacity := 0
+  let size := 0
+
+  Constructor(cap)
+    this.capacity := cap
+    for i := 0 to cap - 1 do
+      this.buckets[i] := null
+    end
+  end
+
+  function HashCode(key)
+    let h := 0
+    foreach ch in key do
+      let code := 0
+      if ch == "a" then code := 1 end
+      if ch == "b" then code := 2 end
+      if ch == "c" then code := 3 end
+      if ch == "d" then code := 4 end
+      if ch == "e" then code := 5 end
+      if ch == "f" then code := 6 end
+      if ch == "g" then code := 7 end
+      if ch == "h" then code := 8 end
+      if ch == "i" then code := 9 end
+      if ch == "j" then code := 10 end
+      h := (h * 31 + code) % this.capacity
+    end
+    return h
+  end
+
+  function Put(key, value)
+    let idx := this.HashCode(key)
+    let cur := this.buckets[idx]
+    while cur != null do
+      if cur.key == key then
+        cur.value := value
+        return
+      end
+      cur := cur.next
+    end
+    let node := new KVNode(key, value)
+    node.next := this.buckets[idx]
+    this.buckets[idx] := node
+    this.size := this.size + 1
+  end
+
+  function Get(key)
+    let idx := this.HashCode(key)
+    let cur := this.buckets[idx]
+    while cur != null do
+      if cur.key == key then return cur.value end
+      cur := cur.next
+    end
+    return null
+  end
+
+  function Remove(key)
+    let idx := this.HashCode(key)
+    if this.buckets[idx] == null then return end
+    if this.buckets[idx].key == key then
+      this.buckets[idx] := this.buckets[idx].next
+      this.size := this.size - 1
+      return
+    end
+    let cur := this.buckets[idx]
+    while cur.next != null and cur.next.key != key do
+      cur := cur.next
+    end
+    if cur.next != null then
+      cur.next := cur.next.next
+      this.size := this.size - 1
+    end
+  end
+
+  function Contains(key)
+    return this.Get(key) != null
+  end
+
+  function Size()
+    return this.size
+  end
+}
+
+let hm := new HashMap(7)
+hm.Put("age", 25)
+hm.Put("score", 100)
+hm.Put("level", 5)
+hm.Put("lives", 3)
+hm.Put("coins", 450)
+hm.Put("gems", 12)
+hm.Put("health", 80)
+hm.Put("mana", 60)
+hm.Put("speed", 10)
+hm.Put("power", 99)
+
+print "Size: " & str(hm.Size())
+print "age: " & str(hm.Get("age"))
+print "score: " & str(hm.Get("score"))
+print "power: " & str(hm.Get("power"))
+print "missing: " & str(hm.Get("missing"))
+print "Contains level: " & str(hm.Contains("level"))
+
+hm.Remove("age")
+hm.Remove("coins")
+hm.Remove("health")
+print "Size after 3 removes: " & str(hm.Size())
+print "Contains age: " & str(hm.Contains("age"))
+print "score: " & str(hm.Get("score"))

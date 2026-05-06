@@ -1,0 +1,7 @@
+﻿let binary := 0b1010
+let octal := 0o17
+let hex := 0xFF
+print binary
+print octal
+print hex
+print binary + octal + hex

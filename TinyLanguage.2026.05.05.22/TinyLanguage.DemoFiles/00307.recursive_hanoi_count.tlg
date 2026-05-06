@@ -1,0 +1,9 @@
+﻿function hanoiMoves(n)
+  if n == 0 then
+    return 0
+  end
+  return 2 * hanoiMoves(n - 1) + 1
+end
+for i := 0 to 8 do
+  print str(i) & " disks: " & str(hanoiMoves(i)) & " moves"
+end

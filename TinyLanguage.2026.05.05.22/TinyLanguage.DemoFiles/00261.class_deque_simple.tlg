@@ -1,0 +1,40 @@
+﻿class Deque {
+  let data := []
+  let front := 100
+  let back := 100
+  Constructor()
+    this.front := 100
+    this.back := 100
+  end
+  function pushFront(x)
+    this.front := this.front - 1
+    this.data[this.front] := x
+  end
+  function pushBack(x)
+    this.data[this.back] := x
+    this.back := this.back + 1
+  end
+  function popFront()
+    if this.front == this.back then return null end
+    let v := this.data[this.front]
+    this.front := this.front + 1
+    return v
+  end
+  function popBack()
+    if this.front == this.back then return null end
+    this.back := this.back - 1
+    return this.data[this.back]
+  end
+  function size()
+    return this.back - this.front
+  end
+}
+let dq := new Deque()
+dq.pushBack(1)
+dq.pushBack(2)
+dq.pushFront(0)
+dq.pushBack(3)
+print dq.size()
+print dq.popFront()
+print dq.popBack()
+print dq.size()

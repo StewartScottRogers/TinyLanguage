@@ -1,0 +1,60 @@
+﻿# Data structure: boolean sieve array
+# Subroutines: Sieve, CollectPrimes, CountPrimes, IsPrime
+# Workload: compute all primes up to 100, verify count, verify specific primes
+
+function Sieve(limit)
+  let isPrime := []
+  for i := 0 to limit do
+    isPrime[i] := true
+  end
+  isPrime[0] := false
+  isPrime[1] := false
+  let i := 2
+  while i * i <= limit do
+    if isPrime[i] then
+      let j := i * i
+      while j <= limit do
+        isPrime[j] := false
+        j := j + i
+      end
+    end
+    i := i + 1
+  end
+  return isPrime
+end
+
+function CollectPrimes(isPrime)
+  let result := []
+  let idx := 0
+  let n := len(isPrime)
+  for i := 0 to n - 1 do
+    if isPrime[i] then
+      result[idx] := i
+      idx := idx + 1
+    end
+  end
+  return result
+end
+
+function CountPrimes(isPrime)
+  let count := 0
+  let n := len(isPrime)
+  for i := 0 to n - 1 do
+    if isPrime[i] then count := count + 1 end
+  end
+  return count
+end
+
+let sieve := Sieve(100)
+let primes := CollectPrimes(sieve)
+let count := CountPrimes(sieve)
+
+print "Prime count up to 100: " & str(count)
+print "First 10 primes:"
+for i := 0 to 9 do
+  print primes[i]
+end
+print "Last prime <= 100: " & str(primes[count - 1])
+print "Is 97 prime: " & str(sieve[97])
+print "Is 91 prime: " & str(sieve[91])
+print "Is 89 prime: " & str(sieve[89])

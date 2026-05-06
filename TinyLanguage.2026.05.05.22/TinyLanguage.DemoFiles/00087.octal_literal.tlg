@@ -1,0 +1,2 @@
+﻿let o := 0o17
+print o

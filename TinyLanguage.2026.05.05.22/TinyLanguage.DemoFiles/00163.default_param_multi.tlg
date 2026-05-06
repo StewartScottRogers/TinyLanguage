@@ -1,0 +1,10 @@
+﻿function power(base, exp := 2)
+  let result := 1
+  for i := 1 to exp do
+    result := result * base
+  end
+  return result
+end
+print power(3)
+print power(2, 8)
+print power(5, 3)

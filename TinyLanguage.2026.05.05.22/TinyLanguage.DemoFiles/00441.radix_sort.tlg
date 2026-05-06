@@ -1,0 +1,65 @@
+﻿# Data structure: array sorted via LSD radix sort (base 10)
+# Subroutines: RadixSort, CountingSortByDigit, GetDigit, MaxValue
+# Workload: sort 12-element array of integers 0-999, verify result
+
+function GetDigit(n, place)
+  return (n // place) % 10
+end
+
+function MaxValue(arr)
+  let m := arr[0]
+  foreach x in arr do
+    if x > m then m := x end
+  end
+  return m
+end
+
+function CountingSortByDigit(arr, place)
+  let n := len(arr)
+  let count := []
+  let output := []
+  for i := 0 to 9 do
+    count[i] := 0
+  end
+  for i := 0 to n - 1 do
+    output[i] := 0
+  end
+  for i := 0 to n - 1 do
+    let d := GetDigit(arr[i], place)
+    count[d] := count[d] + 1
+  end
+  for i := 1 to 9 do
+    count[i] := count[i] + count[i - 1]
+  end
+  for i := n - 1 to 0 step -1 do
+    let d := GetDigit(arr[i], place)
+    output[count[d] - 1] := arr[i]
+    count[d] := count[d] - 1
+  end
+  for i := 0 to n - 1 do
+    arr[i] := output[i]
+  end
+end
+
+function RadixSort(arr)
+  let maxVal := MaxValue(arr)
+  let place := 1
+  while maxVal // place > 0 do
+    CountingSortByDigit(arr, place)
+    place := place * 10
+  end
+end
+
+function isSorted(arr)
+  let n := len(arr)
+  for i := 0 to n - 2 do
+    if arr[i] > arr[i + 1] then return false end
+  end
+  return true
+end
+
+let data := [170, 45, 75, 90, 802, 24, 2, 66, 531, 123, 789, 456]
+RadixSort(data)
+print "Radix sorted:"
+foreach x in data do print x end
+print "Is sorted: " & str(isSorted(data))

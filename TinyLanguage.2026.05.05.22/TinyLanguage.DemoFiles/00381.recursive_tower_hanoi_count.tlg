@@ -1,0 +1,7 @@
+﻿function moves(n)
+  if n == 1 then return 1 end
+  return 2 * moves(n - 1) + 1
+end
+for i := 1 to 8 do
+  print str(i) & " disks => " & str(moves(i)) & " moves"
+end

@@ -1,0 +1,10 @@
+﻿function celsiusToFahrenheit(c)
+  return c * 9.0 / 5.0 + 32.0
+end
+function fahrenheitToCelsius(f)
+  return (f - 32.0) * 5.0 / 9.0
+end
+print celsiusToFahrenheit(0.0)
+print celsiusToFahrenheit(100.0)
+print fahrenheitToCelsius(32.0)
+print fahrenheitToCelsius(212.0)

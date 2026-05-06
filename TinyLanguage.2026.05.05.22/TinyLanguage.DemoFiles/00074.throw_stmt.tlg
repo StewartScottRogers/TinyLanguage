@@ -1,0 +1,12 @@
+﻿function divide(a, b)
+  if b == 0 then
+    throw "division by zero"
+  end
+  return a / b
+end
+try
+  let r := divide(10, 0)
+  print r
+catch e
+  print "Error: " & e
+end

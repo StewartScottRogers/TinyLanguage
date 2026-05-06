@@ -1,0 +1,25 @@
+﻿module ListUtils {
+  function sum(arr)
+    let total := 0
+    foreach item in arr do
+      total := total + item
+    end
+    return total
+  end
+  function avg(arr)
+    return ListUtils.sum(arr) / len(arr)
+  end
+  function max(arr)
+    let m := arr[0]
+    foreach item in arr do
+      if item > m then m := item end
+    end
+    return m
+  end
+  export sum
+  export avg
+  export max
+}
+let data := [4, 7, 2, 9, 1, 5]
+print ListUtils.sum(data)
+print ListUtils.max(data)

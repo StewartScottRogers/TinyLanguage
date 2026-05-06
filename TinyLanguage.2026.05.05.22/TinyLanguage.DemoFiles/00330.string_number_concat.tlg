@@ -1,0 +1,3 @@
+﻿print "result: " & str(42)
+print "pi = " & str(3.14)
+print "flag: " & str(true)

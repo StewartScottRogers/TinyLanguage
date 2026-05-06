@@ -1,0 +1,10 @@
+﻿function repeat(s, n)
+  let result := ""
+  for i := 1 to n do
+    result := result & s
+  end
+  return result
+end
+print repeat("ha", 3)
+print repeat("-", 20)
+print repeat("abc", 0)

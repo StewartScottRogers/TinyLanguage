@@ -1,0 +1,91 @@
+﻿# Data structure: AVL tree (self-balancing BST)
+# Subroutines: Insert, Height, BalanceFactor, RotateLeft, RotateRight, InOrder
+# Workload: insert 10 elements, verify heights stay O(log n), traverse in-order
+
+class AVLNode {
+  let val := 0
+  let left := null
+  let right := null
+  let height := 1
+  Constructor(v)
+    this.val := v
+  end
+}
+
+function avlHeight(node)
+  if node == null then return 0 end
+  return node.height
+end
+
+function maxHeight(a, b)
+  if a > b then return a end
+  return b
+end
+
+function updateHeight(node)
+  node.height := 1 + maxHeight(avlHeight(node.left), avlHeight(node.right))
+end
+
+function balanceFactor(node)
+  if node == null then return 0 end
+  return avlHeight(node.left) - avlHeight(node.right)
+end
+
+function rotateRight(y)
+  let x := y.left
+  let t := x.right
+  x.right := y
+  y.left := t
+  updateHeight(y)
+  updateHeight(x)
+  return x
+end
+
+function rotateLeft(x)
+  let y := x.right
+  let t := y.left
+  y.left := x
+  x.right := t
+  updateHeight(x)
+  updateHeight(y)
+  return y
+end
+
+function avlInsert(node, v)
+  if node == null then return new AVLNode(v) end
+  if v < node.val then node.left := avlInsert(node.left, v)
+  else if v > node.val then node.right := avlInsert(node.right, v)
+  else return node end
+  updateHeight(node)
+  let bf := balanceFactor(node)
+  if bf > 1 and v < node.left.val then return rotateRight(node) end
+  if bf < -1 and v > node.right.val then return rotateLeft(node) end
+  if bf > 1 and v > node.left.val then
+    node.left := rotateLeft(node.left)
+    return rotateRight(node)
+  end
+  if bf < -1 and v < node.right.val then
+    node.right := rotateRight(node.right)
+    return rotateLeft(node)
+  end
+  return node
+end
+
+function avlInOrder(node)
+  if node == null then return end
+  avlInOrder(node.left)
+  print node.val
+  avlInOrder(node.right)
+end
+
+let root := null
+let vals := [10, 20, 30, 40, 50, 25, 35, 5, 15, 45]
+foreach v in vals do
+  root := avlInsert(root, v)
+end
+
+print "AVL InOrder (sorted):"
+avlInOrder(root)
+print "Root: " & str(root.val)
+print "Root height: " & str(root.height)
+print "Balance factor: " & str(balanceFactor(root))

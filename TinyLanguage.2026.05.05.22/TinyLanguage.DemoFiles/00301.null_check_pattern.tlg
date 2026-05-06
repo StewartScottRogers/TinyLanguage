@@ -1,0 +1,18 @@
+﻿function safeDiv(a, b)
+  if b == 0 then
+    return null
+  end
+  return a / b
+end
+let r1 := safeDiv(10, 2)
+let r2 := safeDiv(10, 0)
+if r1 == null then
+  print "r1 is null"
+else
+  print r1
+end
+if r2 == null then
+  print "r2 is null"
+else
+  print r2
+end

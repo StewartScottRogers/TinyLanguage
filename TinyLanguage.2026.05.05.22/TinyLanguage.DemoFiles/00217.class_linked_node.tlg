@@ -1,0 +1,17 @@
+﻿class Node {
+  let value := 0
+  let next := null
+  Constructor(v)
+    this.value := v
+  end
+}
+let n1 := new Node(1)
+let n2 := new Node(2)
+let n3 := new Node(3)
+n1.next := n2
+n2.next := n3
+let cur := n1
+while cur != null do
+  print cur.value
+  cur := cur.next
+end

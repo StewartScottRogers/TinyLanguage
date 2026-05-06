@@ -1,0 +1,23 @@
+﻿module Counter {
+  let count := 0
+  function increment()
+    count := count + 1
+  end
+  function reset()
+    count := 0
+  end
+  function get()
+    return count
+  end
+  export increment
+  export reset
+  export get
+}
+Counter.increment()
+Counter.increment()
+Counter.increment()
+print Counter.get()
+Counter.reset()
+print Counter.get()
+Counter.increment()
+print Counter.get()

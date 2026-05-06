@@ -1,0 +1,4 @@
+﻿let mixed := [1, "two", 3.0, true, null]
+foreach item in mixed do
+  print item
+end

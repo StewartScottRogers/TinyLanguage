@@ -1,0 +1,7 @@
+﻿module Utils {
+  function double(x)
+    return x * 2
+  end
+  export double
+}
+print Utils.double(5)

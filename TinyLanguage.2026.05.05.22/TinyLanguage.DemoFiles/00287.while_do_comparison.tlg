@@ -1,0 +1,14 @@
+﻿# while loop - may not execute body
+let x := 10
+while x < 5 do
+  print "while body"
+  x := x + 1
+end
+print "after while: " & str(x)
+# do-while - always executes once
+let y := 10
+do
+  print "do body executes once"
+  y := y + 1
+while y < 5
+print "after do: " & str(y)

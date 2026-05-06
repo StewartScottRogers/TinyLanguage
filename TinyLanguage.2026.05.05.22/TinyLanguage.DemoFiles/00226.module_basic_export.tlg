@@ -1,0 +1,12 @@
+﻿module Arithmetic {
+  function add(a, b)
+    return a + b
+  end
+  function subtract(a, b)
+    return a - b
+  end
+  export add
+  export subtract
+}
+print Arithmetic.add(5, 3)
+print Arithmetic.subtract(5, 3)

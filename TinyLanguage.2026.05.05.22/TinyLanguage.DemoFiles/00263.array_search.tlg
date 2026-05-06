@@ -1,0 +1,13 @@
+﻿function indexOf(arr, target)
+  let n := len(arr)
+  for i := 0 to n - 1 do
+    if arr[i] == target then
+      return i
+    end
+  end
+  return -1
+end
+let fruits := ["apple", "banana", "cherry", "date"]
+print indexOf(fruits, "cherry")
+print indexOf(fruits, "banana")
+print indexOf(fruits, "elderberry")

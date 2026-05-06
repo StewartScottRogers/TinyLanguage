@@ -1,0 +1,17 @@
+﻿class Event {
+  let handlers := []
+  let count := 0
+  function subscribe(h)
+    this.handlers[this.count] := h
+    this.count := this.count + 1
+  end
+  function fire(data)
+    for i := 0 to this.count - 1 do
+      this.handlers[i](data)
+    end
+  end
+}
+let clickEvent := new Event()
+clickEvent.subscribe(function(d) print "Handler1: " & d)
+clickEvent.subscribe(function(d) print "Handler2: " & str(len(d)))
+clickEvent.fire("button clicked")

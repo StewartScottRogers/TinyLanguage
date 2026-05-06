@@ -1,0 +1,15 @@
+﻿function toBinary(n)
+  if n == 0 then
+    return "0"
+  end
+  let result := ""
+  while n > 0 do
+    result := str(n % 2) & result
+    n := n // 2
+  end
+  return result
+end
+print toBinary(0)
+print toBinary(10)
+print toBinary(255)
+print toBinary(1024)

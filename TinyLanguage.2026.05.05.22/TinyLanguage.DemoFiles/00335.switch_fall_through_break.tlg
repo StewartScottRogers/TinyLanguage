@@ -1,0 +1,10 @@
+﻿for i := 1 to 5 do
+  let msg := ""
+  switch i {
+    case 1: msg := "one"; break
+    case 2: msg := "two"; break
+    case 3: msg := "three"; break
+    default: msg := "other"
+  }
+  print msg
+end

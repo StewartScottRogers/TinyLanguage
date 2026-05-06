@@ -1,0 +1,5 @@
+﻿let o := 0o77
+let b := 0b11111111
+print o
+print b
+print o + b

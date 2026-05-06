@@ -1,0 +1,3 @@
+﻿let x := 10
+let label := x > 5 ? "big" : "small"
+print label
