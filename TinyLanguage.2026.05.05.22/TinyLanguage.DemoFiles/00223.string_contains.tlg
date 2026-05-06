@@ -1,0 +1,22 @@
+﻿function contains(s, target)
+  let tlen := len(target)
+  let slen := len(s)
+  if tlen > slen then
+    return false
+  end
+  for i := 0 to slen - tlen do
+    let match := true
+    for j := 0 to tlen - 1 do
+      if s[i + j] != target[j] then
+        match := false
+      end
+    end
+    if match then
+      return true
+    end
+  end
+  return false
+end
+print contains("hello world", "world")
+print contains("hello world", "xyz")
+print contains("abc", "abc")

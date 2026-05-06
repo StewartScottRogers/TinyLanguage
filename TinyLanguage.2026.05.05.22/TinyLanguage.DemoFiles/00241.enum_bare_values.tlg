@@ -1,0 +1,8 @@
+﻿enum Fruit {
+  Apple,
+  Banana,
+  Cherry
+}
+print Fruit.Apple
+print Fruit.Banana
+print Fruit.Cherry

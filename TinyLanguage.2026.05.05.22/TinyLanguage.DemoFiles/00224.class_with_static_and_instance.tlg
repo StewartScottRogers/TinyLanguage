@@ -1,0 +1,19 @@
+﻿class MathHelper {
+  let precision := 6
+  Constructor(p)
+    this.precision := p
+  end
+  static function square(x)
+    return x * x
+  end
+  static function cube(x)
+    return x * x * x
+  end
+  function describe()
+    return "MathHelper(precision=" & str(this.precision) & ")"
+  end
+}
+print MathHelper.square(5)
+print MathHelper.cube(3)
+let m := new MathHelper(10)
+print m.describe()

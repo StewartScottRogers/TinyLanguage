@@ -1,0 +1,9 @@
+﻿function describe(x)
+  let r := match x {
+    0 => "zero"
+    _ => "nonzero"
+  }
+  return r
+end
+print describe(0)
+print describe(5)

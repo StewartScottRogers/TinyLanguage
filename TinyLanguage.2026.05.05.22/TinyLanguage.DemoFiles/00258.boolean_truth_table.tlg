@@ -1,0 +1,7 @@
+﻿let vals := [true, false]
+foreach a in vals do
+  foreach b in vals do
+    print str(a) & " AND " & str(b) & " = " & str(a and b)
+    print str(a) & " OR  " & str(b) & " = " & str(a or b)
+  end
+end

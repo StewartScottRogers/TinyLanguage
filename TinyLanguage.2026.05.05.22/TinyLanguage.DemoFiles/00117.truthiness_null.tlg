@@ -1,0 +1,5 @@
+﻿if null then
+  print "truthy"
+else
+  print "falsy"
+end

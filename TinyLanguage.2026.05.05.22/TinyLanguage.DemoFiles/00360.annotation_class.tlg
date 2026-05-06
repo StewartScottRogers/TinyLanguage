@@ -1,0 +1,17 @@
+﻿@entity
+class User {
+  let id := 0
+  let name := ""
+  Constructor(i, n)
+    this.id := i
+    this.name := n
+  end
+  @required
+  function validate()
+    return this.id > 0 and len(this.name) > 0
+  end
+}
+let u := new User(1, "Alice")
+print u.validate()
+let invalid := new User(0, "")
+print invalid.validate()

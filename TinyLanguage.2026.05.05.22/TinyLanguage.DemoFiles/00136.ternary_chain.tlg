@@ -1,0 +1,6 @@
+﻿function classify(n)
+  return n < 0 ? "negative" : n == 0 ? "zero" : "positive"
+end
+print classify(-5)
+print classify(0)
+print classify(7)

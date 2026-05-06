@@ -1,0 +1,8 @@
+﻿let arr := []
+for i := 0 to 9 do
+  arr[i] := i * i
+end
+print len(arr)
+foreach item in arr do
+  print item
+end

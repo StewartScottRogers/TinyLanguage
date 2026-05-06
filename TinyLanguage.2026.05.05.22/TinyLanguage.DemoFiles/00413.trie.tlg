@@ -1,0 +1,92 @@
+﻿# Data structure: trie (prefix tree)
+# Subroutines: Insert, Contains, StartsWith, Count, Print
+# Workload: insert 10 words, check contains/not-contains, verify startsWith queries
+
+class TrieNode {
+  let children := []
+  let childKeys := []
+  let childCount := 0
+  let isEnd := false
+
+  function getChild(ch)
+    for i := 0 to this.childCount - 1 do
+      if this.childKeys[i] == ch then
+        return this.children[i]
+      end
+    end
+    return null
+  end
+
+  function addChild(ch)
+    let node := new TrieNode()
+    this.childKeys[this.childCount] := ch
+    this.children[this.childCount] := node
+    this.childCount := this.childCount + 1
+    return node
+  end
+}
+
+class Trie {
+  let root := null
+  let wordCount := 0
+
+  Constructor()
+    this.root := new TrieNode()
+  end
+
+  function Insert(word)
+    let cur := this.root
+    foreach ch in word do
+      let child := cur.getChild(ch)
+      if child == null then
+        child := cur.addChild(ch)
+      end
+      cur := child
+    end
+    if not cur.isEnd then
+      cur.isEnd := true
+      this.wordCount := this.wordCount + 1
+    end
+  end
+
+  function Contains(word)
+    let cur := this.root
+    foreach ch in word do
+      let child := cur.getChild(ch)
+      if child == null then return false end
+      cur := child
+    end
+    return cur.isEnd
+  end
+
+  function StartsWith(prefix)
+    let cur := this.root
+    foreach ch in prefix do
+      let child := cur.getChild(ch)
+      if child == null then return false end
+      cur := child
+    end
+    return true
+  end
+
+  function Count()
+    return this.wordCount
+  end
+}
+
+let trie := new Trie()
+let words := ["apple", "app", "application", "banana", "band", "bandana", "cat", "car", "card", "care"]
+foreach w in words do
+  trie.Insert(w)
+end
+
+print "Word count: " & str(trie.Count())
+print "Contains apple: " & str(trie.Contains("apple"))
+print "Contains app: " & str(trie.Contains("app"))
+print "Contains ap: " & str(trie.Contains("ap"))
+print "Contains apply: " & str(trie.Contains("apply"))
+print "StartsWith app: " & str(trie.StartsWith("app"))
+print "StartsWith ban: " & str(trie.StartsWith("ban"))
+print "StartsWith xyz: " & str(trie.StartsWith("xyz"))
+print "Contains car: " & str(trie.Contains("car"))
+print "Contains care: " & str(trie.Contains("care"))

@@ -1,0 +1,16 @@
+﻿let log := "start"
+try
+  try
+    throw "inner error"
+  catch inner
+    log := log & ",caught_inner"
+    throw "re-thrown"
+  finally
+    log := log & ",inner_finally"
+  end
+catch outer
+  log := log & ",caught_outer"
+finally
+  log := log & ",outer_finally"
+end
+print log

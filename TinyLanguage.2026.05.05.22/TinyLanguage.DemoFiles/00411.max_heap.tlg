@@ -1,0 +1,80 @@
+﻿# Data structure: max-heap (array-based binary heap)
+# Subroutines: Insert, ExtractMax, Peek, HeapifyUp, HeapifyDown, Size
+# Workload: insert 10 values, extract-max 5 times verifying descending order, insert 3 more
+
+class MaxHeap {
+  let data := []
+  let size := 0
+
+  function Insert(x)
+    this.data[this.size] := x
+    this.size := this.size + 1
+    this.HeapifyUp(this.size - 1)
+  end
+
+  function HeapifyUp(i)
+    while i > 0 do
+      let parent := (i - 1) // 2
+      if this.data[i] > this.data[parent] then
+        let tmp := this.data[i]
+        this.data[i] := this.data[parent]
+        this.data[parent] := tmp
+        i := parent
+      else
+        return
+      end
+    end
+  end
+
+  function ExtractMax()
+    if this.size == 0 then throw "heap empty" end
+    let maxVal := this.data[0]
+    this.size := this.size - 1
+    this.data[0] := this.data[this.size]
+    this.HeapifyDown(0)
+    return maxVal
+  end
+
+  function HeapifyDown(i)
+    while true do
+      let left := 2 * i + 1
+      let right := 2 * i + 2
+      let largest := i
+      if left < this.size and this.data[left] > this.data[largest] then
+        largest := left
+      end
+      if right < this.size and this.data[right] > this.data[largest] then
+        largest := right
+      end
+      if largest == i then return end
+      let tmp := this.data[i]
+      this.data[i] := this.data[largest]
+      this.data[largest] := tmp
+      i := largest
+    end
+  end
+
+  function Peek()
+    if this.size == 0 then return null end
+    return this.data[0]
+  end
+
+  function Size()
+    return this.size
+  end
+}
+
+let heap := new MaxHeap()
+let vals := [3, 9, 1, 7, 5, 2, 8, 4, 6, 10]
+foreach v in vals do
+  heap.Insert(v)
+end
+print "Size: " & str(heap.Size())
+print "Peek (max): " & str(heap.Peek())
+print "Extract-max 5 times (should be 10,9,8,7,6):"
+for i := 1 to 5 do
+  print heap.ExtractMax()
+end
+heap.Insert(15)
+heap.Insert(12)
+print "After inserting 15 and 12, max: " & str(heap.Peek())

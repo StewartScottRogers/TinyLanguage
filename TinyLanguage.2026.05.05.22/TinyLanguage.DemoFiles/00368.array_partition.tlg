@@ -1,0 +1,22 @@
+﻿function partition(arr, pivot)
+  let left := []
+  let right := []
+  let li := 0
+  let ri := 0
+  foreach item in arr do
+    if item <= pivot then
+      left[li] := item
+      li := li + 1
+    else
+      right[ri] := item
+      ri := ri + 1
+    end
+  end
+  return [left, right]
+end
+let data := [3, 1, 4, 1, 5, 9, 2, 6, 5, 3]
+let parts := partition(data, 4)
+print "left:"
+foreach x in parts[0] do print x end
+print "right:"
+foreach x in parts[1] do print x end

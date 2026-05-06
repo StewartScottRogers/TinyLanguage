@@ -1,0 +1,29 @@
+﻿class Counter {
+  let value := 0
+  let step := 1
+  Constructor(start, s)
+    this.value := start
+    this.step := s
+  end
+  function increment()
+    this.value := this.value + this.step
+  end
+  function decrement()
+    this.value := this.value - this.step
+  end
+  function reset()
+    this.value := 0
+  end
+  function get()
+    return this.value
+  end
+}
+let c := new Counter(0, 5)
+c.increment()
+c.increment()
+c.increment()
+print c.get()
+c.decrement()
+print c.get()
+c.reset()
+print c.get()

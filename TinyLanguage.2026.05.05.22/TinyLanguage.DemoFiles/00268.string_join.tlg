@@ -1,0 +1,16 @@
+﻿function join(parts, sep)
+  let result := ""
+  let first := true
+  foreach part in parts do
+    if not first then
+      result := result & sep
+    end
+    result := result & part
+    first := false
+  end
+  return result
+end
+let words := ["hello", "world", "foo"]
+print join(words, ", ")
+print join(words, " | ")
+print join([], ", ")

@@ -1,0 +1,54 @@
+﻿# Data structure: 1D DP array for minimum coin change
+# Subroutines: MinCoins, CountWays, BuildDP, Backtrack
+# Workload: solve 5 coin change problems with different denominations and amounts
+
+function MinCoins(coins, amount)
+  let dp := []
+  for i := 0 to amount do
+    dp[i] := amount + 1
+  end
+  dp[0] := 0
+  for i := 1 to amount do
+    foreach coin in coins do
+      if coin <= i then
+        if dp[i - coin] + 1 < dp[i] then
+          dp[i] := dp[i - coin] + 1
+        end
+      end
+    end
+  end
+  if dp[amount] > amount then return -1 end
+  return dp[amount]
+end
+
+function CountWays(coins, amount)
+  let dp := []
+  for i := 0 to amount do
+    dp[i] := 0
+  end
+  dp[0] := 1
+  foreach coin in coins do
+    for i := coin to amount do
+      dp[i] := dp[i] + dp[i - coin]
+    end
+  end
+  return dp[amount]
+end
+
+let tests := [
+  [[1, 5, 10, 25], 41],
+  [[2], 3],
+  [[1, 2, 5], 11],
+  [[186, 419, 83, 408], 6249],
+  [[1, 5, 6, 9], 11]
+]
+
+foreach test in tests do
+  let coins := test[0]
+  let amount := test[1]
+  let minC := MinCoins(coins, amount)
+  let ways := CountWays(coins, amount)
+  let coinStr := ""
+  foreach c in coins do coinStr := coinStr & str(c) & " " end
+  print "coins=[" & coinStr & "], amount=" & str(amount) & ": min=" & str(minC) & ", ways=" & str(ways)
+end

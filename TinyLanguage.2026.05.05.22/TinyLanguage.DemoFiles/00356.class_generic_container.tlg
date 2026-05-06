@@ -1,0 +1,28 @@
+﻿class Container {
+  let value := null
+  let hasValue := false
+  function set(v)
+    this.value := v
+    this.hasValue := true
+  end
+  function get()
+    if not this.hasValue then
+      throw "container is empty"
+    end
+    return this.value
+  end
+  function clear()
+    this.value := null
+    this.hasValue := false
+  end
+  function isEmpty()
+    return not this.hasValue
+  end
+}
+let c := new Container()
+print c.isEmpty()
+c.set(42)
+print c.isEmpty()
+print c.get()
+c.clear()
+print c.isEmpty()

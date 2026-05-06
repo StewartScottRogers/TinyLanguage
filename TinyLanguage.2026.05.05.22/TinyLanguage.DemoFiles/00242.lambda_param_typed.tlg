@@ -1,0 +1,4 @@
+﻿let triple := function(x : int) -> int x * 3
+let double := function(x : float) x * 2.0
+print triple(7)
+print double(3.5)

@@ -1,0 +1,6 @@
+﻿let s1 := "abc"
+let s2 := "abc"
+let s3 := "def"
+print s1 == s2
+print s1 == s3
+print s1 != s3

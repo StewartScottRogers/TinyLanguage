@@ -1,0 +1,20 @@
+﻿class Pair {
+  let first := null
+  let second := null
+  Constructor(a, b)
+    this.first := a
+    this.second := b
+  end
+  function swap()
+    let temp := this.first
+    this.first := this.second
+    this.second := temp
+  end
+  function toString()
+    return "(" & str(this.first) & ", " & str(this.second) & ")"
+  end
+}
+let p := new Pair(1, 2)
+print p.toString()
+p.swap()
+print p.toString()

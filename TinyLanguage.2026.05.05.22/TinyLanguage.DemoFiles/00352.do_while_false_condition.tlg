@@ -1,0 +1,6 @@
+﻿let count := 0
+do
+  count := count + 1
+  print count
+while false
+print "done"

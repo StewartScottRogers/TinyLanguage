@@ -1,0 +1,116 @@
+﻿# Data structure: open-addressing hash table with linear probing
+# Subroutines: Put, Get, Remove, Contains, Size, LoadFactor
+# Workload: insert 8 pairs, probe collisions, remove 2, verify state, re-insert
+
+class OAHashTable {
+  let keys := []
+  let values := []
+  let state := []
+  let capacity := 13
+  let size := 0
+
+  Constructor()
+    for i := 0 to 12 do
+      this.keys[i] := ""
+      this.values[i] := 0
+      this.state[i] := 0
+    end
+  end
+
+  function hash(key)
+    let h := 0
+    let mult := 1
+    foreach ch in key do
+      let code := 0
+      if ch == "a" then code := 97 end
+      if ch == "b" then code := 98 end
+      if ch == "c" then code := 99 end
+      if ch == "d" then code := 100 end
+      if ch == "e" then code := 101 end
+      if ch == "f" then code := 102 end
+      if ch == "g" then code := 103 end
+      if ch == "h" then code := 104 end
+      if ch == "i" then code := 105 end
+      if ch == "j" then code := 106 end
+      if ch == "k" then code := 107 end
+      h := h + code * mult
+      mult := mult * 31
+    end
+    if h < 0 then h := -h end
+    return h % this.capacity
+  end
+
+  function Put(key, value)
+    let idx := this.hash(key)
+    let start := idx
+    while this.state[idx] == 1 and this.keys[idx] != key do
+      idx := (idx + 1) % this.capacity
+      if idx == start then throw "table full" end
+    end
+    if this.state[idx] != 1 then
+      this.size := this.size + 1
+    end
+    this.keys[idx] := key
+    this.values[idx] := value
+    this.state[idx] := 1
+  end
+
+  function Get(key)
+    let idx := this.hash(key)
+    let start := idx
+    while this.state[idx] != 0 do
+      if this.state[idx] == 1 and this.keys[idx] == key then
+        return this.values[idx]
+      end
+      idx := (idx + 1) % this.capacity
+      if idx == start then return null end
+    end
+    return null
+  end
+
+  function Remove(key)
+    let idx := this.hash(key)
+    let start := idx
+    while this.state[idx] != 0 do
+      if this.state[idx] == 1 and this.keys[idx] == key then
+        this.state[idx] := 2
+        this.size := this.size - 1
+        return
+      end
+      idx := (idx + 1) % this.capacity
+      if idx == start then return end
+    end
+  end
+
+  function Contains(key)
+    return this.Get(key) != null
+  end
+
+  function Size()
+    return this.size
+  end
+}
+
+let ht := new OAHashTable()
+ht.Put("one", 1)
+ht.Put("two", 2)
+ht.Put("three", 3)
+ht.Put("four", 4)
+ht.Put("five", 5)
+ht.Put("six", 6)
+ht.Put("seven", 7)
+ht.Put("eight", 8)
+
+print "Size: " & str(ht.Size())
+print "Get one: " & str(ht.Get("one"))
+print "Get five: " & str(ht.Get("five"))
+print "Get missing: " & str(ht.Get("missing"))
+print "Contains three: " & str(ht.Contains("three"))
+
+ht.Remove("two")
+ht.Remove("six")
+print "Size after removes: " & str(ht.Size())
+print "Contains two: " & str(ht.Contains("two"))
+ht.Put("nine", 9)
+print "Get nine: " & str(ht.Get("nine"))
+print "Final size: " & str(ht.Size())

@@ -1,0 +1,38 @@
+﻿class Stack {
+  let items := []
+  let top := -1
+  function push(x)
+    this.top := this.top + 1
+    this.items[this.top] := x
+  end
+  function pop()
+    if this.top < 0 then
+      throw "stack underflow"
+    end
+    let v := this.items[this.top]
+    this.top := this.top - 1
+    return v
+  end
+  function peek()
+    if this.top < 0 then
+      return null
+    end
+    return this.items[this.top]
+  end
+  function isEmpty()
+    return this.top < 0
+  end
+  function size()
+    return this.top + 1
+  end
+}
+let s := new Stack()
+print s.isEmpty()
+s.push(10)
+s.push(20)
+s.push(30)
+print s.size()
+print s.peek()
+print s.pop()
+print s.peek()
+print s.size()

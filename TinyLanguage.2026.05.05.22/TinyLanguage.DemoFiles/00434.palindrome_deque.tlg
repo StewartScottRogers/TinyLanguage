@@ -1,0 +1,63 @@
+﻿# Data structure: deque for palindrome checking
+# Subroutines: PushFront, PushBack, PopFront, PopBack, Size, IsPalindrome
+# Workload: load 8 strings into deque one char at a time, check palindrome from both ends
+
+class CharDeque {
+  let data := []
+  let front := 500
+  let back := 500
+
+  function PushFront(ch)
+    this.front := this.front - 1
+    this.data[this.front] := ch
+  end
+
+  function PushBack(ch)
+    this.data[this.back] := ch
+    this.back := this.back + 1
+  end
+
+  function PopFront()
+    if this.front == this.back then throw "empty" end
+    let v := this.data[this.front]
+    this.front := this.front + 1
+    return v
+  end
+
+  function PopBack()
+    if this.front == this.back then throw "empty" end
+    this.back := this.back - 1
+    return this.data[this.back]
+  end
+
+  function Size()
+    return this.back - this.front
+  end
+
+  function IsEmpty()
+    return this.front == this.back
+  end
+
+  function Clear()
+    this.front := 500
+    this.back := 500
+  end
+}
+
+function IsPalindromeDeque(s)
+  let dq := new CharDeque()
+  foreach ch in s do
+    dq.PushBack(ch)
+  end
+  while dq.Size() > 1 do
+    let f := dq.PopFront()
+    let b := dq.PopBack()
+    if f != b then return false end
+  end
+  return true
+end
+
+let words := ["racecar", "hello", "level", "world", "abcba", "noon", "abcd", "civic"]
+foreach w in words do
+  print "'" & w & "' is palindrome: " & str(IsPalindromeDeque(w))
+end

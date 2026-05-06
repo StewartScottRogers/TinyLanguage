@@ -1,0 +1,6 @@
+﻿function product(arr, i)
+  if i >= len(arr) then return 1 end
+  return arr[i] * product(arr, i + 1)
+end
+print product([1, 2, 3, 4, 5], 0)
+print product([2, 4, 8], 0)

@@ -1,0 +1,26 @@
+﻿class Stack {
+  let data := []
+  let top := 0
+  function push(x)
+    this.data[this.top] := x
+    this.top := this.top + 1
+  end
+  function pop()
+    if this.top == 0 then
+      return null
+    end
+    this.top := this.top - 1
+    return this.data[this.top]
+  end
+  function size()
+    return this.top
+  end
+}
+let stk := new Stack()
+stk.push(10)
+stk.push(20)
+stk.push(30)
+print stk.size()
+print stk.pop()
+print stk.pop()
+print stk.size()

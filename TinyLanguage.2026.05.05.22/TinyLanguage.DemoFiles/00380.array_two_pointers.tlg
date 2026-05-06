@@ -1,0 +1,15 @@
+﻿function twoSum(arr, target)
+  let n := len(arr)
+  for i := 0 to n - 2 do
+    for j := i + 1 to n - 1 do
+      if arr[i] + arr[j] == target then
+        return [i, j]
+      end
+    end
+  end
+  return []
+end
+let data := [2, 7, 11, 15]
+let result := twoSum(data, 9)
+print result[0]
+print result[1]

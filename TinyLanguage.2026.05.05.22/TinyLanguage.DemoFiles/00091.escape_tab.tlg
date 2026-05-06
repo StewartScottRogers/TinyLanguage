@@ -1,0 +1,2 @@
+﻿let s := "col1\tcol2"
+print s

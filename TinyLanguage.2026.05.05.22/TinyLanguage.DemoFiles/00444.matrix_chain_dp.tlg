@@ -1,0 +1,42 @@
+﻿# Data structure: 2D DP table for matrix chain multiplication order
+# Subroutines: MCM, BuildDP, PrintOptimalOrder, MinCost
+# Workload: compute minimum multiplications for 5 chains of dimensions
+
+function MCM(dims)
+  let n := len(dims) - 1
+  let dp := []
+  for i := 0 to n - 1 do
+    dp[i] := []
+    for j := 0 to n - 1 do
+      dp[i][j] := 0
+    end
+  end
+  for length := 2 to n do
+    for i := 0 to n - length do
+      let j := i + length - 1
+      dp[i][j] := 999999999
+      for k := i to j - 1 do
+        let cost := dp[i][k] + dp[k + 1][j] + dims[i] * dims[k + 1] * dims[j + 1]
+        if cost < dp[i][j] then
+          dp[i][j] := cost
+        end
+      end
+    end
+  end
+  return dp[0][n - 1]
+end
+
+let chains := [
+  [10, 30, 5, 60],
+  [40, 20, 30, 10, 30],
+  [10, 20, 30, 40, 30],
+  [5, 10, 3, 12, 5, 50, 6],
+  [1, 2, 3]
+]
+
+foreach chain in chains do
+  let cost := MCM(chain)
+  let display := ""
+  foreach d in chain do display := display & str(d) & " " end
+  print "MCM([" & display & "]) = " & str(cost)
+end

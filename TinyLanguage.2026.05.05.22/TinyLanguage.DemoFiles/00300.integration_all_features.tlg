@@ -1,0 +1,49 @@
+﻿# Integration demo combining many features
+
+enum Priority { Low = 1, Medium = 2, High = 3 }
+
+class Task {
+  let title := ""
+  let priority := 1
+  let done := false
+  Constructor(t, p)
+    this.title := t
+    this.priority := p
+  end
+  function complete()
+    this.done := true
+  end
+  function toString()
+    let status := if this.done then "[X]" else "[ ]"
+    return status & " " & this.title & " (P" & str(this.priority) & ")"
+  end
+}
+
+function sortByPriority(tasks)
+  let n := len(tasks)
+  for i := 0 to n - 2 do
+    for j := 0 to n - 2 - i do
+      if tasks[j].priority < tasks[j + 1].priority then
+        let tmp := tasks[j]
+        tasks[j] := tasks[j + 1]
+        tasks[j + 1] := tmp
+      end
+    end
+  end
+end
+
+let tasks := [
+  new Task("Write tests", Priority.High),
+  new Task("Update docs", Priority.Low),
+  new Task("Fix bug", Priority.High),
+  new Task("Review PR", Priority.Medium)
+]
+
+tasks[0].complete()
+tasks[2].complete()
+
+sortByPriority(tasks)
+
+foreach t in tasks do
+  print t.toString()
+end

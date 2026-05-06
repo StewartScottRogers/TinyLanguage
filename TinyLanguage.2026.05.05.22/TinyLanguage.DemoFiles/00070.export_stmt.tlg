@@ -1,0 +1,7 @@
+﻿module Greet {
+  function hello(name)
+    return "Hello, " & name
+  end
+  export hello
+}
+print Greet.hello("World")

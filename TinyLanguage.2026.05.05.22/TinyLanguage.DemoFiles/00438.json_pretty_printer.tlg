@@ -1,0 +1,87 @@
+﻿# Data structure: nested arrays and maps represented as tag+data arrays
+# Subroutines: PrettyPrint, PrintIndent, PrintArray, PrintMap, TypeOf
+# Workload: build nested structure with 3 levels, print with 2-space indentation
+
+function printIndent(level)
+  let indent := ""
+  for i := 0 to level - 1 do
+    indent := indent & "  "
+  end
+  return indent
+end
+
+function prettyPrintValue(val, level)
+  if val == null then
+    print printIndent(level) & "null"
+  else
+    if val is string then
+      print printIndent(level) & "\"" & val & "\""
+    else
+      if val is int then
+        print printIndent(level) & str(val)
+      else
+        if val is float then
+          print printIndent(level) & str(val)
+        else
+          if val is bool then
+            print printIndent(level) & str(val)
+          else
+            print printIndent(level) & str(val)
+          end
+        end
+      end
+    end
+  end
+end
+
+function prettyPrintArray(arr, level)
+  print printIndent(level) & "["
+  foreach item in arr do
+    prettyPrintValue(item, level + 1)
+  end
+  print printIndent(level) & "]"
+end
+
+let data := [
+  "name",
+  "database",
+  "version",
+  2,
+  "host",
+  "localhost",
+  "port",
+  5432,
+  "enabled",
+  true,
+  "tags",
+  ["prod", "v2", "stable"]
+]
+
+print "Pretty-printed structure:"
+print "{"
+let i := 0
+while i < len(data) - 1 do
+  let key := data[i]
+  let val := data[i + 1]
+  if val is string then
+    print "  \"" & key & "\": \"" & val & "\","
+  else
+    if val is int then
+      print "  \"" & key & "\": " & str(val) & ","
+    else
+      if val is float then
+        print "  \"" & key & "\": " & str(val) & ","
+      else
+        if val is bool then
+          print "  \"" & key & "\": " & str(val) & ","
+        else
+          print "  \"" & key & "\": ["
+          prettyPrintArray(val, 2)
+          print "  ],"
+        end
+      end
+    end
+  end
+  i := i + 2
+end
+print "}"

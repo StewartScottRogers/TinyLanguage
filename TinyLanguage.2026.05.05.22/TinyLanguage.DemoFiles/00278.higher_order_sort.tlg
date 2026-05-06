@@ -1,0 +1,17 @@
+﻿function bubbleSortWith(arr, less)
+  let n := len(arr)
+  for i := 0 to n - 2 do
+    for j := 0 to n - 2 - i do
+      if less(arr[j + 1], arr[j]) then
+        let tmp := arr[j]
+        arr[j] := arr[j + 1]
+        arr[j + 1] := tmp
+      end
+    end
+  end
+end
+let data := [5, 2, 8, 1, 9, 3]
+bubbleSortWith(data, function(a, b) a < b)
+foreach item in data do
+  print item
+end

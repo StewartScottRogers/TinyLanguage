@@ -1,0 +1,14 @@
+﻿function pipeline(val, fns)
+  let result := val
+  foreach fn in fns do
+    result := fn(result)
+  end
+  return result
+end
+let transforms := [
+  function(x) x * 2,
+  function(x) x + 10,
+  function(x) x - 3,
+  function(x) str(x) & "!"
+]
+print pipeline(5, transforms)

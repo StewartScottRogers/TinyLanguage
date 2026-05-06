@@ -1,0 +1,66 @@
+﻿# Data structure: dynamic array (vector with automatic resize)
+# Subroutines: Append, Get, Set, Remove, Resize, Size, Contains
+# Workload: build vector of 12 elements, set/get random indices, remove elements, verify size
+
+class DynArray {
+  let data := []
+  let size := 0
+  let capacity := 4
+
+  function Append(x)
+    this.data[this.size] := x
+    this.size := this.size + 1
+  end
+
+  function Get(i)
+    if i < 0 or i >= this.size then throw "index out of bounds" end
+    return this.data[i]
+  end
+
+  function Set(i, x)
+    if i < 0 or i >= this.size then throw "index out of bounds" end
+    this.data[i] := x
+  end
+
+  function Remove(i)
+    if i < 0 or i >= this.size then throw "index out of bounds" end
+    for j := i to this.size - 2 do
+      this.data[j] := this.data[j + 1]
+    end
+    this.size := this.size - 1
+  end
+
+  function Size()
+    return this.size
+  end
+
+  function Contains(x)
+    for i := 0 to this.size - 1 do
+      if this.data[i] == x then return true end
+    end
+    return false
+  end
+
+  function PrintAll()
+    for i := 0 to this.size - 1 do
+      print this.data[i]
+    end
+  end
+}
+
+let v := new DynArray()
+for i := 1 to 12 do
+  v.Append(i * 5)
+end
+print "Size after 12 appends: " & str(v.Size())
+print "Get(0): " & str(v.Get(0))
+print "Get(11): " & str(v.Get(11))
+v.Set(5, 999)
+print "Get(5) after Set: " & str(v.Get(5))
+print "Contains 999: " & str(v.Contains(999))
+print "Contains 100: " & str(v.Contains(100))
+v.Remove(5)
+print "Size after Remove(5): " & str(v.Size())
+print "Get(5) after Remove: " & str(v.Get(5))
+print "All elements:"
+v.PrintAll()

@@ -1,0 +1,66 @@
+﻿# Data structure: 2D boolean DP table for palindromic substrings
+# Subroutines: BuildTable, CountPalindromes, LongestPalindrome, FindAll
+# Workload: process 4 strings, count palindromes and find longest
+
+function BuildPalinTable(s)
+  let n := len(s)
+  let dp := []
+  for i := 0 to n - 1 do
+    dp[i] := []
+    for j := 0 to n - 1 do
+      dp[i][j] := false
+    end
+  end
+  for i := 0 to n - 1 do
+    dp[i][i] := true
+  end
+  for i := 0 to n - 2 do
+    dp[i][i + 1] := s[i] == s[i + 1]
+  end
+  for length := 3 to n do
+    for i := 0 to n - length do
+      let j := i + length - 1
+      dp[i][j] := s[i] == s[j] and dp[i + 1][j - 1]
+    end
+  end
+  return dp
+end
+
+function CountPalindromes(s)
+  let dp := BuildPalinTable(s)
+  let n := len(s)
+  let count := 0
+  for i := 0 to n - 1 do
+    for j := i to n - 1 do
+      if dp[i][j] then count := count + 1 end
+    end
+  end
+  return count
+end
+
+function LongestPalindrome(s)
+  let dp := BuildPalinTable(s)
+  let n := len(s)
+  let bestLen := 1
+  let bestStart := 0
+  for i := 0 to n - 1 do
+    for j := i to n - 1 do
+      if dp[i][j] and j - i + 1 > bestLen then
+        bestLen := j - i + 1
+        bestStart := i
+      end
+    end
+  end
+  let result := ""
+  for i := bestStart to bestStart + bestLen - 1 do
+    result := result & s[i]
+  end
+  return result
+end
+
+let strings := ["abcba", "racecar", "abcd", "aabaa"]
+foreach s in strings do
+  let count := CountPalindromes(s)
+  let longest := LongestPalindrome(s)
+  print "'" & s & "': " & str(count) & " palindromes, longest='" & longest & "'"
+end

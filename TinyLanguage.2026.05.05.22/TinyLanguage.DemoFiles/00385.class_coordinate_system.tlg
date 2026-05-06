@@ -1,0 +1,30 @@
+﻿class Vector2D {
+  let x := 0.0
+  let y := 0.0
+  Constructor(px, py)
+    this.x := px
+    this.y := py
+  end
+  function add(v)
+    return new Vector2D(this.x + v.x, this.y + v.y)
+  end
+  function subtract(v)
+    return new Vector2D(this.x - v.x, this.y - v.y)
+  end
+  function dot(v)
+    return this.x * v.x + this.y * v.y
+  end
+  function lengthSq()
+    return this.x * this.x + this.y * this.y
+  end
+  function toString()
+    return "(" & str(this.x) & "," & str(this.y) & ")"
+  end
+}
+let a := new Vector2D(3.0, 4.0)
+let b := new Vector2D(1.0, 2.0)
+print a.toString()
+print a.add(b).toString()
+print a.subtract(b).toString()
+print a.dot(b)
+print a.lengthSq()

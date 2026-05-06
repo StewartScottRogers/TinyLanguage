@@ -1,0 +1,5 @@
+﻿@log
+let x := 42
+@trace
+let y := x * 2
+print y

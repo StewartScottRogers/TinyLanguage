@@ -1,0 +1,8 @@
+﻿let x : int := 42
+let y : float := 3.14
+let s : string := "hello"
+let b : bool := true
+print x
+print y
+print s
+print b

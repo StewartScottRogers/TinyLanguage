@@ -1,0 +1,25 @@
+﻿class Builder {
+  let parts := []
+  let count := 0
+  function add(s)
+    this.parts[this.count] := s
+    this.count := this.count + 1
+  end
+  function build()
+    let result := ""
+    let first := true
+    for i := 0 to this.count - 1 do
+      if not first then
+        result := result & " "
+      end
+      result := result & this.parts[i]
+      first := false
+    end
+    return result
+  end
+}
+let b := new Builder()
+b.add("Hello")
+b.add("World")
+b.add("TinyLanguage")
+print b.build()

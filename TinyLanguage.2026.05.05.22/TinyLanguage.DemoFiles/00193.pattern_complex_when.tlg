@@ -1,0 +1,14 @@
+﻿function grade(score)
+  match score {
+    s when s >= 90 => return "A"
+    s when s >= 80 => return "B"
+    s when s >= 70 => return "C"
+    s when s >= 60 => return "D"
+    _ => return "F"
+  }
+end
+print grade(95)
+print grade(82)
+print grade(71)
+print grade(65)
+print grade(50)
