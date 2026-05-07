@@ -109,6 +109,34 @@ Phase 5 Step 3 (formerly: `dotnet run --project TinyLanguage` prints
 successfully." and exits 0. The per-`.cmd` validation loop in Step 5 is
 unchanged — those scripts use file mode (two args).
 
+### 4. Interactive debugger via Debug Adapter Protocol (additive)
+
+`Build.Solution.md` does not describe a debugger. The project owner asked
+for one targeted at VS Code today and growing toward a Turbo-Pascal-grade
+experience over time. The adopted architecture is **Debug Adapter Protocol
+(DAP)** so that the same engine drives VS Code, Visual Studio, JetBrains,
+Neovim, etc.
+
+Three layers (built by Phases 4C and 4D below):
+
+  1. **Engine** — `IDebuggerHost` interface + `DebuggerControl` enum +
+     statement-boundary callback in `TinyLanguage.Interpreter.Interpreter`.
+     Zero overhead when no host is attached. Reusable for a future CLI REPL.
+  2. **DAP adapter** — new project `TinyLanguage.DebugAdapter` that speaks
+     DAP over stdin/stdout. Worker thread runs the interpreter; server
+     thread handles VS Code requests; cooperative pause/resume via
+     `BlockingCollection<DebuggerControl>`.
+  3. **VS Code extension** — `vscode-extension\` directory at the solution
+     root. Tiny CommonJS shim that registers debug type `tinylanguage`
+     and points it at the published `TinyLanguage.exe --dap`.
+
+Activation flag: `TinyLanguage.exe --dap` (single arg). Source comes from
+the DAP `launch` request, not the command line. All other modes
+(zero-args stdin / two-args file) are unchanged.
+
+Future agents must NOT remove the debugger on the assumption "spec doesn't
+mention it." It is a deliberate addition.
+
 ---
 
 ## How to Run This Plan
@@ -740,6 +768,382 @@ Smoke-test:
 
 ---
 
+## Phase 4C — Debugger Engine + DAP Adapter  *(starts after Phase 3A + 4B)*
+
+**Agent:** `general-purpose`
+**Isolation:** worktree
+**Model:** `claude-opus-4-6`  *(cooperative threading + DAP wire protocol)*
+**Prompt:**
+```
+Read Build.md "Deliberate deviations from Build.Solution.md" item 4 — the
+debugger is an additive feature. Build.Solution.md says nothing about
+debugging; do NOT take its silence as a reason to skip the work.
+
+Architecture: TinyLanguage.exe speaks the Debug Adapter Protocol (DAP) so
+VS Code (and other DAP clients) can drive an interactive debugger. Three
+layers: engine (IDebuggerHost in TinyLanguage.Interpreter), DAP adapter
+(new TinyLanguage.DebugAdapter project), console flag (--dap in
+TinyLanguage\Program.cs). The VS Code extension is Phase 4D.
+
+# Six confirmed design decisions (do NOT relitigate)
+
+1. VS Code extension lives at the solution root: vscode-extension\.
+2. Activation flag: --dap (single arg). Source comes from the DAP launch
+   request, not the command line.
+3. Stop on entry by default. launch.json's stopOnEntry wins if specified.
+4. Conditional breakpoints AND logpoints both ship in v1.
+5. Pause-while-running ships in v1 (single check in OnStatementBefore).
+6. No CLI REPL in v1. Engine API must be reusable for a future CLI front-end.
+
+# WU-A — Engine additions to TinyLanguage.Interpreter
+
+Add files in Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.Interpreter\:
+
+- IDebuggerHost.cs (public interface):
+    DebuggerControl OnStatementBefore(StatementContext context);
+    void OnFunctionEnter(string functionName, int line);
+    void OnFunctionExit(string functionName);
+    DebuggerControl OnUnhandledException(InterpreterException ex, StatementContext context);
+
+- DebuggerControl.cs (public enum):
+    Continue, StepIn, StepOver, StepOut, Pause, Restart, Quit
+
+- StatementContext.cs (public sealed class):
+    AstNode Node, int Line, Scope Scope, IReadOnlyList<DebuggerStackFrame> CallStack
+
+- DebuggerStackFrame.cs (public sealed class):
+    string FunctionName, int Line, Scope LocalScope
+
+- DebuggerRestartException.cs, DebuggerQuitException.cs (internal sealed):
+    Used to unwind the recursive interpreter when host returns Restart/Quit.
+
+- AssemblyInfo.cs:
+    [assembly: InternalsVisibleTo("TinyLanguage.DebugAdapter")]
+    The DAP host needs to type-test against InstanceValue/FunctionValue and
+    catch DebuggerRestartException/DebuggerQuitException without expanding
+    the interpreter's public API surface.
+
+Modify Interpreter.cs:
+
+- Add public property `IDebuggerHost DebuggerHost { get; set; }` (default null).
+  When null, the hot path is unchanged: ONE null-check per statement, no
+  StatementContext/StackFrame allocations, no behavioural difference. The
+  existing 274 unit + 72 integration tests must continue to pass.
+- Maintain List<DebuggerStackFrame> _debugCallStack (only when host != null).
+  Push on function/method/lambda enter (inside InvokeFunction); pop on exit.
+- Push a synthetic <global> frame in RunWithDebugger so stackTrace at a
+  program-root pause always returns at least one frame.
+- Before EVERY statement-level Visit (ProgramNode body, StatementListNode body,
+  each individual statement Visit), if DebuggerHost != null, build
+  StatementContext and call host.OnStatementBefore. Process the returned
+  DebuggerControl: Continue → run; Restart → throw DebuggerRestartException;
+  Quit → throw DebuggerQuitException; StepIn/StepOver/StepOut/Pause are
+  decisions the HOST makes per-statement (engine just reports — the host
+  owns the entire step-mode state machine). Engine does NOT track step state.
+- Add public method `object Evaluate(string expression, Scope scope)`:
+  lex, parse-as-expression, evaluate in the given scope without mutating
+  the interpreter's stdout/stdin. Used by DAP evaluate, conditional
+  breakpoints, logpoint message interpolation.
+- Add public method `void RunWithDebugger(AstNode program, IDebuggerHost host,
+  TextWriter stdout, TextReader stdin)` as the debugger entry point.
+
+Modify Scope.cs:
+
+- Add `IReadOnlyDictionary<string, object> LocalBindings { get; }` (or
+  IEnumerable<KeyValuePair<string,object>>) so DAP variables requests can
+  list a scope's own bindings without walking the parent chain. (Walking
+  parents into a function frame would dump globals into every locals view.)
+
+# WU-B — TinyLanguage.DebugAdapter (new project)
+
+Create Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj:
+- net10.0 classlib, no implicit usings, no nullable
+- ProjectReferences: TinyLanguage.Interpreter, TinyLanguage.Lexer
+
+Add to TinyLanguage.slnx between TinyLanguage.Interpreter and
+TinyLanguage.UnitTests.
+
+Files:
+
+- DebugAdapterServer.cs — public static class with:
+    int RunOnStdInOut() — convenience overload reading Console.OpenStandardInput / OpenStandardOutput
+    int Run(Stream input, Stream output) — testable overload
+  Returns 0 on clean disconnect, 1 on unrecoverable error.
+
+- DapMessageReader.cs / DapMessageWriter.cs — Content-Length\r\n\r\n<JSON>
+  framing over UTF-8. Use System.Text.Json (BCL).
+
+- DapHost.cs — implements IDebuggerHost. Cross-thread bridge:
+    Owns Dictionary<int, BreakpointInfo> for breakpoints (line → condition + logMessage).
+    OnStatementBefore decides pause iff: pause-flag set, stopOnEntry pending,
+    step state matches (host owns this state), or breakpoint at this line
+    AND condition truthy (evaluate via Interpreter.Evaluate). For logpoints,
+    interpolate {expr} substrings, emit Output event, do NOT pause.
+    Uses BlockingCollection<DebuggerControl> for command queue from server thread.
+    volatile bool _pauseRequested for the pause-while-running flag.
+
+- BreakpointInfo.cs — { line, condition?, logMessage? }
+- VariableHandle.cs — variablesReference allocation + lookup
+
+DAP requests handled (dispatch by command):
+  initialize, launch, setBreakpoints, configurationDone, threads,
+  stackTrace, scopes, variables, evaluate, continue, next, stepIn,
+  stepOut, pause, restart, disconnect
+
+DAP events emitted:
+  initialized, stopped (reasons: entry, step, breakpoint, pause, exception),
+  continued, output (categories: stdout, stderr), terminated, exited
+
+DAP capabilities advertised in initialize response:
+  supportsConfigurationDoneRequest, supportsConditionalBreakpoints,
+  supportsLogPoints, supportsEvaluateForHovers, supportsRestartRequest,
+  supportsTerminateRequest
+
+The launch request accepts BOTH program (path to .tlg, the production
+contract VS Code uses) AND source (inline source string, used by
+integration tests so they don't need a temp file). Document this.
+
+Threading model: caller of RunOnStdInOut runs the DAP server on its own
+thread. A worker thread runs Interpreter.RunWithDebugger. They communicate
+via BlockingCollection<DebuggerControl> (server → worker) and DapHost's
+internal locks (worker → server when emitting stopped events). Server
+thread synchronously queries DapHost state for stackTrace/scopes/variables/
+evaluate — safe because the worker is paused at this point.
+
+Filter built-in sentinels (len, str, int, bool, float) from the variables
+view at the program-root scope; otherwise the user's locals are buried in
+noise.
+
+# WU-C — Console flag
+
+Modify Program.cs:
+- ProjectReference TinyLanguage → TinyLanguage.DebugAdapter (csproj edit).
+- Add --dap flag handling AT THE TOP of Main, before the existing zero-args
+  / two-args branches:
+    if (args.Length == 1 && args[0] == "--dap") {
+        return DebugAdapterServer.RunOnStdInOut();
+    }
+- Update the usage message to mention --dap.
+- Do NOT regress the existing modes (stdin / file).
+
+# Acceptance for Phase 4C
+
+From the canonical solution path:
+  dotnet build           → 0 errors, 0 warnings
+  dotnet test            → Failed: 0 (numbers > 346 — the existing tests
+                                       plus debugger tests added in WU-E
+                                       below)
+  dotnet publish TinyLanguage -c Release    → ~36 MB exe in DemoFiles\
+  TinyLanguage.DemoFiles\run-all-demos.cmd  → still prints
+                                               "All demos completed
+                                               successfully.", exit 0
+
+DAP smoke test (from solution root):
+  Pipe a Content-Length-framed JSON `initialize` request into
+  TinyLanguage.exe --dap; verify the response is a valid JSON object with
+  "type":"response", "command":"initialize", "success":true, body containing
+  capabilities; verify an `initialized` event is emitted.
+
+# WU-E — Tests (delivered with this phase)
+
+In TinyLanguage.UnitTests:
+- DebuggerEngineUnitTests.cs (~9 tests):
+  Breakpoint on line N pauses; StepIn pauses every statement; StepOver
+  skips function bodies; StepOut runs until depth decreases;
+  Evaluate(expr, scope) reads locals + arithmetic + member access;
+  DebuggerControl.Restart unwinds cleanly; null host = zero overhead.
+  Use a RecordingHost test helper (IDebuggerHost) that records calls and
+  returns scripted DebuggerControl values from a queue.
+
+In TinyLanguage.IntegrationTests:
+- DebugAdapterIntegrationTests.cs (~7 tests): in-process DAP via Stream
+  pairs (don't spawn the exe). Test cases: initialize handshake; launch +
+  configurationDone with stopOnEntry; continue runs to completion;
+  setBreakpoints + continue stops at breakpoint; stackTrace; variables;
+  evaluate. Every test uses the launch.source overload to embed source
+  inline (no temp .tlg files).
+
+Every test prints input/result via Console.WriteLine.
+
+# Reporting
+Report:
+- The exact dotnet build summary line
+- The exact dotnet test summary lines
+- Files added (counts + key paths)
+- Files modified with one-line justifications
+- DAP requests + events implemented (lists)
+- Any decisions you made that weren't explicit in this prompt
+- Known limitations / TODOs
+```
+
+---
+
+## Phase 4D — VS Code Extension  *(starts after Phase 4C; small)*
+
+**Agent:** `general-purpose`
+**Isolation:** worktree
+**Prompt:**
+```
+Phase 4C is done — TinyLanguage.exe --dap speaks DAP correctly. Your job
+is the thin VS Code extension that lets users F5-debug a .tlg file.
+
+Output target: Z:\repos\TinyLanguage.YYYY.MM.DD.HH\vscode-extension\
+This is a peer of the source projects at the solution root. It ships with
+every regenerated solution.
+
+Files:
+
+- package.json — the extension manifest. Required keys:
+    name: "tinylanguage-debug"
+    displayName: "TinyLanguage Debugger"
+    version: "0.1.0"
+    publisher: "tinylanguage-local"
+    engines.vscode: "^1.70.0"
+    categories: ["Debuggers"]
+    main: "./extension.js"
+    activationEvents: ["onDebug"]
+    contributes:
+      languages: [{ id:"tinylanguage", extensions:[".tlg"], aliases:["TinyLanguage"] }]
+      debuggers: [{
+        type: "tinylanguage",
+        label: "TinyLanguage",
+        languages: ["tinylanguage"],
+        configurationAttributes.launch.required: ["program"],
+        configurationAttributes.launch.properties.program: { type:"string", default:"${file}" },
+        configurationAttributes.launch.properties.stopOnEntry: { type:"boolean", default:true },
+        initialConfigurations: [
+          { type:"tinylanguage", request:"launch", name:"Debug TinyLanguage program", program:"${file}", stopOnEntry:true }
+        ]
+      }]
+
+- extension.js — minimal CommonJS. Activates on debug. Registers a
+  DebugAdapterDescriptorFactory for type "tinylanguage" that resolves to
+  TinyLanguage.exe at ${workspaceFolder}/TinyLanguage.DemoFiles/TinyLanguage.exe
+  with arg ["--dap"]. (Falls back to "TinyLanguage.exe" on PATH if no
+  workspace folder.) Exports activate / deactivate.
+
+- README.md — install instructions in 5 commands or fewer:
+    cd vscode-extension
+    npm install -g vsce
+    vsce package
+    code --install-extension tinylanguage-debug-0.1.0.vsix
+  Plus a launch.json template the user can paste.
+
+- .vscodeignore — minimal, just exclude .vscode/ and node_modules/
+
+Also update .vscode/launch.json at the SOLUTION root (NOT the
+vscode-extension's). Keep the existing two configurations for the
+TinyLanguage console (created by Phase 1A); ADD a third configuration
+for the TinyLanguage debug type:
+  {
+    "type": "tinylanguage",
+    "request": "launch",
+    "name": "Debug current .tlg file",
+    "program": "${file}",
+    "stopOnEntry": true,
+    "preLaunchTask": "publish"
+  }
+
+Create .vscode/tasks.json (or add to existing) with a "publish" task that
+runs `dotnet publish TinyLanguage -c Release` so the preLaunchTask resolves.
+
+# Acceptance
+- vscode-extension/package.json validates as JSON (jq . package.json works)
+- README.md describes install in ≤ 5 commands
+- .vscode/launch.json keeps existing dotnet F5 configs AND adds the new tinylanguage one
+- .vscode/tasks.json has a "publish" task
+
+# Reporting
+- Files created (paths + line counts)
+- Confirmation that JSON parses
+- Note any decisions that diverge from the spec above
+```
+
+---
+
+## Phase 4E — Wiki Generation  *(starts after Phase 4D; small, parallel-safe with Phase 5 step 1)*
+
+**Agent:** `general-purpose`
+**Prompt:**
+```
+Generate the user-facing wiki for the TinyLanguage solution.
+
+Read for context:
+  Z:\repos\TinyLanguage\Build.Solution.md  (locked spec — sections 1–7)
+  Z:\repos\TinyLanguage\Build.md           ("Deliberate deviations from Build.Solution.md")
+  Z:\repos\TinyLanguage\Plan.md            (work-unit breakdown + final layout)
+  Z:\repos\TinyLanguage\CLAUDE.md          (project conventions; cross-link from the wiki)
+
+Output target: Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.wiki.md
+(Substitute the actual canonical solution path. The file may already exist as a
+0-byte stub — overwrite it.)
+
+The wiki is a SINGLE self-contained markdown document covering:
+
+  1. What is TinyLanguage — one-paragraph elevator pitch + the three execution
+     modes (stdin / file / --dap).
+  2. Language tour — runnable snippets covering: Hello World, variables (let/var/const),
+     arithmetic + types, control flow (if/while/for/foreach/do-while), functions,
+     lambdas, classes (incl. extends + Constructor + this), arrays, modules,
+     exceptions (try/catch/finally/throw), pattern matching (every kind), built-in
+     functions (len/str/int/bool/float), and truthiness rules.
+  3. Quick reference card — a one-screen cheat sheet of operators and keywords.
+  4. Demo suite — describe Tier A (00001..00399, feature coverage) and Tier B
+     (00400..00499, advanced data structures) with a category table for Tier B,
+     plus how to run them (per-demo .cmd and run-all-demos.cmd).
+  5. Building and running — the four canonical commands; explain that .cmd
+     demos require a prior dotnet publish.
+  6. Debugging in VS Code — install vsce, package the extension, F5.
+  7. Architecture — three-layer DAP design (engine / DAP adapter / editor shim),
+     project layout, data-flow diagram, key design decisions (visitor pattern,
+     linked-list scope chain, BCL-only).
+  8. Implementation notes reference — table of the most-load-bearing notes
+     (1, 2, 4, 5, 7, 8–9, 10, 11, 12, 13, 14, 16, 19, 20, 23) with a one-line
+     gloss each. Cross-reference Build.Solution.md §4.1 for the full list.
+  9. Test suite — table of test projects and counts; how to run a single class.
+ 10. Known limitations — the deliberate design decisions baked into the spec
+     (no closure capture of caller locals; no bitwise ops; no map literals;
+     single-threaded; no super() call). Frame these as design choices, not bugs.
+ 11. Regenerating the solution — point at Build.md and list every phase
+     (0, 1A–1D parallel, 2, 3A–3B parallel, 4A–4B parallel, 4C, 4D, **4E (this
+     wiki)**, 5).
+ 12. References — Build.Solution.md, Build.md, CLAUDE.md, Plan.md, the DAP spec.
+
+Constraints:
+
+- Style: factual, terse, code-heavy. No marketing language. No emoji.
+- The wiki is read by humans, not by future Claude Code sessions — do NOT add
+  agent prompts, work-unit IDs, or phase numbers inside the language tour.
+- Use markdown tables for reference matter (operators, demo categories, test
+  counts). Use fenced code blocks (```tinylanguage / ```bash / ```powershell)
+  for runnable examples. Verify the snippets actually parse (lex them through
+  the freshly-built TinyLanguage.exe — if a snippet fails to lex/parse, fix
+  the snippet, do not "loosen" the example to hide a real bug).
+- Keep the wiki under ~600 lines. It is a reference document, not a tutorial.
+- When the wiki and Build.Solution.md disagree, the spec wins — say so
+  explicitly at the top of the wiki.
+- Cross-reference but do NOT duplicate Build.Solution.md content verbatim.
+  The spec is the source of truth; the wiki is the user's on-ramp.
+
+Acceptance:
+
+- Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.wiki.md exists, > 200 lines,
+  < 800 lines.
+- Every fenced code block tagged ```tinylanguage parses cleanly through the
+  built parser (run the lexer + parser smoke harness used in Phase 2 against
+  each block, or write a quick ad-hoc check).
+- The Demo Suite section's Tier B category table is consistent with the
+  actual filenames in TinyLanguage.DemoFiles/.
+
+Reporting:
+- Final line count of TinyLanguage.wiki.md
+- Number of code blocks (split by language tag)
+- Confirmation that ```tinylanguage blocks all parse
+- Any decisions that diverge from this prompt
+```
+
+---
+
 ## Phase 5 — Final Validation & Assembly  *(sequential, all branches merged)*
 
 **Agent:** `general-purpose`
@@ -786,6 +1190,25 @@ Protocol below. Every step must pass before you may declare the plan complete.
   If size is ~160 KB instead, that is the framework-dependent apphost — check
   TinyLanguage.csproj has NOT regrown an AfterTargets="Build" copy target (see the
   csproj comments for the long history). The .cmd demos cannot work with the apphost.
+
+### Step 4b — DAP smoke test
+  Quick check that the published exe responds to a DAP `initialize` request.
+  Skip this step if Phase 4C wasn't run (older solutions without a debugger).
+
+  PowerShell:
+    $body = '{"seq":1,"type":"request","command":"initialize","arguments":{"clientID":"smoke","adapterID":"tinylanguage","linesStartAt1":true,"columnsStartAt1":true,"pathFormat":"path"}}'
+    $msg  = "Content-Length: $($body.Length)`r`n`r`n$body"
+    $proc = Start-Process -FilePath "TinyLanguage.DemoFiles\TinyLanguage.exe" -ArgumentList "--dap" `
+              -RedirectStandardInput "stdin.tmp" -RedirectStandardOutput "stdout.tmp" -PassThru -NoNewWindow
+    # (Or use a more proper Stream approach — the integration tests in Phase 4C exercise
+    # the full protocol, this is just a "does the exe answer" check.)
+
+  Accept: stdout contains a JSON response with "command":"initialize","success":true
+  followed by an "event":"initialized" event.
+
+  If this fails: the --dap flag is not wired (Program.cs regression) or
+  TinyLanguage.DebugAdapter is missing from the publish (csproj reference
+  regression). Fix and republish.
 
 ### Step 5 — Verify ALL .cmd files via the published exe
   *** GUARD FIRST: re-verify that DemoFiles\TinyLanguage.exe is still ~36 MB        ***
@@ -911,10 +1334,17 @@ that canonical copy has been re-validated end-to-end.
         Solution root:  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\
         Demo files:     Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\
         Published exe:  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DemoFiles\TinyLanguage.exe
+        User wiki:      Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.wiki.md
 
-All six steps must be green. Do not declare the plan complete until Step 6f
-confirms the canonical path holds the buildable, fully-validated solution.
-Do not refactor unrelated code. Do not alter Build.Solution.md.
+  6h. Confirm the wiki is present and non-trivial: `TinyLanguage.wiki.md` exists
+      at the canonical solution root, is more than 200 lines, and references
+      Build.Solution.md as the source of truth. If the file is missing or empty,
+      Phase 4E was skipped — re-run Phase 4E before declaring complete.
+
+All six steps must be green. Do not declare the plan complete until Step 6h
+confirms the canonical path holds the buildable, fully-validated solution
+plus the user wiki. Do not refactor unrelated code. Do not alter
+Build.Solution.md.
 ```
 
 ---
@@ -929,6 +1359,9 @@ Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." }
 Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 1B
 Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 1C
 Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 1D
+
+// Phase 4E — single call, after 4D, before Phase 5 (wiki generation)
+Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 4E
 
 // Phase 2 — single call, awaited (sequential)
 Agent({ subagent_type: "general-purpose", isolation: "worktree",
@@ -955,6 +1388,9 @@ orchestrating session always has a live view of build state.
 | 3A — Interpreter | `claude-opus-4-6` | Scope chain, operator semantics, tree-walking |
 | 3B — Unit Tests | `claude-sonnet-4-6` | Systematic coverage, lower complexity |
 | 4A–4B — Integration + CLI | `claude-sonnet-4-6` | Straightforward integration work |
+| 4C — Debugger + DAP | `claude-opus-4-6` | Cooperative threading + DAP wire protocol |
+| 4D — VS Code Extension | `claude-sonnet-4-6` | Small JSON + CommonJS shim |
+| 4E — Wiki Generation | `claude-sonnet-4-6` | Synthesis + cross-referencing, no novel design |
 | 5 — Validation | `claude-sonnet-4-6` | Fix-and-retry loop, targeted edits |
 
 ---

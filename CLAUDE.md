@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Plan.md` has the dependency graph and work unit breakdown.
+TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Plan.md` has the dependency graph and work unit breakdown. The user-facing reference is `TinyLanguage.wiki.md` inside each generated solution folder — produced by Phase 4E of the orchestration; cross-references the spec without duplicating it.
 
 ## Build & Test Commands
 
@@ -15,16 +15,50 @@ dotnet publish TinyLanguage -c Release          # Produces single-file self-cont
 TinyLanguage.DemoFiles\run-all-demos.cmd        # Walks every .tlg, prints "All demos completed successfully.", exit 0
 echo print "hi" | dotnet run --project TinyLanguage   # stdin mode (no args): read source from stdin, write to stdout
 dotnet run --project TinyLanguage -- input.tlg output.txt  # File-processor mode
+TinyLanguage.DemoFiles\TinyLanguage.exe --dap   # Debug Adapter Protocol mode (used by VS Code; not run by hand)
 ```
 
 Run a single test class:
 ```bash
 dotnet test --filter "FullyQualifiedName~LexerUnitTests"
+dotnet test --filter "FullyQualifiedName~DebuggerEngineUnitTests"
+dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 ```
 
 **Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `TinyLanguage.DemoFiles\run-all-demos.cmd` → exit 0.
 
-> **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Two modes: zero args = read source from stdin and write to stdout; two args = file-processor mode. The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
+> **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Three modes: zero args = read source from stdin and write to stdout; two args = file-processor mode; `--dap` = Debug Adapter Protocol server (used by VS Code). The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
+
+## Debugging in VS Code
+
+The interpreter has a built-in DAP server. To debug a `.tlg` program in VS Code:
+
+1. **One-time setup** — package and install the workspace extension:
+   ```bash
+   cd vscode-extension
+   npm install -g vsce       # if not already installed
+   vsce package
+   code --install-extension tinylanguage-debug-0.1.0.vsix
+   ```
+2. **Publish the exe** (the extension launches it; `preLaunchTask: "publish"` in `.vscode/launch.json` does this automatically on first F5):
+   ```bash
+   dotnet publish TinyLanguage -c Release
+   ```
+3. **Open a `.tlg` file**, click in the gutter to set a breakpoint, press `F5`. Pick the "Debug current .tlg file" launch config the extension contributed.
+
+Available in the debugger: gutter breakpoints, conditional breakpoints (right-click → Edit Breakpoint), logpoints, Step Over (F10) / Step In (F11) / Step Out (Shift+F11), Continue (F5), Pause, Restart, Variables panel, Watch panel, Call Stack panel, hover-to-evaluate, and the Debug Console (REPL) for ad-hoc expression evaluation in the current scope.
+
+The architecture is three layers:
+
+| Layer | Project | What it does |
+|---|---|---|
+| Engine | `TinyLanguage.Interpreter` | `IDebuggerHost` interface; per-statement callback; breakpoint match; step-mode state; `Evaluate(expr, scope)`. Zero overhead when no host attached. |
+| DAP adapter | `TinyLanguage.DebugAdapter` | Speaks DAP over stdin/stdout. Worker thread runs interpreter; server thread handles VS Code requests; cooperative pause/resume via `BlockingCollection<DebuggerControl>`. |
+| Editor shim | `vscode-extension/` | ~30 lines of CommonJS. Registers debug type `tinylanguage`, points VS Code at `TinyLanguage.exe --dap`. |
+
+Future direction: a CLI REPL front-end (consuming the same engine) and a richer Turbo-Pascal-style integrated experience. Adding new debugger features should happen in the engine first; the DAP adapter and any future front-ends benefit equally.
+
+> **Debugger override (additive — not in Build.Solution.md):** Build.Solution.md does not describe a debugger. The project owner explicitly added one. Future agents must not delete it on the assumption that "the spec doesn't mention it." See "Deliberate deviations from Build.Solution.md" item 4 in `Build.md`.
 
 ### Single-file exe
 `TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
@@ -37,17 +71,21 @@ dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 
 ## Architecture
 
-Six projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed first so Visual Studio treats it as the startup project (the `.slnx` format has no explicit startup-project field; VS defaults to the first executable project). A `.vscode/launch.json` provides the same default for VS Code.
+Seven projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed first so Visual Studio treats it as the startup project (the `.slnx` format has no explicit startup-project field; VS defaults to the first executable project). A `.vscode/launch.json` provides the same default for VS Code.
 
 | Project | Role |
 |---|---|
 | `TinyLanguage.Lexer` | Lexer, Parser, AST nodes, `AstPrettyPrinter` |
-| `TinyLanguage.Interpreter` | Tree-walking interpreter, `Scope` chain |
-| `TinyLanguage` | Console app (demo mode + file-processor mode) |
-| `TinyLanguage.UnitTests` | MSTest unit tests (lexer + parser) |
-| `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter + end-to-end) |
+| `TinyLanguage.Interpreter` | Tree-walking interpreter, `Scope` chain, `IDebuggerHost` engine hooks |
+| `TinyLanguage.DebugAdapter` | Debug Adapter Protocol server (used by the VS Code extension via `TinyLanguage.exe --dap`) |
+| `TinyLanguage` | Console app (stdin / file / DAP modes) |
+| `TinyLanguage.UnitTests` | MSTest unit tests (lexer, parser, debugger engine) |
+| `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter end-to-end + DAP) |
+| `TinyLanguage.DemoFiles` | 310 `.tlg` demos + matching `.cmd` runners + `run-all-demos.cmd` |
 
-**Data flow:** source text → `Lexer` → `Token[]` → `Parser` → AST → `Interpreter` (visitor) → output/side effects.
+Plus `vscode-extension/` at the solution root — a small CommonJS extension that registers the `tinylanguage` debug type for VS Code.
+
+**Data flow:** source text → `Lexer` → `Token[]` → `Parser` → AST → `Interpreter` (visitor) → output/side effects. With `--dap`, an `IDebuggerHost` (the DAP adapter's `DapHost`) is attached to the interpreter and observes statement boundaries, function enter/exit, and unhandled exceptions.
 
 ### Key design decisions
 
