@@ -115,7 +115,7 @@ Highest-risk nodes: **WU-2** (parser disambiguation: notes 12, 13, 14, 20, 22, 2
 
 ```
 Z:\repos\TinyLanguage.2026.05.07.20\
-├── TinyLanguage.slnx                    ← lists TinyLanguage FIRST
+├── TinyLanguage.slnx                    ← lists TinyLanguage FIRST + "Solution Items" folder pre-declaring .gitignore, install-vscode-debugger.cmd, TinyLanguage.wiki.md
 ├── Directory.Build.props                ← TargetFramework=net10.0, Nullable=disable, ImplicitUsings=disable, TreatWarningsAsErrors=true
 ├── install-vscode-debugger.cmd          ← double-click installer (Phase 4D); paren-safe by structure
 ├── TinyLanguage.wiki.md                 ← user-facing wiki (Phase 4E)
