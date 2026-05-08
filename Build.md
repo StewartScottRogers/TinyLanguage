@@ -1047,15 +1047,78 @@ for the TinyLanguage debug type:
 Create .vscode/tasks.json (or add to existing) with a "publish" task that
 runs `dotnet publish TinyLanguage -c Release` so the preLaunchTask resolves.
 
+# Additional output: install-vscode-debugger.cmd at the solution root
+
+Also create `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\install-vscode-debugger.cmd`
+— a Windows .cmd installer the user can double-click from Explorer (or run
+from any shell). It must be idempotent and run five steps:
+
+  1. Verify prerequisites: `where dotnet`, `where node`, `where npm`, `where code`.
+     Any missing → print which one + the install URL → pause + exit 1.
+  2. `dotnet publish "%SCRIPT_DIR%TinyLanguage\TinyLanguage.csproj" -c Release`.
+  3. If `where vsce` fails, `npm install -g vsce`. After install, re-check;
+     fall back to `%APPDATA%\npm\vsce.cmd` if PATH hasn't picked up the new
+     install in this shell session.
+  4. `pushd "%SCRIPT_DIR%vscode-extension" && call "%VSCE%" package`. Captures
+     errorlevel into a saved RC, popd's, then checks the saved RC.
+  5. `call code --install-extension "%SCRIPT_DIR%vscode-extension\tinylanguage-debug-0.1.0.vsix" --force`.
+
+Pause at the start (after printing the five-step plan) so a double-click user
+can read it before committing. Pause on every error path so the cmd window
+doesn't vanish when run from Explorer. Print a final "Done. Open a .tlg file
+and press F5." message on success.
+
+## CMD parser gotcha to avoid (this bit a prior run; do NOT repeat it)
+
+When you write the prerequisite-check subroutine, do NOT use the natural
+
+    :check_tool
+    where %~1 >nul 2>&1
+    if errorlevel 1 (
+        echo ERROR: %~1 not found on PATH.
+        echo   %~2
+        exit /b 1
+    )
+    exit /b 0
+
+structure with hint strings that contain parentheses. cmd substitutes `%~2`
+at parse time, BEFORE counting block-delimiting parens. If `%~2` expands to
+`https://nodejs.org (npm ships with Node)`, the literal `(` and `)` inside
+make cmd's parser close the if-block early, leaving `exit /b 1` OUTSIDE the
+if. Result: errorlevel 1 is returned even when the tool is on PATH, and the
+"ERROR: ..." line never prints (because the if-block body never ran).
+
+Two-part fix (apply both):
+
+  (a) Refactor :check_tool to early-return so there's no if-block at all:
+
+        :check_tool
+        where %~1 >nul 2>&1
+        if not errorlevel 1 exit /b 0
+        echo.
+        echo ERROR: %~1 not found on PATH.
+        echo   %~2
+        exit /b 1
+
+  (b) Avoid parentheses in any string substituted into an if-block elsewhere
+      in the script. Two specific spots that previously had this latent bug:
+      the "(not on PATH yet in this shell)" diagnostic and the "(exit code N)"
+      error. Use plain prose with hyphens or em-dashes instead. The bug is
+      dormant in error-only paths but surfaces unpredictably; eliminate it
+      by construction.
+
 # Acceptance
 - vscode-extension/package.json validates as JSON (jq . package.json works)
 - README.md describes install in ≤ 5 commands
 - .vscode/launch.json keeps existing dotnet F5 configs AND adds the new tinylanguage one
 - .vscode/tasks.json has a "publish" task
+- install-vscode-debugger.cmd exists at the solution root, is paren-safe per the gotcha above
+- The installer end-to-end path runs to exit 0 on a machine that already has dotnet/node/npm/code installed (test it with `cmd /c install-vscode-debugger.cmd < NUL > log 2>&1` from a clean shell; expect exit 0 on first run AND on second run — idempotent)
 
 # Reporting
 - Files created (paths + line counts)
 - Confirmation that JSON parses
+- Confirmation that the installer ran end-to-end exit 0 on first AND second run
 - Note any decisions that diverge from the spec above
 ```
 
@@ -1304,6 +1367,10 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj exists
         - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 300 files
         - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
+        - $canonical\TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj exists (Phase 4C)
+        - $canonical\vscode-extension\package.json          exists (Phase 4D)
+        - $canonical\install-vscode-debugger.cmd            exists (Phase 4D)
+        - $canonical\TinyLanguage.wiki.md                   exists, > 200 lines (Phase 4E)
       Fail loudly with a specific path if any of these is missing.
 
   6d. Re-run the full build, test, publish, and run-all-demos chain at the

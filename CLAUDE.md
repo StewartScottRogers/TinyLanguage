@@ -33,18 +33,8 @@ dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 
 The interpreter has a built-in DAP server. To debug a `.tlg` program in VS Code:
 
-1. **One-time setup** — package and install the workspace extension:
-   ```bash
-   cd vscode-extension
-   npm install -g vsce       # if not already installed
-   vsce package
-   code --install-extension tinylanguage-debug-0.1.0.vsix
-   ```
-2. **Publish the exe** (the extension launches it; `preLaunchTask: "publish"` in `.vscode/launch.json` does this automatically on first F5):
-   ```bash
-   dotnet publish TinyLanguage -c Release
-   ```
-3. **Open a `.tlg` file**, click in the gutter to set a breakpoint, press `F5`. Pick the "Debug current .tlg file" launch config the extension contributed.
+1. **One-time setup** — double-click `install-vscode-debugger.cmd` at the solution root (or run it from any shell). It is idempotent and runs five steps: prereq check (dotnet, node, npm, code), `dotnet publish TinyLanguage -c Release`, `npm install -g vsce` if missing, `vsce package`, `code --install-extension ... --force`. Manual fallback if you'd rather drive it yourself: `cd vscode-extension && vsce package && code --install-extension tinylanguage-debug-0.1.0.vsix --force`, plus a separate `dotnet publish TinyLanguage -c Release`.
+2. **Open a `.tlg` file**, click in the gutter to set a breakpoint, press `F5`. Pick the "Debug current .tlg file" launch config the extension contributed.
 
 Available in the debugger: gutter breakpoints, conditional breakpoints (right-click → Edit Breakpoint), logpoints, Step Over (F10) / Step In (F11) / Step Out (Shift+F11), Continue (F5), Pause, Restart, Variables panel, Watch panel, Call Stack panel, hover-to-evaluate, and the Debug Console (REPL) for ad-hoc expression evaluation in the current scope.
 

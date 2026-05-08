@@ -1,7 +1,7 @@
 # TinyLanguage — Phase 0 Plan.md
 
 Working document for the Claude Code orchestration build of TinyLanguage.
-Canonical solution root: `Z:\repos\TinyLanguage.2026.05.07.05\`
+Canonical solution root: `Z:\repos\TinyLanguage.2026.05.07.20\`
 Spec source-of-truth: `Build.Solution.md` (locked, read-only).
 Deviations layer:    `Build.md` (no exe demo-mode; `run-all-demos.cmd`; DAP debugger; `vscode-extension/`).
 
@@ -86,7 +86,7 @@ Deviations layer:    `Build.md` (no exe demo-mode; `run-all-demos.cmd`; DAP debu
 | WU-4A | Interpreter integration tests | `TinyLanguage.IntegrationTests/*.cs` | WU-3A, WU-3B | Phase 4A |
 | WU-4B | Console app Program.cs (stdin + file modes — NO demo mode) | `TinyLanguage/Program.cs` | WU-3A | Phase 4B |
 | WU-4C | Debugger engine + DebugAdapter project + --dap + tests | engine files, new project, modified Program.cs, tests | WU-3A, WU-4B | Phase 4C |
-| WU-4D | VS Code extension + .vscode updates | `vscode-extension/*`, updated `.vscode/launch.json`, `tasks.json` | WU-4C | Phase 4D |
+| WU-4D | VS Code extension + .vscode updates + double-click installer | `vscode-extension/*`, updated `.vscode/launch.json`, `tasks.json`, `install-vscode-debugger.cmd` (paren-safe, idempotent) | WU-4C | Phase 4D |
 | WU-5 | Final assembly, validate, deliver to canonical sibling path | published exe + all green | WU-1D, WU-3B, WU-4A, WU-4B, WU-4C, WU-4D | Phase 5 |
 
 ---
@@ -114,9 +114,11 @@ Highest-risk nodes: **WU-2** (parser disambiguation: notes 12, 13, 14, 20, 22, 2
 ## 4. Final Project Directory Layout
 
 ```
-Z:\repos\TinyLanguage.2026.05.07.05\
+Z:\repos\TinyLanguage.2026.05.07.20\
 ├── TinyLanguage.slnx                    ← lists TinyLanguage FIRST
 ├── Directory.Build.props                ← TargetFramework=net10.0, Nullable=disable, ImplicitUsings=disable, TreatWarningsAsErrors=true
+├── install-vscode-debugger.cmd          ← double-click installer (Phase 4D); paren-safe by structure
+├── TinyLanguage.wiki.md                 ← user-facing wiki (Phase 4E)
 ├── .gitignore
 │
 ├── .vscode\
