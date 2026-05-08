@@ -1021,7 +1021,20 @@ Files:
     engines.vscode: "^1.70.0"
     categories: ["Debuggers"]
     main: "./extension.js"
-    activationEvents: ["onDebug"]
+    activationEvents: [
+      "onLanguage:tinylanguage",
+      "onDebug",
+      "onDebugResolve:tinylanguage",
+      "onDebugDynamicConfigurations:tinylanguage"
+    ]
+    (Note: `onDebug` alone is NOT enough. If the user opened VS Code at a folder
+    that is not the canonical solution root — and therefore has no
+    `.vscode/launch.json` with the "Debug current .tlg file" config — pressing
+    F5 on a .tlg file did literally nothing in early versions, because the
+    extension never activated and so couldn't resolve a synthetic config.
+    Adding `onLanguage:tinylanguage` activates the extension as soon as a .tlg
+    file is opened in any folder, making the resolveDebugConfiguration hook
+    available in time for F5.)
     contributes:
       languages: [{ id:"tinylanguage", extensions:[".tlg"], aliases:["TinyLanguage"] }]
       debuggers: [{
@@ -1036,11 +1049,41 @@ Files:
         ]
       }]
 
-- extension.js — minimal CommonJS. Activates on debug. Registers a
-  DebugAdapterDescriptorFactory for type "tinylanguage" that resolves to
-  TinyLanguage.exe at ${workspaceFolder}/TinyLanguage.DemoFiles/TinyLanguage.exe
-  with arg ["--dap"]. (Falls back to "TinyLanguage.exe" on PATH if no
-  workspace folder.) Exports activate / deactivate.
+- extension.js — small CommonJS module. MUST register BOTH a
+  DebugConfigurationProvider AND a DebugAdapterDescriptorFactory for type
+  "tinylanguage". Two separate jobs:
+
+    1. DebugConfigurationProvider.resolveDebugConfiguration(folder, config) —
+       called by VS Code on F5. If `config` is empty (no `.vscode/launch.json`
+       entry exists) AND the active editor is a `.tlg` file (languageId
+       "tinylanguage"), synthesise a config:
+         { type: "tinylanguage", request: "launch",
+           name: "Debug current .tlg file",
+           program: <activeEditor.document.uri.fsPath>,
+           stopOnEntry: true }
+       This makes "open any folder, open a .tlg file, press F5" work end-to-end
+       even when there is no launch.json. Without this provider, F5 with no
+       launch.json silently does nothing.
+
+    2. DebugAdapterDescriptorFactory.createDebugAdapterDescriptor(session) —
+       returns `new vscode.DebugAdapterExecutable(<exePath>, ["--dap"])`. The
+       exe path is resolved by the FOLLOWING precedence chain (first hit wins):
+         a. session.configuration.exe — explicit override in launch.json
+         b. Walk UP from `path.dirname(session.configuration.program)` looking
+            for a `TinyLanguage.exe` directly in that dir, OR a
+            `TinyLanguage.DemoFiles/TinyLanguage.exe` inside it. This makes the
+            extension find the published interpreter even when the user opened
+            VS Code at an arbitrary folder, as long as the .tlg file lives
+            somewhere inside (or beside) the canonical solution.
+         c. `${workspaceFolder}/TinyLanguage.DemoFiles/TinyLanguage.exe` —
+            classic in-workspace lookup.
+         d. Bare `"TinyLanguage.exe"` — final fallback, lets PATH resolve it.
+
+  Use `fs.existsSync` to verify each candidate before returning it; only the
+  bare-name PATH fallback is unverified.
+
+  Exports `activate(context)` and `deactivate()`. `activate` registers BOTH the
+  provider and the factory and pushes both disposables onto `context.subscriptions`.
 
 - README.md — install instructions in 5 commands or fewer:
     cd vscode-extension
