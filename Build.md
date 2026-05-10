@@ -1507,7 +1507,7 @@ Generate the user-facing wiki for the TinyLanguage solution.
 Read for context:
   Z:\repos\TinyLanguage\Build.Solution.md  (locked spec — sections 1–7)
   Z:\repos\TinyLanguage\Build.md           ("Deliberate deviations from Build.Solution.md")
-  Z:\repos\TinyLanguage\Plan.md            (work-unit breakdown + final layout)
+  Z:\repos\TinyLanguage\Build.Plan.md      (work-unit breakdown + final layout)
   Z:\repos\TinyLanguage\CLAUDE.md          (project conventions; cross-link from the wiki)
 
 Output target: Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.wiki.md
@@ -1547,7 +1547,7 @@ The wiki is a SINGLE self-contained markdown document covering:
  11. Regenerating the solution — point at Build.md and list every phase
      (0, 1A–1D parallel, 2, 3A–3B parallel, 4A–4B parallel, 4C, 4D, **4E (this
      wiki)**, 5).
- 12. References — Build.Solution.md, Build.md, CLAUDE.md, Plan.md, the DAP spec.
+ 12. References — Build.Solution.md, Build.md, CLAUDE.md, Build.Plan.md, the DAP spec.
 
 Constraints:
 

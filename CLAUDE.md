@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Plan.md` has the dependency graph and work unit breakdown. The user-facing reference is `TinyLanguage.wiki.md` inside each generated solution folder — produced by Phase 4E of the orchestration; cross-references the spec without duplicating it.
+TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Build.Plan.md` has the dependency graph and work unit breakdown. The user-facing reference is `TinyLanguage.wiki.md` inside each generated solution folder — produced by Phase 4E of the orchestration; cross-references the spec without duplicating it.
 
 ## SDK pin (`global.json`) — required so VS and CLI agree
 
@@ -23,7 +23,7 @@ This exists because VS18's bundled NuGet NRE'd reading lockfiles produced by `10
 
 **Critical:** `rollForward: latestPatch` (NOT `latestFeature`). `latestFeature` rolls *up* from 10.0.203 to 10.0.300-preview because preview is the latest *feature band*; `latestPatch` keeps you on 10.0.2xx.
 
-When a newer stable SDK ships (10.0.3xx, 10.0.4xx GA), bump the version. Until then, do not "simplify" this away — see deviation D7 in `Build.md` and `Plan.md`.
+When a newer stable SDK ships (10.0.3xx, 10.0.4xx GA), bump the version. Until then, do not "simplify" this away — see deviation D7 in `Build.md` and `Build.Plan.md`.
 
 ## Long paths (machine prereq for VS Batch Rebuild)
 
@@ -33,7 +33,7 @@ The canonical solution path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` plus the deep
 2. **`Directory.Build.props`** at solution root contains `<_LongPathsEnabled>true</_LongPathsEnabled>` (authored by Phase 1A; see Build.md preamble "Long-path support — non-negotiable").
 3. **`TinyLanguage\app.manifest`** declares `<longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>` and `TinyLanguage.csproj` references it via `<ApplicationManifest>app.manifest</ApplicationManifest>` (also Phase 1A).
 
-If a future agent "simplifies" any of (2) or (3) away, VS Batch Rebuild fails with `The fully qualified file name must be less than 260 characters` on the integration-tests project — **do not remove these on the assumption "the spec doesn't mention them."** They are deliberate additions; see deviation D6 in `Build.md` and `Plan.md`.
+If a future agent "simplifies" any of (2) or (3) away, VS Batch Rebuild fails with `The fully qualified file name must be less than 260 characters` on the integration-tests project — **do not remove these on the assumption "the spec doesn't mention them."** They are deliberate additions; see deviation D6 in `Build.md` and `Build.Plan.md`.
 
 ## Build & Test Commands
 
@@ -135,7 +135,7 @@ From `Build.Solution.md` — follow exactly:
   TestLog.Result(actual);   // multi-line content is fine — uses real \n
   ```
 
-  Do NOT introduce a `Visible(s)` helper that escapes `\n`→`\\n` — it collapses multi-line stdout onto one unreadable line. See deviation D8 in `Build.md` and `Plan.md`. The exact `TestLog.cs` source lives in the "Test output formatting — non-negotiable" preamble of `Build.md`.
+  Do NOT introduce a `Visible(s)` helper that escapes `\n`→`\\n` — it collapses multi-line stdout onto one unreadable line. See deviation D8 in `Build.md` and `Build.Plan.md`. The exact `TestLog.cs` source lives in the "Test output formatting — non-negotiable" preamble of `Build.md`.
 
 ## Disambiguation Rules
 

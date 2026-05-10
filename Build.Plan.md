@@ -1,4 +1,4 @@
-# TinyLanguage — Plan.md (Phase 0 Architect Output)
+# TinyLanguage — Build.Plan.md (Phase 0 Architect Output)
 
 Working architect document for the Claude Code orchestration build defined in
 `Z:\repos\TinyLanguage\Build.md`. Specification source of truth:
@@ -78,7 +78,7 @@ Output paths use the canonical solution root `Z:\repos\TinyLanguage.2026.05.08.1
 
 | ID    | Title                              | Outputs (under canonical root unless noted)                                                                                                                                                                                                  | Dependencies          | Phase |
 |-------|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|-------|
-| WU-0  | Architect Analysis                 | `Z:\repos\TinyLanguage\Plan.md` (this file — orchestrator-repo working doc, not committed)                                                                                                                                                     | none                  | 0     |
+| WU-0  | Architect Analysis                 | `Z:\repos\TinyLanguage\Build.Plan.md` (this file — orchestrator-repo working doc, not committed)                                                                                                                                               | none                  | 0     |
 | WU-1A | Solution Scaffold                  | `TinyLanguage.slnx`, `Directory.Build.props` (incl. long-path props per D6), `global.json` (SDK pin per D7), `.gitignore`, `.vscode\launch.json`, `TinyLanguage\app.manifest` (longPathAware=true), six project subdirs each with empty csproj (`TinyLanguage` (csproj references app.manifest via `<ApplicationManifest>`), `TinyLanguage.Lexer`, `TinyLanguage.Interpreter`, `TinyLanguage.UnitTests`, `TinyLanguage.IntegrationTests`, `TinyLanguage.DemoFiles`); slnx pre-declares Solution Items entries for `.gitignore`, `install-vscode-debugger.cmd`, `TinyLanguage.wiki.md` | WU-0                  | 1A    |
 | WU-1B | Token & Lexer                      | `TinyLanguage.Lexer\TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` (incl. `Pipe`, `This`, all kw)                                                                                                                                  | WU-0                  | 1B    |
 | WU-1C | AST Node Types + Pretty Printer    | One `*Node.cs` per AST node class in `TinyLanguage.Lexer\`; `INodeVisitor.cs`; `AstPrettyPrinter.cs`                                                                                                                                          | WU-0                  | 1C    |
@@ -205,5 +205,5 @@ Z:\repos\TinyLanguage.2026.05.08.12\
 
 ---
 
-*End of Plan.md — architect-level outline only. No code generated. Build.Solution.md
+*End of Build.Plan.md — architect-level outline only. No code generated. Build.Solution.md
 and Build.md are unchanged.*
