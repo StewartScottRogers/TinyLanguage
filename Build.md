@@ -66,6 +66,246 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 
 ---
 
+> ## Long-path support — non-negotiable
+>
+> The canonical solution path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` is 37
+> characters before any project subdirectory. Combined with the deepest
+> intermediate paths produced by a self-contained single-file
+> `net10.0/win-x64` publish — for example
+> `TinyLanguage.IntegrationTests\obj\Release\net10.0\win-x64\PubTmp\Out\runtimes\win-x64\native\<asset>` —
+> the absolute path can exceed Windows' classic MAX_PATH limit (260 chars).
+> `dotnet build` from a recent .NET SDK is long-path-aware and tolerates this,
+> but **Visual Studio's Batch Rebuild dialog still fails** on these paths
+> unless long-path support is explicitly enabled at three layers. All three
+> are required; missing any one causes Batch Rebuild to fail with
+> `The specified path, file name, or both are too long. The fully qualified
+> file name must be less than 260 characters.`
+>
+> ### Layer 1 — Machine registry (one-time, requires admin)
+>
+> ```powershell
+> reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+> ```
+>
+> No reboot required, but Visual Studio must be restarted to pick it up. The
+> install-vscode-debugger.cmd installer (Phase 4D) must verify this key reads
+> 1 and abort with a clear "run the registry command above as admin" error if
+> not — fixing it after a 30-minute build failure is far worse than refusing
+> to start.
+>
+> ### Layer 2 — Solution-level Directory.Build.props
+>
+> Phase 1A authors `Directory.Build.props` at the solution root. It must
+> include:
+>
+> ```xml
+> <Project>
+>   <PropertyGroup>
+>     <!-- Force MSBuild + tracker to use \\?\ long-path APIs on Windows. -->
+>     <MSBuildEnableAllPropertyFunctions>true</MSBuildEnableAllPropertyFunctions>
+>     <UseCommonOutputDirectory>false</UseCommonOutputDirectory>
+>     <!-- Surface long paths to .NET SDK tasks. -->
+>     <_LongPathsEnabled>true</_LongPathsEnabled>
+>   </PropertyGroup>
+> </Project>
+> ```
+>
+> ### Layer 3 — Per-executable app.manifest
+>
+> The `TinyLanguage` console project (the only executable in the solution)
+> ships with an `app.manifest` declaring long-path awareness so any path the
+> exe itself manipulates at runtime — and any path Windows hands it via
+> command-line arguments — uses the long-path API. Phase 1A authors:
+>
+> `TinyLanguage\app.manifest`:
+> ```xml
+> <?xml version="1.0" encoding="utf-8"?>
+> <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+>   <application xmlns="urn:schemas-microsoft-com:asm.v3">
+>     <windowsSettings>
+>       <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
+>     </windowsSettings>
+>   </application>
+> </assembly>
+> ```
+>
+> `TinyLanguage\TinyLanguage.csproj` references it via:
+> ```xml
+> <PropertyGroup>
+>   <ApplicationManifest>app.manifest</ApplicationManifest>
+> </PropertyGroup>
+> ```
+>
+> ### Why this matters (why prior runs got it wrong)
+>
+> A previous orchestration produced a buildable solution at the canonical
+> path that `dotnet build` happily processed but that Visual Studio's
+> Batch Rebuild dialog refused with MAX_PATH errors on the
+> `TinyLanguage.IntegrationTests\obj\Release\net10.0\win-x64\PubTmp\...`
+> chain. The user could neither single-step build via Batch Build nor
+> right-click → Rebuild on the affected projects, blocking IDE-driven
+> development entirely. The fix is structural: Phase 1A authors all three
+> layers above so every regenerated solution is VS-batch-rebuildable from
+> first commit. Phase 5 Step 6c verifies the three artefacts exist in the
+> deliverable; if any is missing, delivery fails loudly.
+
+---
+
+> ## SDK pinning — non-negotiable
+>
+> Visual Studio's MSBuild + NuGet integration uses the .NET SDK that
+> resolves at the solution root. If the agent shell publishes the
+> deliverable with one SDK and Visual Studio later resolves a *different*
+> SDK at the same path, lockfile incompatibility produces
+> `MSB4018: ResolvePackageAssets task failed unexpectedly. NullReferenceException`
+> on every project — independent of long-path concerns.
+>
+> Concretely on the development machine: dotnet on PATH was
+> `10.0.300-preview.0.26177.108` and Visual Studio 18 resolved
+> `10.0.203` by default. The publish wrote `obj/project.assets.json`
+> in the preview SDK's format; VS18's older NuGet bits NRE'd reading it.
+>
+> ### The fix
+>
+> Phase 1A authors a `global.json` at the canonical solution root that
+> pins the SDK to a stable version VS understands:
+>
+> ```json
+> {
+>   "sdk": {
+>     "version": "10.0.203",
+>     "rollForward": "latestPatch"
+>   }
+> }
+> ```
+>
+> `rollForward: latestPatch` is critical — `latestFeature` rolls *up*
+> across feature bands (e.g. from 10.0.203 to 10.0.300-preview), which
+> defeats the purpose. `latestPatch` keeps you on the same feature band
+> (10.0.2xx) and only picks newer patch revisions inside that band.
+> `disable` (exact match) is also acceptable but more brittle.
+>
+> Update the version string when a newer stable SDK ships; until then,
+> 10.0.203 is the floor that .NET 10 GA aligned around.
+>
+> Phase 5 Step 6c verifies `global.json` exists at the canonical path and
+> that `dotnet --version` from that path reports a 10.0.2xx SDK (NOT
+> a -preview build).
+
+---
+
+> ## Test output formatting — non-negotiable
+>
+> Build.Solution.md requires every test print its input and result via
+> `Console.WriteLine` so the test runner log shows what was exercised.
+> The naive form — `Console.WriteLine($"Input: {source}")` followed by
+> `Console.WriteLine($"Result: {Visible(actual)}")` with `Visible`
+> escaping `\n` to `\\n` — produces output that's unreadable for any
+> non-trivial multi-line result:
+>
+> ```
+> Input: 00277.repeat_print.tlg
+> Source:
+> for i := 1 to 5 do
+>     print "tick"
+> end
+>
+> Result: tick\ntick\ntick\ntick\ntick\n
+> ```
+>
+> Every test instead routes through a small `TestLog` helper that prints
+> sectioned, real-newline-indented output:
+>
+> ```
+> --- Input: 00277.repeat_print.tlg ---
+>   for i := 1 to 5 do
+>       print "tick"
+>   end
+> --- Result ---
+>   tick
+>   tick
+>   tick
+>   tick
+>   tick
+> ---
+> ```
+>
+> ### Required `TestLog.cs` (authored once per test project)
+>
+> Both `TinyLanguage.UnitTests/TestLog.cs` (authored by Phase 3B when it
+> first introduces tests) and `TinyLanguage.IntegrationTests/TestLog.cs`
+> (authored by Phase 4A) must contain the same class. Only the
+> `namespace` line differs:
+>
+> ```csharp
+> using System;
+>
+> namespace TinyLanguage.UnitTests   // or TinyLanguage.IntegrationTests
+> {
+>     public static class TestLog
+>     {
+>         private const string Indent = "  ";
+>
+>         public static void Input(string content) { Input(null, content); }
+>
+>         public static void Input(string label, string content)
+>         {
+>             Console.WriteLine();
+>             if (string.IsNullOrEmpty(label)) Console.WriteLine("--- Input ---");
+>             else Console.WriteLine("--- Input: " + label + " ---");
+>             WriteIndented(content);
+>         }
+>
+>         public static void Section(string label, string content)
+>         {
+>             if (string.IsNullOrEmpty(label)) Console.WriteLine("---");
+>             else Console.WriteLine("--- " + label + " ---");
+>             WriteIndented(content);
+>         }
+>
+>         public static void Result(string content)
+>         {
+>             Console.WriteLine("--- Result ---");
+>             WriteIndented(content);
+>             Console.WriteLine("---");
+>         }
+>
+>         private static void WriteIndented(string content)
+>         {
+>             if (content == null) { Console.WriteLine(Indent + "(null)"); return; }
+>             if (content.Length == 0) { Console.WriteLine(Indent + "(empty)"); return; }
+>             string normalised = content.Replace("\r\n", "\n");
+>             int start = 0;
+>             for (int index = 0; index < normalised.Length; index = index + 1)
+>             {
+>                 if (normalised[index] == '\n')
+>                 {
+>                     Console.WriteLine(Indent + normalised.Substring(start, index - start));
+>                     start = index + 1;
+>                 }
+>             }
+>             if (start < normalised.Length)
+>                 Console.WriteLine(Indent + normalised.Substring(start));
+>         }
+>     }
+> }
+> ```
+>
+> ### Test-author rules (apply to Phases 3B, 4A, 4C, and any future test phase)
+>
+> 1. NEVER write `Console.WriteLine($"Input: {x}")` or `Console.WriteLine($"Result: {y}")`. Always go through `TestLog.Input(...)` / `TestLog.Result(...)`.
+> 2. Multi-line content (source code, multi-line stdout, lists of tokens) goes into the helper as a single string with real `\n` separators — do NOT pre-escape `\n` to `\\n`. The helper handles indentation.
+> 3. Composite results (e.g. debugger tests with multiple fields) format each field on its own line:
+>    ```csharp
+>    TestLog.Result("enters = [" + string.Join(",", host.FrameEnters) + "]\n"
+>                 + "exits  = [" + string.Join(",", host.FrameExits) + "]");
+>    ```
+>    NOT a single `field1=...; field2=...; field3=...` blob.
+> 4. Token-list helpers (`DescribeTokens` etc.) print one token per line, not a single comma-separated string.
+> 5. Single-line inputs/results pass through the helper unchanged. The helper still wraps them in the section header so test rows are visually uniform when scanning a 500+ test log.
+
+---
+
 ## Deliberate deviations from Build.Solution.md
 
 `Build.Solution.md` is the locked specification, but a small number of points
@@ -200,9 +440,11 @@ Create the full solution skeleton at `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` with
 this layout (all paths relative to that solution root):
 
   TinyLanguage.slnx                                    ← solution file at the root
-  Directory.Build.props                                ← solution-wide MSBuild props
+  Directory.Build.props                                ← solution-wide MSBuild props (incl. long-path props)
+  global.json                                          ← SDK pin (see "SDK pinning" preamble)
   .vscode/launch.json                                  ← IDE debugger config
   TinyLanguage/TinyLanguage.csproj                     ← console (net10.0, self-contained single-file win-x64 exe)
+  TinyLanguage/app.manifest                            ← <longPathAware>true</longPathAware> manifest
   TinyLanguage.Lexer/TinyLanguage.Lexer.csproj         ← classlib (net10.0)
   TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj  ← classlib (net10.0)
   TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj      ← MSTest
@@ -286,7 +528,24 @@ launches it directly:
     ]
   }
 
+Long-path support — non-negotiable. Read the "Long-path support" section at
+the top of Build.md before scaffolding. Phase 1A is responsible for authoring
+ALL of:
+
+  (a) The solution-root `Directory.Build.props` (exact contents specified in
+      that section — long-path properties).
+  (b) `TinyLanguage\app.manifest` declaring <longPathAware>true</longPathAware>
+      with the exact contents specified in that section.
+  (c) `<ApplicationManifest>app.manifest</ApplicationManifest>` inside the
+      <PropertyGroup> of `TinyLanguage\TinyLanguage.csproj`.
+
+These three together make the deliverable VS-Batch-Rebuild-capable; missing
+any one causes Visual Studio to fail with MAX_PATH errors on the deepest
+publish intermediate paths even though `dotnet build` succeeds. Phase 5
+Step 6c will verify all three exist in the deliverable.
+
 TinyLanguage/TinyLanguage.csproj must include:
+  <ApplicationManifest>app.manifest</ApplicationManifest>
   <SelfContained>true</SelfContained>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PublishSingleFile>true</PublishSingleFile>
@@ -699,16 +958,25 @@ Read Build.Solution.md: "Unit Testing Strategy & Requirements",
 "Coding Style", "Implementation Notes".
 
 Implement TinyLanguage.UnitTests/:
+- TestLog.cs       — pretty-printing helper authored verbatim from the "Test output formatting — non-negotiable" preamble at the top of Build.md (UnitTests namespace).
 - LexerUnitTests.cs  — every token type, boundary conditions, error cases.
 - ParserUnitTests.cs — every BNF production, all 23 disambiguation rules.
 
 Use MSTest only. Test class suffix: UnitTests. No "Test" in method names.
 Name pattern: Subject_Action_ExpectedOutcome.
 
-Every test must print its input and result via Console.WriteLine so the test
-log shows what was exercised, e.g.:
-  Console.WriteLine($"Input: {source}");
-  Console.WriteLine($"Result: {actual}");
+Every test must print its input and result via the TestLog helper so the test
+log shows what was exercised — see "Test output formatting — non-negotiable"
+at the top of Build.md for the exact rules. Summary:
+
+  TestLog.Input(source);                    // for a bare source string
+  TestLog.Input("label", source);           // when there's a meaningful label
+  TestLog.Result(actual);                   // multi-line content uses real newlines
+
+Do NOT use raw `Console.WriteLine($"Input: ...")` / `Console.WriteLine($"Result: ...")`.
+Do NOT escape `\n` to `\\n` in any value passed to TestLog — the helper handles
+indentation and uses real newlines so multi-line content stays readable. For
+helpers like `DescribeTokens`, emit one token per line (not a comma-joined blob).
 
 Run: dotnet test TinyLanguage.UnitTests
 Accept only: Failed: 0.
@@ -727,13 +995,22 @@ Read Build.Solution.md: "IntegrationTests", "Test Validation Protocol",
 "Unit Testing Requirements".
 
 Implement TinyLanguage.IntegrationTests/:
+- TestLog.cs       — pretty-printing helper authored verbatim from the "Test output formatting — non-negotiable" preamble at the top of Build.md (IntegrationTests namespace).
 - InterpreterIntegrationTests.cs — end-to-end programs for every language feature.
 - Use the .tlg demo files from Phase 1D as test inputs where appropriate.
 
-Every test must print its input and result via Console.WriteLine so the test
-log shows what was exercised, e.g.:
-  Console.WriteLine($"Input: {source}");
-  Console.WriteLine($"Result: {actual}");
+Every test must print its input and result via the TestLog helper so the test
+log shows what was exercised — see "Test output formatting — non-negotiable"
+at the top of Build.md for the exact rules. Summary:
+
+  TestLog.Input(demoFileName, source);      // when the input has a label
+  TestLog.Section("Stdin", stdin);          // for additional input streams
+  TestLog.Result(actual);                   // multi-line stdout uses real newlines
+
+Do NOT use raw `Console.WriteLine($"Input: ...")` / `Console.WriteLine($"Result: ...")`.
+Do NOT introduce a `Visible(s)` helper that escapes `\n` to `\\n` — that collapses
+multi-line program stdout onto one unreadable line. The TestLog helper handles
+indentation and preserves real newlines for any content it prints.
 
 Run: dotnet test TinyLanguage.IntegrationTests
 Accept only: Failed: 0.
@@ -983,7 +1260,14 @@ In TinyLanguage.IntegrationTests:
   evaluate. Every test uses the launch.source overload to embed source
   inline (no temp .tlg files).
 
-Every test prints input/result via Console.WriteLine.
+Every test prints input/result via the TestLog helper authored by Phases 3B
+and 4A — see "Test output formatting — non-negotiable" at the top of Build.md.
+Do NOT use raw `Console.WriteLine($"Input: ...")` / `Console.WriteLine($"Result: ...")`.
+For composite results (multiple fields), put each field on its own line via
+`\n` inside the result string, e.g.:
+
+  TestLog.Result("enters = [" + string.Join(",", host.FrameEnters) + "]\n"
+               + "exits  = [" + string.Join(",", host.FrameExits) + "]");
 
 # Reporting
 Report:
@@ -1451,8 +1735,10 @@ that canonical copy has been re-validated end-to-end.
 
   6c. Verify the structural standards from the preamble hold at the canonical path:
         - $canonical\TinyLanguage.slnx                     exists
-        - $canonical\Directory.Build.props                  exists
-        - $canonical\TinyLanguage\TinyLanguage.csproj       exists
+        - $canonical\global.json                            exists, pins to 10.0.203 with rollForward "latestPatch"; verify `dotnet --version` from $canonical reports a 10.0.2xx SDK (NOT a preview build)
+        - $canonical\Directory.Build.props                  exists, contains <_LongPathsEnabled>true
+        - $canonical\TinyLanguage\TinyLanguage.csproj       exists, contains <ApplicationManifest>
+        - $canonical\TinyLanguage\app.manifest              exists, contains <longPathAware>true
         - $canonical\TinyLanguage.Lexer\...csproj           exists
         - $canonical\TinyLanguage.Interpreter\...csproj     exists
         - $canonical\TinyLanguage.UnitTests\...csproj       exists
@@ -1464,6 +1750,10 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\vscode-extension\package.json          exists (Phase 4D)
         - $canonical\install-vscode-debugger.cmd            exists (Phase 4D)
         - $canonical\TinyLanguage.wiki.md                   exists, > 200 lines (Phase 4E)
+        - HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled DWORD = 1
+          (verify via `(Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -EA SilentlyContinue).LongPathsEnabled -eq 1`).
+          If missing/zero, abort delivery with the exact admin-elevated `reg add` command
+          from the Long-path support preamble.
       Fail loudly with a specific path if any of these is missing.
 
   6d. Re-run the full build, test, publish, and run-all-demos chain at the
@@ -1501,10 +1791,47 @@ that canonical copy has been re-validated end-to-end.
       Build.Solution.md as the source of truth. If the file is missing or empty,
       Phase 4E was skipped — re-run Phase 4E before declaring complete.
 
-All six steps must be green. Do not declare the plan complete until Step 6h
-confirms the canonical path holds the buildable, fully-validated solution
-plus the user wiki. Do not refactor unrelated code. Do not alter
-Build.Solution.md.
+  6i. **Visual Studio Batch Rebuild smoke test** *(blocks plan completion)*
+
+      The fundamental promise of this orchestration: the deliverable is
+      Visual-Studio-buildable end to end, not just `dotnet build`-buildable.
+      Drive `devenv.com` from the command line so a CI can verify it without a
+      human clicking through the IDE.
+
+      First locate `devenv.com`. Try in order:
+        1. `Get-Command devenv.com -EA SilentlyContinue` (if PATH has it).
+        2. `& "${env:ProgramFiles}\Microsoft Visual Studio\2026\Professional\Common7\IDE\devenv.com"`
+        3. `& "${env:ProgramFiles}\Microsoft Visual Studio\2026\Enterprise\Common7\IDE\devenv.com"`
+        4. `& "${env:ProgramFiles}\Microsoft Visual Studio\2026\Community\Common7\IDE\devenv.com"`
+        5. Fallback to `vswhere.exe`:
+             `& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath`
+           and switch the trailing exe to devenv.com.
+        If none resolves, print a stderr message naming all candidate paths
+        searched and exit 1.
+
+      Run:
+        & $devenv "$canonical\TinyLanguage.slnx" /Rebuild "Debug|Any CPU" `
+          /Out "$env:TEMP\tlg_vs_batch_rebuild.log"
+
+      Accept all of:
+        - $LASTEXITCODE -eq 0
+        - The /Out log contains "Rebuild All succeeded" (or the localised
+          equivalent for non-en-US installs — fall back to checking that
+          `Select-String -Path $logPath -Pattern '0 failed'` finds a hit).
+        - The /Out log does NOT contain any of:
+          "The fully qualified file name must be less than 260 characters"
+          "The specified path, file name, or both are too long"
+          "MSB6005"  (path-too-long MSBuild error)
+          "MSB3491"  (also path-too-long)
+
+      If any check fails: re-verify Layers 1–3 of long-path support, restart
+      Visual Studio if Layer 1 was just enabled in this session, and re-run.
+      Path-too-long failures here are NOT an acceptable outcome — they mean
+      the solution we just delivered is unusable in the IDE.
+
+All seven steps must be green. Do not declare the plan complete until Step 6i
+confirms `devenv.com /Rebuild` exits 0 with no MAX_PATH errors. Do not
+refactor unrelated code. Do not alter Build.Solution.md.
 ```
 
 ---

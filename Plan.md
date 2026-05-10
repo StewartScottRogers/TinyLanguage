@@ -1,176 +1,209 @@
-# TinyLanguage — Phase 0 Plan.md
+# TinyLanguage — Plan.md (Phase 0 Architect Output)
 
-Working document for the Claude Code orchestration build of TinyLanguage.
-Canonical solution root: `Z:\repos\TinyLanguage.2026.05.07.20\`
-Spec source-of-truth: `Build.Solution.md` (locked, read-only).
-Deviations layer:    `Build.md` (no exe demo-mode; `run-all-demos.cmd`; DAP debugger; `vscode-extension/`).
+Working architect document for the Claude Code orchestration build defined in
+`Z:\repos\TinyLanguage\Build.md`. Specification source of truth:
+`Z:\repos\TinyLanguage\Build.Solution.md` (READ-ONLY).
+
+Canonical solution root: **`Z:\repos\TinyLanguage.2026.05.08.12\`**
+(sibling of the orchestrator repo; UTC 2026-05-08, hour 12).
 
 ---
 
-## 1. Hierarchical Outline of `Build.Solution.md`
+## 1. Hierarchical Outline of Build.Solution.md
+
+- **.NET Standards**
+  - .NET Version Requirements (net10.0, C#, no implicit usings, no nullable, VS 2026+)
+  - Coding Style (lowerCamelCase locals, UpperCamelCase members/types, `I`-prefix interfaces, Tuples named + `Tuple` postfix + `var`, `readonly` everywhere possible, complete-noun naming)
+  - Library Usage (BCL only — value & reference types)
+  - Programming Constructs (favor Tuples over Records/Classes/Structs; AST nodes are Classes for Visitor; stream-read source files)
+  - File System Structure (one type per file: class / interface / enum / record)
+  - Code Documentation (comments target business analysts / entry-level)
+- **Application Description**
+  - What to Build (`..\TinyLanguage.YYYY.MM.DD.HH`, BNF Grammar Verification Strategy)
+  - Class Library `TinyLanguage.Lexer.dll` (lexer + AST node types + parser + pretty printer)
+  - Class Library `TinyLanguage.Interpreter.dll` (depends on Lexer)
+  - UnitTests `TinyLanguage.UnitTests.dll`
+  - IntegrationTests `TinyLanguage.IntegrationTests.dll`
+  - Console Application `TinyLanguage.exe` (file-processor mode, demo mode — see deviation D1)
+  - Tiny Language Demonstration Suite `TinyLanguage.DemoFiles` (SDK-style csproj, 300+ `.tlg` + matching `.cmd`)
+- **Unit Testing Strategy & Requirements**
+  - Unit Testing Requirements (MSTest only; `UnitTests` / `IntegrationTests` suffix)
+  - Test Validation Protocol (commands, acceptance criteria, fix-and-retry loop)
+- **TinyLanguage Syntax**
+  - Implementation Notes 1–23 (comment char, `:=`, separators, bare return, keywords, foreach-string, ArrayElementAssign, scope chain, function scope, operator types, precedence, conditional expr, cast, lambda, `new`, `static`, empty arg lists, top-level decls, for-loop scope, generic-type, separator strictness, call-stmt, pattern alternation)
+  - BNF Grammar (Comments, Program Structure, Statements, Assignment/Declaration, Control Flow, I/O, Functions, Lambdas, Classes/Objects, Module System, Expressions with full precedence ladder, Conditional Expression, Cast, Arrays, Exceptions, Pattern Matching, Annotations, Type System, Literals/Identifiers, Terminals)
+- **TinyLanguage Semantics**
+  - Type System (Integer/Float/Bool, arithmetic promotion table, operator-specific rules, truthiness)
+  - Built-in Functions (`len`, `str`, `int`, `bool`; `print` is a statement keyword)
+  - Scope Rules (linked-list scope chain, function scope, closures out-of-scope)
+  - Runtime Error Policy (descriptive + line number, stack depth 500, div-by-zero, type mismatch, unimplemented features)
+  - Feature Implementation Status (categories that must be fully implemented)
+  - Interpreter Architecture (Visitor pattern via `INodeVisitor`)
+- **BNF Grammar Verification Strategy**
+  - Layer 1 — Lexer Coverage (every keyword, operator, delimiter, literal form)
+  - Layer 2 — Parser Coverage (every non-terminal, every alternative, every optional)
+  - Layer 3 — AST Pretty Printer Coverage (every node type, indentation, determinism)
+  - Layer 4 — Interpreter Coverage (every executable production)
+  - Layer 5 — Integration Coverage (FizzBuzz, Fibonacci, sort, calculator, etc.)
+  - Verification Checklist (Lexer, Parser, Pretty Printer, Interpreter, Integration, Code quality)
+- **Build Instructions**
+  - Restore, Build, Unit Tests, Integration Tests, Demo Suite, File-Processor Mode
+  - Build Success Criteria
+  - Implementation Requirements (solution structure, project deps, build config, compiler settings, testing reqs)
+
+---
+
+## 2. Deliberate Deviations from Build.Solution.md
+
+These come from Build.md's "Deliberate deviations from Build.Solution.md" section
+and the additive Phase 4E. The locked spec is overridden by the project owner on
+exactly these points; no other deviations are permitted.
+
+| ID | Title                                  | Build.Solution.md says                                                                  | Build.md override                                                                                                    | Affected phases |
+|----|----------------------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|-----------------|
+| D1 | `TinyLanguage.exe` has no demo mode    | Zero-arg invocation walks `TinyLanguage.DemoFiles\` and prints "All demos completed successfully." | Two modes only — zero-arg = stdin pipe, two-arg = file mode. Anything else → usage to stderr + exit 1. No `Console.IsInputRedirected` branching. | Phase 4B, Phase 5 |
+| D2 | Demo aggregator script                 | Demo-walking lives inside `TinyLanguage.exe`                                              | Demo-walking lives in `TinyLanguage.DemoFiles\run-all-demos.cmd`, generated alongside per-demo `.cmd` files.         | Phase 1D, Phase 5 |
+| D3 | Phase 5 acceptance shift               | `dotnet run --project TinyLanguage` prints "All demos completed successfully."            | `TinyLanguage.DemoFiles\run-all-demos.cmd` prints it instead. Per-`.cmd` validation loop unchanged.                  | Phase 5 (Step 3) |
+| D4 | Interactive debugger via DAP (additive)| Spec is silent on debugging                                                              | Three-layer DAP design: engine `IDebuggerHost` in Interpreter, new `TinyLanguage.DebugAdapter` project, VS Code extension at `vscode-extension\`. Activation flag `--dap`. | Phase 4C, Phase 4D |
+| D5 | User-facing wiki (additive)            | Spec is silent on a wiki                                                                  | Single self-contained `TinyLanguage.wiki.md` at the solution root, generated AFTER Phase 4D and BEFORE Phase 5. Pre-declared in slnx "Solution Items" by Phase 1A. | Phase 4E |
+| D6 | Long-path support (additive)            | Spec is silent on long paths                                                              | Three-layer requirement so VS Batch Rebuild succeeds on the timestamped canonical path: (1) `HKLM\...\FileSystem\LongPathsEnabled`=1 (machine prereq, admin), (2) `Directory.Build.props` with `<_LongPathsEnabled>true</_LongPathsEnabled>`, (3) `TinyLanguage\app.manifest` with `<longPathAware>true</longPathAware>` referenced via `<ApplicationManifest>` in `TinyLanguage.csproj`. Phase 5 Step 6c verifies all three; Step 6i drives `devenv.com /Rebuild` to prove VS-buildability. | Phase 1A, Phase 4D, Phase 5 |
+| D7 | SDK pin via global.json (additive)      | Spec is silent on SDK selection                                                            | `global.json` at the canonical solution root pins to a stable .NET SDK (`10.0.203`, `rollForward: latestPatch`) so VS's bundled NuGet and the dotnet-CLI publish use the same SDK and the same lockfile format. Without this, VS can NRE on `ResolvePackageAssets` if dotnet-on-PATH is a newer feature band than what VS resolves by default. Phase 5 Step 6c verifies. | Phase 1A, Phase 5 |
+| D8 | TestLog helper (additive)               | Spec says "every test prints input + result via Console.WriteLine"                          | Tests route through a `TestLog.Input/Section/Result` helper instead of raw `Console.WriteLine`, with sectioned `--- Input ---` / `--- Result ---` blocks and real-newline indentation. Replaces the older `Visible(s)` pattern that escaped `\n`→`\\n` and collapsed multi-line stdout onto one unreadable line. Phase 3B authors `TinyLanguage.UnitTests/TestLog.cs`; Phase 4A authors `TinyLanguage.IntegrationTests/TestLog.cs`; Phase 4C reuses both. Exact source for the helper is in the "Test output formatting — non-negotiable" preamble of Build.md. | Phase 3B, Phase 4A, Phase 4C |
+
+---
+
+## 3. Work-Unit List
+
+Output paths use the canonical solution root `Z:\repos\TinyLanguage.2026.05.08.12\`.
+
+| ID    | Title                              | Outputs (under canonical root unless noted)                                                                                                                                                                                                  | Dependencies          | Phase |
+|-------|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|-------|
+| WU-0  | Architect Analysis                 | `Z:\repos\TinyLanguage\Plan.md` (this file — orchestrator-repo working doc, not committed)                                                                                                                                                     | none                  | 0     |
+| WU-1A | Solution Scaffold                  | `TinyLanguage.slnx`, `Directory.Build.props` (incl. long-path props per D6), `global.json` (SDK pin per D7), `.gitignore`, `.vscode\launch.json`, `TinyLanguage\app.manifest` (longPathAware=true), six project subdirs each with empty csproj (`TinyLanguage` (csproj references app.manifest via `<ApplicationManifest>`), `TinyLanguage.Lexer`, `TinyLanguage.Interpreter`, `TinyLanguage.UnitTests`, `TinyLanguage.IntegrationTests`, `TinyLanguage.DemoFiles`); slnx pre-declares Solution Items entries for `.gitignore`, `install-vscode-debugger.cmd`, `TinyLanguage.wiki.md` | WU-0                  | 1A    |
+| WU-1B | Token & Lexer                      | `TinyLanguage.Lexer\TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` (incl. `Pipe`, `This`, all kw)                                                                                                                                  | WU-0                  | 1B    |
+| WU-1C | AST Node Types + Pretty Printer    | One `*Node.cs` per AST node class in `TinyLanguage.Lexer\`; `INodeVisitor.cs`; `AstPrettyPrinter.cs`                                                                                                                                          | WU-0                  | 1C    |
+| WU-1D | Demo Files (Tier A + Tier B)       | `TinyLanguage.DemoFiles\*.tlg` (≥300, Tier A 00001–00399 + Tier B 00400+); matching `*.cmd` per demo (CWD-independent template); `TinyLanguage.DemoFiles\run-all-demos.cmd`                                                                    | WU-0                  | 1D    |
+| WU-2  | Parser                             | `TinyLanguage.Lexer\Parser.cs` (recursive-descent over full BNF, all 23 notes), `ParserException.cs`                                                                                                                                          | WU-1A, WU-1B, WU-1C   | 2     |
+| WU-3A | Interpreter                        | `TinyLanguage.Interpreter\IInterpreter.cs`, `Interpreter.cs` (visitor + scope chain + operator semantics + ArrayElementAssign mutation + foreach-over-string), `InterpreterException.cs`, `Scope.cs`                                          | WU-2                  | 3A    |
+| WU-3B | Unit Tests (Lexer + Parser)        | `TinyLanguage.UnitTests\TestLog.cs` (pretty-print helper per D8), `LexerUnitTests.cs`, `ParserUnitTests.cs` (MSTest, `Subject_Action_ExpectedOutcome` naming, every test routes through `TestLog.Input/Result`)                              | WU-2                  | 3B    |
+| WU-4A | Integration Tests                  | `TinyLanguage.IntegrationTests\TestLog.cs` (pretty-print helper per D8), `InterpreterIntegrationTests.cs` (uses Phase 1D `.tlg` inputs; routes output through `TestLog`)                                                                       | WU-3A, WU-3B          | 4A    |
+| WU-4B | Console Application                | `TinyLanguage\Program.cs` (two modes only — see D1); single-file self-contained publish copies `TinyLanguage.exe` into `TinyLanguage.DemoFiles\` via `AfterTargets="Publish"`                                                                  | WU-3A, WU-3B          | 4B    |
+| WU-4C | Debugger Engine + DAP Adapter      | Engine (`TinyLanguage.Interpreter\IDebuggerHost.cs`, `DebuggerControl.cs`, `StatementContext.cs`, `DebuggerStackFrame.cs`, `DebuggerRestartException.cs`, `DebuggerQuitException.cs`, `AssemblyInfo.cs`, modified `Interpreter.cs` + `Scope.cs`); new project `TinyLanguage.DebugAdapter\` (`DebugAdapterServer.cs`, `DapMessageReader.cs`, `DapMessageWriter.cs`, `DapHost.cs`, `BreakpointInfo.cs`, `VariableHandle.cs`); slnx insertion between Interpreter and UnitTests; `--dap` flag in `TinyLanguage\Program.cs`; `DebuggerEngineUnitTests.cs` + `DebugAdapterIntegrationTests.cs` | WU-3A, WU-4B          | 4C    |
+| WU-4D | VS Code Extension + Installer      | `vscode-extension\package.json`, `extension.js`, `README.md`, `.vscodeignore`, `LICENSE.txt`; `install-vscode-debugger.cmd` at solution root; `.vscode\launch.json` extended with `tinylanguage` config; `.vscode\tasks.json` with `publish` task | WU-4C                 | 4D    |
+| WU-4E | Wiki Generation                    | `TinyLanguage.wiki.md` at the solution root (>200 lines, single self-contained markdown covering language tour, demo suite, debugger, architecture, regeneration steps); slnx Solution Items entry already present from WU-1A                  | WU-4D                 | 4E    |
+| WU-5  | Final Validation & Delivery        | Validated solution at `Z:\repos\TinyLanguage.2026.05.08.12\`; `dotnet publish` produced ~36 MB single-file exe at `TinyLanguage.DemoFiles\TinyLanguage.exe`; full `.cmd` validation loop green; `run-all-demos.cmd` exits 0; DAP smoke test green | WU-4A, WU-4B, WU-4C, WU-4D, WU-4E | 5 |
+
+---
+
+## 4. Dependency Graph & Critical Path
 
 ```
-1. .NET Standards
-   1.1 .NET Version Requirements ............. .NET 10.0, C#, VS 2026, no Implicit Using, no Nullable
-   1.2 Coding Style .......................... naming, I-prefix, var-only-for-Tuples, readonly default
-   1.3 Library Usage ......................... BCL only, no third-party
-   1.4 Programming Constructs ................ Tuples for multi-return, Records over Classes (except Visitor AST)
-   1.5 File System Structure ................. one type per file
-   1.6 Code Documentation .................... business-analyst-readable comments
-
-2. Application Description
-   2.1 What to Build ......................... TinyLanguage.YYYY.MM.DD.HH; BNF-driven test generation
-   2.2 Class Library: TinyLanguage.Lexer.dll . Lexer + AST nodes + Parser + AstPrettyPrinter
-   2.3 Class Library: TinyLanguage.Interpreter.dll
-   2.4 UnitTests: TinyLanguage.UnitTests.dll
-   2.5 IntegrationTests: TinyLanguage.IntegrationTests.dll
-   2.6 Console App: TinyLanguage.exe ......... [SPEC: file-mode + demo-mode] (DEVIATION: demo-mode REMOVED)
-   2.7 Demonstration Suite: TinyLanguage.DemoFiles
-
-3. Unit Testing Strategy & Requirements
-   3.1 Unit Testing Requirements
-   3.2 Test Validation Protocol
-
-4. TinyLanguage Syntax
-   4.1 Implementation Notes (1–23)
-   4.2 BNF Grammar
-
-5. TinyLanguage Semantics
-   5.1 Type System
-   5.2 Built-in Functions .................... len/str/int/bool; print is a keyword
-   5.3 Scope Rules ........................... linked-list scope chain
-   5.4 Runtime Error Policy
-   5.5 Feature Implementation Status
-   5.6 Interpreter Architecture .............. Visitor pattern via INodeVisitor
-
-6. BNF Grammar Verification Strategy
-   6.1 Layer 1 — Lexer Coverage
-   6.2 Layer 2 — Parser Coverage
-   6.3 Layer 3 — Pretty Printer Coverage
-   6.4 Layer 4 — Interpreter Coverage
-   6.5 Layer 5 — Integration Coverage
-   6.6 Verification Checklist
-
-7. Build Instructions
-   7.1 Build the .NET Application
-   7.2 Build Success Criteria ................ 0/0; Failed: 0; "All demos completed successfully."; exit 0
-   7.3 Implementation Requirements
+                              WU-0
+                               |
+        +----------+-----------+-----------+
+        |          |           |           |
+      WU-1A      WU-1B       WU-1C       WU-1D
+        \          \           /
+         \          \         /
+          +----- WU-2 -------+
+                  |
+            +-----+-----+
+            |           |
+          WU-3A       WU-3B
+            \           /
+             \         /
+              +---+---+
+              |       |
+            WU-4A   WU-4B
+                     |
+                   WU-4C
+                     |
+                   WU-4D
+                     |
+                   WU-4E
+                     |
+                    WU-5  <- joins WU-4A leaf as well
 ```
 
----
+Notes:
+- Phase 1 (WU-1A..1D) is fully parallel — four worktrees launch simultaneously.
+- WU-2 joins all three foundation projects (1A, 1B, 1C); WU-1D is independent of WU-2 but WU-5 joins it.
+- Phase 3 (WU-3A, WU-3B) is parallel after WU-2.
+- Phase 4 split: WU-4A and WU-4B parallel after WU-3A/3B; WU-4C sequential after WU-3A + WU-4B; WU-4D after WU-4C; WU-4E after WU-4D.
+- Phase 5 (WU-5) joins all leaves: WU-4A and WU-4E.
 
-## 0. Deliberate Deviations (apply on top of §1–§7)
-
-| # | Spec point | Deviation | Effect |
-|---|-----------|-----------|--------|
-| D1 | §2.6 Demo mode | exe has NO demo mode; zero args = stdin source; ignore `Console.IsInputRedirected` | WU-4B |
-| D2 | §2.6 "All demos completed successfully." | Behavior moves to `TinyLanguage.DemoFiles\run-all-demos.cmd` | WU-1D |
-| D3 | §7.2 acceptance | Phase 5 Step 3 calls `run-all-demos.cmd` | WU-5 |
-| D4 | (no spec entry) | DAP debugger added: engine in `TinyLanguage.Interpreter`, new `TinyLanguage.DebugAdapter` project, `vscode-extension/`, `--dap` flag | WU-4C, WU-4D |
-| D5 | §2.2 split | Lexer + AST + Parser all in `TinyLanguage.Lexer.dll` | WU-1B, WU-1C, WU-2 |
+**Critical path** (longest chain): WU-0 -> WU-1B/1C -> WU-2 -> WU-3A -> WU-4B -> WU-4C -> WU-4D -> WU-4E -> WU-5.
 
 ---
 
-## 2. Work Unit List
+## 5. Final Project Directory Layout
 
-| ID | Title | Outputs (under canonical root) | Dependencies | Role |
-|----|-------|-------------------------------|--------------|------|
-| WU-0 | Architect plan | `Plan.md` (this file) | — | Phase 0 |
-| WU-1A | Solution scaffold + csproj skeletons + slnx + Directory.Build.props + .vscode/launch.json | scaffold files | — | Phase 1A |
-| WU-1B | Lexer | `TinyLanguage.Lexer/TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` | — | Phase 1B |
-| WU-1C | AST node classes + visitor + pretty printer | one file per AST node, `INodeVisitor.cs`, `AstPrettyPrinter.cs` | — | Phase 1C |
-| WU-1D | Demo .tlg + .cmd files + run-all-demos.cmd | `TinyLanguage.DemoFiles/*.tlg` (300+) + `*.cmd` + aggregator | — | Phase 1D |
-| WU-2 | Recursive-descent Parser + ParserException | `Parser.cs`, `ParserException.cs` | WU-1A, WU-1B, WU-1C | Phase 2 |
-| WU-3A | Tree-walking interpreter + Scope | `IInterpreter.cs`, `Interpreter.cs`, `Scope.cs`, value-types | WU-2 | Phase 3A |
-| WU-3B | Lexer + Parser unit tests | `TinyLanguage.UnitTests/*.cs` | WU-2 | Phase 3B |
-| WU-4A | Interpreter integration tests | `TinyLanguage.IntegrationTests/*.cs` | WU-3A, WU-3B | Phase 4A |
-| WU-4B | Console app Program.cs (stdin + file modes — NO demo mode) | `TinyLanguage/Program.cs` | WU-3A | Phase 4B |
-| WU-4C | Debugger engine + DebugAdapter project + --dap + tests | engine files, new project, modified Program.cs, tests | WU-3A, WU-4B | Phase 4C |
-| WU-4D | VS Code extension + .vscode updates + double-click installer | `vscode-extension/*`, updated `.vscode/launch.json`, `tasks.json`, `install-vscode-debugger.cmd` (paren-safe, idempotent) | WU-4C | Phase 4D |
-| WU-5 | Final assembly, validate, deliver to canonical sibling path | published exe + all green | WU-1D, WU-3B, WU-4A, WU-4B, WU-4C, WU-4D | Phase 5 |
-
----
-
-## 3. Dependency Graph + Critical Path
-
-- WU-0 → unblocks Phase 1
-- WU-1A, WU-1B, WU-1C, WU-1D run in parallel
-- WU-2 = join(WU-1A, WU-1B, WU-1C)
-- WU-3A and WU-3B run in parallel after WU-2
-- WU-4A = join(WU-3A, WU-3B)
-- WU-4B depends only on WU-3A (parallel with WU-4A)
-- WU-4C depends on WU-3A AND WU-4B
-- WU-4D depends on WU-4C
-- WU-5 = join(WU-1D, WU-3B, WU-4A, WU-4B, WU-4C, WU-4D)
-
-### Critical Path
-
-> **WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-5**
-
-Highest-risk nodes: **WU-2** (parser disambiguation: notes 12, 13, 14, 20, 22, 23) and **WU-4C** (cooperative-threaded DAP host with conditional breakpoints + logpoints + restart unwind).
-
----
-
-## 4. Final Project Directory Layout
+All paths under `Z:\repos\TinyLanguage.2026.05.08.12\`. Annotation `(Pn)` indicates the producing phase.
 
 ```
-Z:\repos\TinyLanguage.2026.05.07.20\
-├── TinyLanguage.slnx                    ← lists TinyLanguage FIRST + "Solution Items" folder pre-declaring .gitignore, install-vscode-debugger.cmd, TinyLanguage.wiki.md
-├── Directory.Build.props                ← TargetFramework=net10.0, Nullable=disable, ImplicitUsings=disable, TreatWarningsAsErrors=true
-├── install-vscode-debugger.cmd          ← double-click installer (Phase 4D); paren-safe by structure
-├── TinyLanguage.wiki.md                 ← user-facing wiki (Phase 4E)
-├── .gitignore
-│
+Z:\repos\TinyLanguage.2026.05.08.12\
+├── TinyLanguage.slnx                                       (1A, edited 4C to add DebugAdapter project)
+├── Directory.Build.props                                   (1A)
+├── global.json                                             (1A — SDK pin; see D7)
+├── .gitignore                                              (1A)
+├── install-vscode-debugger.cmd                             (4D)
+├── TinyLanguage.wiki.md                                    (4E)
 ├── .vscode\
-│   ├── launch.json                      ← stdin / file / Debug current .tlg
-│   └── tasks.json                       ← build + publish
-│
-├── TinyLanguage\
-│   ├── TinyLanguage.csproj              ← Exe; SelfContained; PublishSingleFile; AfterTargets=Publish copy
-│   └── Program.cs                       ← --dap | stdin | file modes
-│
-├── TinyLanguage.Lexer\                  ← classlib: Lexer + AST + Parser + PrettyPrinter
-│   ├── TinyLanguage.Lexer.csproj
-│   ├── TokenType.cs / Token.cs / Lexer.cs / LexerException.cs
-│   ├── Parser.cs / ParserException.cs
-│   ├── INodeVisitor.cs / AstPrettyPrinter.cs / AstNode.cs
-│   └── (Statements, Expressions, Types subfolders — one file per node class)
-│
-├── TinyLanguage.Interpreter\
-│   ├── TinyLanguage.Interpreter.csproj
-│   ├── AssemblyInfo.cs                  ← [InternalsVisibleTo("TinyLanguage.DebugAdapter")]
-│   ├── IInterpreter.cs / Interpreter.cs / InterpreterException.cs / Scope.cs / BuiltInFunctions.cs
-│   ├── Values\ (Instance/Function/Lambda/Class/Module/List/Map)
-│   ├── IDebuggerHost.cs / DebuggerControl.cs / StatementContext.cs / DebuggerStackFrame.cs
-│   └── DebuggerRestartException.cs / DebuggerQuitException.cs
-│
-├── TinyLanguage.DebugAdapter\           ← new project per D4
-│   ├── TinyLanguage.DebugAdapter.csproj
-│   ├── DebugAdapterServer.cs / DapMessageReader.cs / DapMessageWriter.cs
-│   ├── DapHost.cs / BreakpointInfo.cs / VariableHandle.cs
-│
-├── TinyLanguage.UnitTests\              ← MSTest
-│   └── LexerUnitTests / ParserUnitTests / AstPrettyPrinterUnitTests / DebuggerEngineUnitTests
-│
-├── TinyLanguage.IntegrationTests\       ← MSTest
-│   └── InterpreterIntegrationTests / ScopeIsolation / Exception / PatternMatching / ModuleSystem / DebugAdapterIntegrationTests
-│
-├── TinyLanguage.DemoFiles\              ← INSIDE solution folder
-│   ├── TinyLanguage.DemoFiles.csproj    ← Content-only
-│   ├── run-all-demos.cmd                ← aggregator (D2)
-│   ├── 00001..00399.*.tlg + .cmd        ← Tier A
-│   ├── 00400..00499+.*.tlg + .cmd       ← Tier B
-│   └── TinyLanguage.exe                 ← AFTER `dotnet publish` (~36 MB)
-│
-└── vscode-extension\                    ← per D4
-    ├── package.json / extension.js / README.md / .vscodeignore
+│   ├── launch.json                                         (1A; extended 4D with tinylanguage debug config)
+│   └── tasks.json                                          (4D — publish preLaunchTask)
+├── TinyLanguage\                                           (1A scaffold; 4B Program.cs; 4C --dap flag)
+│   ├── TinyLanguage.csproj                                 (1A; ProjectReference to DebugAdapter added 4C)
+│   ├── app.manifest                                        (1A — longPathAware=true; see D6)
+│   └── Program.cs                                          (4B; modified 4C)
+├── TinyLanguage.Lexer\                                     (1A scaffold; 1B+1C+2 source)
+│   ├── TinyLanguage.Lexer.csproj                           (1A)
+│   ├── TokenType.cs / Token.cs / Lexer.cs / LexerException.cs   (1B)
+│   ├── *Node.cs (one file per AST node class)              (1C)
+│   ├── INodeVisitor.cs                                     (1C)
+│   ├── AstPrettyPrinter.cs                                 (1C)
+│   ├── Parser.cs                                           (2)
+│   └── ParserException.cs                                  (2)
+├── TinyLanguage.Interpreter\                               (1A scaffold; 3A source; 4C debugger additions)
+│   ├── TinyLanguage.Interpreter.csproj                     (1A)
+│   ├── IInterpreter.cs / Interpreter.cs / Scope.cs         (3A; Interpreter + Scope modified 4C)
+│   ├── InterpreterException.cs                             (3A)
+│   ├── IDebuggerHost.cs / DebuggerControl.cs               (4C)
+│   ├── StatementContext.cs / DebuggerStackFrame.cs         (4C)
+│   ├── DebuggerRestartException.cs / DebuggerQuitException.cs   (4C)
+│   └── AssemblyInfo.cs                                     (4C)
+├── TinyLanguage.DebugAdapter\                              (4C — new project)
+│   ├── TinyLanguage.DebugAdapter.csproj                    (4C)
+│   ├── DebugAdapterServer.cs                               (4C)
+│   ├── DapMessageReader.cs / DapMessageWriter.cs           (4C)
+│   ├── DapHost.cs                                          (4C)
+│   ├── BreakpointInfo.cs                                   (4C)
+│   └── VariableHandle.cs                                   (4C)
+├── TinyLanguage.UnitTests\                                 (1A scaffold; 3B source; 4C debugger tests)
+│   ├── TinyLanguage.UnitTests.csproj                       (1A)
+│   ├── TestLog.cs                                          (3B — pretty-print helper; see D8)
+│   ├── LexerUnitTests.cs / ParserUnitTests.cs              (3B)
+│   └── DebuggerEngineUnitTests.cs                          (4C)
+├── TinyLanguage.IntegrationTests\                          (1A scaffold; 4A source; 4C DAP integration)
+│   ├── TinyLanguage.IntegrationTests.csproj                (1A)
+│   ├── TestLog.cs                                          (4A — pretty-print helper; see D8)
+│   ├── InterpreterIntegrationTests.cs                      (4A)
+│   └── DebugAdapterIntegrationTests.cs                     (4C)
+├── TinyLanguage.DemoFiles\                                 (1A scaffold; 1D content; 4B publish target)
+│   ├── TinyLanguage.DemoFiles.csproj                       (1A — content-only, copies *.tlg + *.cmd)
+│   ├── 00001..00399.*.tlg                                  (1D — Tier A feature-coverage demos)
+│   ├── 00400..00499.*.tlg                                  (1D — Tier B advanced data structures)
+│   ├── *.cmd (one per .tlg, CWD-independent)               (1D)
+│   ├── run-all-demos.cmd                                   (1D — replaces removed exe demo mode, see D2)
+│   └── TinyLanguage.exe                                    (4B — placed by AfterTargets="Publish"; ~36 MB self-contained)
+└── vscode-extension\                                        (4D — peer of source projects)
+    ├── package.json                                        (4D)
+    ├── extension.js                                        (4D)
+    ├── README.md                                           (4D)
+    ├── .vscodeignore                                       (4D)
+    └── LICENSE.txt                                         (4D)
 ```
 
-### Conformance to BD §0 structural standards
+---
 
-- **Std 1**: `.slnx` at root + `Directory.Build.props` + `.vscode/` siblings ✓
-- **Std 2**: every project in own subdir ✓
-- **Std 3**: DemoFiles inside solution root ✓
-- **Std 4**: project refs use `..\<Project>\<Project>.csproj` ✓
-- **Std 5**: default per-project bin/obj ✓
-- **Std 6**: every path resolves under canonical root ✓
+*End of Plan.md — architect-level outline only. No code generated. Build.Solution.md
+and Build.md are unchanged.*
