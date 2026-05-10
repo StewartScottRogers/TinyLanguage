@@ -62,7 +62,7 @@ dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 
 The interpreter has a built-in DAP server. To debug a `.tlg` program in VS Code:
 
-1. **One-time setup** — double-click `install-vscode-debugger.cmd` at the solution root (or run it from any shell). It is idempotent and runs five steps: prereq check (dotnet, node, npm, code), `dotnet publish TinyLanguage -c Release`, `npm install -g vsce` if missing, `vsce package`, `code --install-extension ... --force`. Manual fallback if you'd rather drive it yourself: `cd vscode-extension && vsce package --allow-missing-repository && code --install-extension tinylanguage-debug-0.1.0.vsix --force`, plus a separate `dotnet publish TinyLanguage -c Release`. (`--allow-missing-repository` and the `LICENSE.txt` next to `package.json` together silence vsce's two y/N prompts so the install runs unattended.)
+1. **One-time setup** — double-click `install-vscode-debugger.cmd` at the solution root (or run it from any shell). It is idempotent and runs five steps: prereq check (dotnet, node, npm, code), `dotnet publish TinyLanguage -c Release`, `npm install -g vsce` if missing, `vsce package`, `code --install-extension ... --force`. Manual fallback if you'd rather drive it yourself: `cd extensions\vscode && vsce package --allow-missing-repository && code --install-extension tinylanguage-debug-0.1.0.vsix --force`, plus a separate `dotnet publish TinyLanguage -c Release`. (`--allow-missing-repository` and the `LICENSE.txt` next to `package.json` together silence vsce's two y/N prompts so the install runs unattended.)
 2. **Open a `.tlg` file**, click in the gutter to set a breakpoint, press `F5`. F5 works whether or not the workspace is the canonical solution root — the extension's `DebugConfigurationProvider` synthesises a launch config when no `.vscode/launch.json` is present, and its `DebugAdapterDescriptorFactory` walks up from the .tlg's directory to locate `TinyLanguage.exe` (also checking `${workspaceFolder}\TinyLanguage.DemoFiles\` and finally PATH). If the canonical workspace IS open, the "Debug current .tlg file" launch config the extension contributed is also picked up automatically.
 
 Available in the debugger: gutter breakpoints, conditional breakpoints (right-click → Edit Breakpoint), logpoints, Step Over (F10) / Step In (F11) / Step Out (Shift+F11), Continue (F5), Pause, Restart, Variables panel, Watch panel, Call Stack panel, hover-to-evaluate, and the Debug Console (REPL) for ad-hoc expression evaluation in the current scope.
@@ -73,11 +73,23 @@ The architecture is three layers:
 |---|---|---|
 | Engine | `TinyLanguage.Interpreter` | `IDebuggerHost` interface; per-statement callback; breakpoint match; step-mode state; `Evaluate(expr, scope)`. Zero overhead when no host attached. |
 | DAP adapter | `TinyLanguage.DebugAdapter` | Speaks DAP over stdin/stdout. Worker thread runs interpreter; server thread handles VS Code requests; cooperative pause/resume via `BlockingCollection<DebuggerControl>`. |
-| Editor shim | `vscode-extension/` | ~30 lines of CommonJS. Registers debug type `tinylanguage`, points VS Code at `TinyLanguage.exe --dap`. |
+| Editor shim (VS Code) | `extensions/vscode/` | ~30 lines of CommonJS. Registers debug type `tinylanguage`, points VS Code at `TinyLanguage.exe --dap`. |
+| Editor shim (VS18) | `extensions/vs/` | Small `IAdapterLauncher` VSIX. Plugs into VS's stock Debug Adapter Host engine and spawns the same `TinyLanguage.exe --dap`. |
 
 Future direction: a CLI REPL front-end (consuming the same engine) and a richer Turbo-Pascal-style integrated experience. Adding new debugger features should happen in the engine first; the DAP adapter and any future front-ends benefit equally.
 
 > **Debugger override (additive — not in Build.Solution.md):** Build.Solution.md does not describe a debugger. The project owner explicitly added one. Future agents must not delete it on the assumption that "the spec doesn't mention it." See "Deliberate deviations from Build.Solution.md" item 4 in `Build.md`.
+
+## Debugging in Visual Studio 2026
+
+Same DAP server as VS Code, different editor shim. To debug a `.tlg` program in VS18:
+
+1. **One-time setup** — double-click `install-vs-debugger.cmd` at the solution root (or run it from any shell). Idempotent. Five steps: prereq check (dotnet, vswhere, plus VS18's MSBuild and VSIXInstaller resolved via vswhere), `dotnet publish TinyLanguage -c Release`, build `extensions/vs/TinyLanguage.VsTools.csproj` against the VS SDK, install the resulting `TinyLanguage.VsTools.vsix` per-user via `VSIXInstaller.exe /quiet` (admin not required).
+2. **Restart Visual Studio**, open the `.slnx` (or any folder containing `.tlg` files via *Open Folder*), open a `.tlg` file, click in the gutter to set a breakpoint, press `F5`.
+
+The shim is a tiny `IAdapterLauncher` implementation in `extensions/vs/` that plugs into VS's stock Debug Adapter Host engine and spawns the same `TinyLanguage.exe --dap` the VS Code extension uses. Feature parity (gutter / conditional / logpoints / step / continue / pause / restart / variables / watch / call stack / hover / Immediate Window) is by construction. See section 7 of `TinyLanguage.wiki.md` for the user-facing details and the "Deliberate deviations from Build.Solution.md" item 5 in `Build.md` for the deliberate-addition record.
+
+> **VS18 extension override (additive — not in Build.Solution.md):** parallel to the VS Code item above. Future agents must not delete `extensions/vs/` on the assumption that the spec or item 4 already covers it.
 
 ### Single-file exe
 `TinyLanguage.csproj` is configured with `SelfContained=true`, `RuntimeIdentifier=win-x64`, and `PublishSingleFile=true`.
@@ -102,7 +114,7 @@ Seven projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed f
 | `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter end-to-end + DAP) |
 | `TinyLanguage.DemoFiles` | 310 `.tlg` demos + matching `.cmd` runners + `run-all-demos.cmd` |
 
-Plus `vscode-extension/` at the solution root — a small CommonJS extension that registers the `tinylanguage` debug type for VS Code.
+Plus `extensions/vscode/` and `extensions/vs/` at the solution root — small editor shims for VS Code (CommonJS extension) and Visual Studio 2026 (managed VSIX with an `IAdapterLauncher`). Both register the `tinylanguage` debug type and spawn the same `TinyLanguage.exe --dap`.
 
 **Data flow:** source text → `Lexer` → `Token[]` → `Parser` → AST → `Interpreter` (visitor) → output/side effects. With `--dap`, an `IDebuggerHost` (the DAP adapter's `DapHost`) is attached to the interpreter and observes statement boundaries, function enter/exit, and unhandled exceptions.
 

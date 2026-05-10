@@ -366,9 +366,10 @@ Three layers (built by Phases 4C and 4D below):
      DAP over stdin/stdout. Worker thread runs the interpreter; server
      thread handles VS Code requests; cooperative pause/resume via
      `BlockingCollection<DebuggerControl>`.
-  3. **VS Code extension** — `vscode-extension\` directory at the solution
-     root. Tiny CommonJS shim that registers debug type `tinylanguage`
-     and points it at the published `TinyLanguage.exe --dap`.
+  3. **VS Code extension** — `extensions\vscode\` directory under the
+     Shared Project container (see item 6 / Phase 4F). Tiny CommonJS shim
+     that registers debug type `tinylanguage` and points it at the
+     published `TinyLanguage.exe --dap`.
 
 Activation flag: `TinyLanguage.exe --dap` (single arg). Source comes from
 the DAP `launch` request, not the command line. All other modes
@@ -376,6 +377,27 @@ the DAP `launch` request, not the command line. All other modes
 
 Future agents must NOT remove the debugger on the assumption "spec doesn't
 mention it." It is a deliberate addition.
+
+### 5. Visual Studio 2026 debugger extension (additive)
+
+Parallel to the VS Code extension (item 4), the project owner asked for a
+Visual Studio 2026 (VS18) editor shim that hosts the same `TinyLanguage.exe
+--dap` server. It lives at `extensions/vs/`, a sibling of `extensions/vscode/`
+inside the Shared Project container (see item 6 / Phase 4F). The VS18 shim
+is a tiny `IAdapterLauncher` implementation
+packaged as a `.vsix`; it plugs into VS's stock Debug Adapter Host engine
+(`Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces`, ships with
+VS18 at `Common7\IDE\Extensions\Microsoft\DebugAdapterHost\`). The pkgdef
+registers a TinyLanguage-specific AD7Metrics engine GUID whose
+`AdapterLauncher` field points at our launcher class CLSID, while reusing
+the stock DAP-host engine CLSID. Build via `install-vs-debugger.cmd` at the
+solution root; same five-step idempotent shape as
+`install-vscode-debugger.cmd`. Same DAP server, same feature set
+&mdash; feature parity with VS Code is by construction.
+
+Future agents must NOT delete `extensions/vs/` on the assumption that "the
+spec doesn't mention it" or that "the debugger is already covered by item
+4". Both editors are deliberate.
 
 ---
 
@@ -466,21 +488,23 @@ TinyLanguage.slnx must list TinyLanguage/TinyLanguage.csproj FIRST so that Visua
 Studio recognises it as the default startup project (the .slnx format has no explicit
 startup-project field; VS defaults to the first executable project in the list).
 
-The slnx must also include a "Solution Items" folder that pre-declares the three
-non-project files end-users open from the solution: `.gitignore` (created here in
-Phase 1A), `install-vscode-debugger.cmd` (created in Phase 4D), and
-`TinyLanguage.wiki.md` (created in Phase 4E). `dotnet build` IGNORES `<File>`
-entries that don't yet exist on disk — verified empirically — so it is safe to
-pre-declare all three here. The benefit: the slnx is authored exactly once, and
-Phases 4D / 4E don't need to edit it. The folder makes the three files appear
-under the solution node in Visual Studio / Rider so users discover the wiki and
-the installer without spelunking the filesystem.
+The slnx must also include a "Solution Items" folder that pre-declares the four
+non-project files end-users open from the solution: `.gitignore` (created here
+in Phase 1A), `install-vscode-debugger.cmd` (created in Phase 4D),
+`install-vs-debugger.cmd` (created in Phase 4F), and `TinyLanguage.wiki.md`
+(created in Phase 4E). `dotnet build` IGNORES `<File>` entries that don't yet
+exist on disk — verified empirically — so it is safe to pre-declare all four
+here. The benefit: the slnx is authored exactly once, and Phases 4D / 4E / 4F
+don't need to edit it for Solution Items. The folder makes the four files
+appear under the solution node in Visual Studio / Rider so users discover the
+wiki and both installers without spelunking the filesystem.
 
 Exact slnx contents:
   <Solution>
     <Folder Name="/Solution Items/">
       <File Path=".gitignore" />
       <File Path="install-vscode-debugger.cmd" />
+      <File Path="install-vs-debugger.cmd" />
       <File Path="TinyLanguage.wiki.md" />
     </Folder>
     <Project Path="TinyLanguage\TinyLanguage.csproj" />
@@ -492,7 +516,11 @@ Exact slnx contents:
   </Solution>
 
 (Phase 4C inserts `<Project Path="TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj" />`
-between Interpreter and UnitTests when it adds the DAP project — see Phase 4C below.)
+between Interpreter and UnitTests when it adds the DAP project — see Phase 4C below.
+Phase 4F appends `<Project Path="extensions\extensions.shproj" />` after the seven
+.NET projects when it adds the Shared Project container — see Phase 4F below.
+Both projects are real files at the time they're added to the slnx; do not
+pre-declare them in Phase 1A.)
 
 .vscode/launch.json must target the TinyLanguage console project so VS Code F5
 launches it directly:
@@ -1084,7 +1112,8 @@ TinyLanguage\Program.cs). The VS Code extension is Phase 4D.
 
 # Six confirmed design decisions (do NOT relitigate)
 
-1. VS Code extension lives at the solution root: vscode-extension\.
+1. VS Code extension lives at extensions\vscode\ (under the Shared Project
+   container — see Phase 4F).
 2. Activation flag: --dap (single arg). Source comes from the DAP launch
    request, not the command line.
 3. Stop on entry by default. launch.json's stopOnEntry wins if specified.
@@ -1291,9 +1320,12 @@ Report:
 Phase 4C is done — TinyLanguage.exe --dap speaks DAP correctly. Your job
 is the thin VS Code extension that lets users F5-debug a .tlg file.
 
-Output target: Z:\repos\TinyLanguage.YYYY.MM.DD.HH\vscode-extension\
-This is a peer of the source projects at the solution root. It ships with
-every regenerated solution.
+Output target: Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vscode\
+This sits under the Shared Project container `extensions\` (authored by
+Phase 4F) and is a peer of `extensions\vs\` (also Phase 4F). The two shims
+are bundled visually in Solution Explorer via `extensions\extensions.shproj`
+but built independently — VS Code reads `extensions\vscode\` directly; VS18
+builds `extensions\vs\TinyLanguage.VsTools.csproj` via `install-vs-debugger.cmd`.
 
 Files:
 
@@ -1370,7 +1402,7 @@ Files:
   provider and the factory and pushes both disposables onto `context.subscriptions`.
 
 - README.md — install instructions in 5 commands or fewer:
-    cd vscode-extension
+    cd extensions\vscode
     npm install -g vsce
     vsce package --allow-missing-repository
     code --install-extension tinylanguage-debug-0.1.0.vsix
@@ -1392,7 +1424,7 @@ Files:
   build orchestration. No warranty." is sufficient.
 
 Also update .vscode/launch.json at the SOLUTION root (NOT the
-vscode-extension's). Keep the existing two configurations for the
+extensions\vscode\'s). Keep the existing two configurations for the
 TinyLanguage console (created by Phase 1A); ADD a third configuration
 for the TinyLanguage debug type:
   {
@@ -1423,7 +1455,7 @@ It must be idempotent and run five steps:
   3. If `where vsce` fails, `npm install -g vsce`. After install, re-check;
      fall back to `%APPDATA%\npm\vsce.cmd` if PATH hasn't picked up the new
      install in this shell session.
-  4. `pushd "%SCRIPT_DIR%vscode-extension" && call "%VSCE%" package --allow-missing-repository`.
+  4. `pushd "%SCRIPT_DIR%extensions\vscode" && call "%VSCE%" package --allow-missing-repository`.
      Captures errorlevel into a saved RC, popd's, then checks the saved RC.
      The `--allow-missing-repository` flag suppresses vsce's
      ` WARNING  A 'repository' field is missing from the 'package.json' manifest file.`
@@ -1434,7 +1466,7 @@ It must be idempotent and run five steps:
      unattended-install-blocking warnings (missing repo + missing LICENSE) and
      both must be addressed for the installer to run end-to-end without
      keystrokes.
-  5. `call code --install-extension "%SCRIPT_DIR%vscode-extension\tinylanguage-debug-0.1.0.vsix" --force`.
+  5. `call code --install-extension "%SCRIPT_DIR%extensions\vscode\tinylanguage-debug-0.1.0.vsix" --force`.
 
 Pause at the start (after printing the five-step plan) so a double-click user
 can read it before committing. Pause on every error path so the cmd window
@@ -1481,7 +1513,7 @@ Two-part fix (apply both):
       by construction.
 
 # Acceptance
-- vscode-extension/package.json validates as JSON (jq . package.json works)
+- extensions/vscode/package.json validates as JSON (jq . package.json works)
 - README.md describes install in ≤ 5 commands
 - .vscode/launch.json keeps existing dotnet F5 configs AND adds the new tinylanguage one
 - .vscode/tasks.json has a "publish" task
@@ -1580,6 +1612,354 @@ Reporting:
 - Number of code blocks (split by language tag)
 - Confirmation that ```tinylanguage blocks all parse
 - Any decisions that diverge from this prompt
+```
+
+---
+
+## Phase 4F — VS18 Editor Shim + Shared Project  *(starts after Phase 4D; parallel-safe with Phase 4E)*
+
+**Agent:** `general-purpose`
+**Model:** `claude-opus-4-6`  *(VS Debug Adapter Host wiring + pkgdef registry shape)*
+**Prompt:**
+```
+Read Build.md "Deliberate deviations from Build.Solution.md" item 5 — the VS18
+editor shim is an additive feature parallel to the VS Code shim (item 4 / Phase
+4D). Build.Solution.md is silent on debugging entirely; do NOT take its silence
+as a reason to skip the work.
+
+The same `TinyLanguage.exe --dap` DAP server already powers VS Code. Your job is
+the thin editor shim for VS18 plus the Shared Project container that gives both
+shims one navigable tree in Solution Explorer.
+
+OUTPUT TARGETS — absolute paths:
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\extensions.shproj
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\extensions.projitems
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\TinyLanguage.VsTools.csproj
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\source.extension.vsixmanifest
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\TinyLanguagePackage.cs
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\TinyLanguageAdapterLauncher.cs
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\TinyLanguageTargetHostProcess.cs
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\Resources\PackageRegistration.pkgdef
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\Resources\icon.png
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\launch.vs.json.template
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\README.md
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\extensions\vs\LICENSE.txt
+  Z:\repos\TinyLanguage.YYYY.MM.DD.HH\install-vs-debugger.cmd
+
+PLUS one slnx edit: append <Project Path="extensions\extensions.shproj" /> after
+the seven .NET projects. The Solution Items folder already has the
+install-vs-debugger.cmd entry from Phase 1A; do NOT re-add it.
+
+# Pinned GUIDs (from Build.Plan.md §6 Allocated Identifiers — DO NOT reroll)
+
+| Identifier              | Value                                      |
+|-------------------------|--------------------------------------------|
+| Shared Project          | {5157DF2E-637E-49A6-AE37-F7E6F9D53055}     |
+| VS18 package            | {8D86897A-2C9B-4A38-BFE2-2CA687B82AC3}     |
+| VS18 engine             | {BAFF8877-1B8C-4D5C-ABB2-A4918F45F244}     |
+| VS18 launcher CLSID     | {A08C993B-F229-4376-B2D4-994E825527A1}     |
+| VS18 stock DAP-host CLSID | {DAB324E9-7B35-454C-ACA8-F6BB0D5C8673}   (REUSED, NOT generated — VS-owned) |
+
+These are baked into installer caches, the VS extension registry, and the slnx
+project reference. Future regenerations MUST use these exact values or VS will
+refuse to load the previously-installed extension.
+
+# WU-A — Shared Project container (extensions/extensions.shproj + .projitems)
+
+extensions\extensions.shproj — exact contents, matching VS18's own SharedProject
+template (the import path is what VS18's CodeSharing targets ACTUALLY ship at;
+ToolsVersion 14.0 with `Microsoft.CodeSharing.Common.targets` as final import
+will load but VS will not be able to open the project — see the Phase 4F gotcha
+note below):
+
+  <?xml version="1.0" encoding="utf-8"?>
+  <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup Label="Globals">
+      <ProjectGuid>{5157DF2E-637E-49A6-AE37-F7E6F9D53055}</ProjectGuid>
+      <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    </PropertyGroup>
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+    <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\CodeSharing\Microsoft.CodeSharing.Common.Default.props" />
+    <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\CodeSharing\Microsoft.CodeSharing.Common.props" />
+    <PropertyGroup />
+    <Import Project="extensions.projitems" Label="Shared" />
+    <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\CodeSharing\Microsoft.CodeSharing.CSharp.targets" />
+  </Project>
+
+GOTCHA — early Phase 4F runs used ToolsVersion="14.0" and `Common.targets`
+(without the `Microsoft.Common.props` import). devenv.com /Rebuild still built
+the other seven projects but logged "extensions.shproj : error : The project
+file cannot be opened by the project system, because it is missing some
+critical imports or the referenced SDK cannot be found." The fix is the exact
+import chain above: Microsoft.Common.props FIRST (initializes VisualStudioVersion),
+then CodeSharing\*.props, then projitems, then CodeSharing\CSharp.targets.
+Verified: dotnet build 0/0, devenv /Rebuild loads cleanly.
+
+extensions\extensions.projitems — enumerates every file under extensions\vs\
+and extensions\vscode\ as <None> items so directory hierarchy survives in
+Solution Explorer. SharedGUID MUST match shproj's ProjectGuid:
+
+  <?xml version="1.0" encoding="utf-8"?>
+  <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+      <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+      <HasSharedItems>true</HasSharedItems>
+      <SharedGUID>{5157DF2E-637E-49A6-AE37-F7E6F9D53055}</SharedGUID>
+    </PropertyGroup>
+    <PropertyGroup Label="Configuration">
+      <Import_RootNamespace>extensions</Import_RootNamespace>
+    </PropertyGroup>
+    <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)vs\LICENSE.txt" />
+      <None Include="$(MSBuildThisFileDirectory)vs\README.md" />
+      <None Include="$(MSBuildThisFileDirectory)vs\launch.vs.json.template" />
+      <None Include="$(MSBuildThisFileDirectory)vs\source.extension.vsixmanifest" />
+      <None Include="$(MSBuildThisFileDirectory)vs\TinyLanguage.VsTools.csproj" />
+      <None Include="$(MSBuildThisFileDirectory)vs\TinyLanguageAdapterLauncher.cs" />
+      <None Include="$(MSBuildThisFileDirectory)vs\TinyLanguagePackage.cs" />
+      <None Include="$(MSBuildThisFileDirectory)vs\TinyLanguageTargetHostProcess.cs" />
+      <None Include="$(MSBuildThisFileDirectory)vs\Resources\PackageRegistration.pkgdef" />
+      <None Include="$(MSBuildThisFileDirectory)vs\Resources\icon.png" />
+      <None Include="$(MSBuildThisFileDirectory)vscode\.vscodeignore" />
+      <None Include="$(MSBuildThisFileDirectory)vscode\extension.js" />
+      <None Include="$(MSBuildThisFileDirectory)vscode\LICENSE.txt" />
+      <None Include="$(MSBuildThisFileDirectory)vscode\package.json" />
+      <None Include="$(MSBuildThisFileDirectory)vscode\README.md" />
+    </ItemGroup>
+  </Project>
+
+# WU-B — extensions/vs/ VSIX project (TinyLanguage.VsTools)
+
+Project name TinyLanguage.VsTools (not VsDebugger) so the bundle can grow into
+syntax highlighting / project templates / etc. without renaming. Today it ships
+only the debugger.
+
+TinyLanguage.VsTools.csproj — legacy MSBuild csproj (NOT SDK-style):
+- <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion> — VS18 extensions still
+  target .NET Framework; they load in-process to devenv.exe.
+- <UseCodebase>true</UseCodebase>
+- <CreateVsixContainer>true</CreateVsixContainer>
+- <DeployExtension>false</DeployExtension>  — do NOT auto-launch experimental hive
+- <GeneratePkgDefFile>true</GeneratePkgDefFile>
+- PackageReferences (these are the packages that ACTUALLY exist on nuget.org —
+  do NOT reach for the prompt-suggested Microsoft.VisualStudio.VSCodeDebugAdapterHost,
+  it doesn't exist):
+    Microsoft.VSSDK.BuildTools 17.x or 18.x
+    Microsoft.VisualStudio.SDK
+    Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces 16.6.40406.1
+        (the interface contract; the implementation DLL ships INSIDE VS18 at
+         Common7\IDE\Extensions\Microsoft\DebugAdapterHost\ and is not redistributable)
+    Microsoft.VisualStudio.Shared.VSCodeDebugProtocol
+
+source.extension.vsixmanifest — Identity Id="TinyLanguage.VsTools.{package-GUID}"
+Version="0.1.0" Publisher="tinylanguage-local". InstallationTarget for VS18:
+
+  <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[18.0,)" />
+  <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[18.0,)" />
+  <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[18.0,)" />
+
+Prerequisite: Microsoft.VisualStudio.Component.CoreEditor [18.0,)
+
+Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project"
+d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|"
+
+TinyLanguagePackage.cs — namespace TinyLanguage.VsTools; public sealed class :
+AsyncPackage decorated with:
+  [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
+  [InstalledProductRegistration("TinyLanguage Tools", "Editor + DAP debugger for the TinyLanguage interpreter.", "0.1.0")]
+  [Guid(PackageGuidString)]
+  [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+
+PackageGuidString = "8D86897A-2C9B-4A38-BFE2-2CA687B82AC3"
+InitializeAsync override — empty body. The package's only job is to load the
+assembly so pkgdef registry entries take effect.
+
+TinyLanguageAdapterLauncher.cs — implements IAdapterLauncher from
+Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces. Class decorated with
+[Guid("A08C993B-F229-4376-B2D4-994E825527A1")].
+
+API deviations from naive expectations (verified empirically against the actual
+shipped interface):
+- IAdapterLauncher extends IDebugAdapterHostComponent, which requires a
+  no-op Initialize(IDebugAdapterHostContext) method.
+- LaunchAdapter signature is:
+    ITargetHostProcess LaunchAdapter(LaunchAdapterRequest request, ITargetHostInterop interop)
+  (NOT IAdapterLaunchEventCallback)
+- UpdateLaunchOptions(UpdateLaunchOptionsRequest request) — pass-through, return request.Args.
+- There is NO TargetHostProcess.AttachToProcess helper class — provide a thin
+  wrapper (TinyLanguageTargetHostProcess.cs, separate file per one-type-per-file rule)
+  that implements ITargetHostProcess by wrapping a System.Diagnostics.Process.
+- ITargetHostProcess.ErrorDataReceived is DataReceivedEventHandler (the BCL one),
+  not EventHandler<string>.
+
+Exe-resolution chain (mirror the VS Code extension's logic from extensions/vscode/extension.js):
+  1. request.LaunchJson.exe (explicit override)
+  2. Walk UP from path.dirname(request.LaunchJson.program) looking for
+     TinyLanguage.exe directly OR TinyLanguage.DemoFiles\TinyLanguage.exe inside it.
+  3. <SolutionDir>\TinyLanguage.DemoFiles\TinyLanguage.exe
+  4. Bare "TinyLanguage.exe" (PATH fallback)
+Use File.Exists to verify each candidate; only the PATH fallback is unverified.
+
+TinyLanguageTargetHostProcess.cs — thin ITargetHostProcess wrapper around
+System.Diagnostics.Process. Forwards StandardInput / StandardOutput streams and
+emits ErrorDataReceived / Exited events. Implements IDisposable.
+
+Resources\PackageRegistration.pkgdef — registers the AD7Metrics engine and
+launcher CLSID. CRITICAL: reuses VS18's stock DAP-host engine CLSID
+{DAB324E9-7B35-454C-ACA8-F6BB0D5C8673} (look it up in
+Common7\IDE\Extensions\Microsoft\DebugAdapterHost\EngineRegistration.pkgdef to
+confirm; do NOT generate a new one — VS owns this CLSID, our engine plugs INTO
+it):
+
+  ; AD7Metrics engine
+  [$RootKey$\AD7Metrics\Engine\{BAFF8877-1B8C-4D5C-ABB2-A4918F45F244}]
+  "Name"="TinyLanguage"
+  "CLSID"="{DAB324E9-7B35-454C-ACA8-F6BB0D5C8673}"        ; stock DAP-host engine
+  "AdapterLauncher"="{A08C993B-F229-4376-B2D4-994E825527A1}"
+  "Attach"="0"
+  "AddressBP"="0"
+  "AlwaysLoadLocal"="0"
+  "AutoSelectPriority"="4"
+  "CallStackBP"="1"
+  "Disassembly"="0"
+  "DumpWriter"="0"
+  "Embedded"="0"
+  "Exceptions"="1"
+  "HitCountBP"="1"
+  "JustMyCodeStepping"="0"
+
+  ; Launcher CLSID — points VS at our managed launcher class
+  [$RootKey$\CLSID\{A08C993B-F229-4376-B2D4-994E825527A1}]
+  @="TinyLanguage Adapter Launcher"
+  "Assembly"="TinyLanguage.VsTools, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null"
+  "InprocServer32"="$WinDir$\System32\mscoree.dll"
+  "Class"="TinyLanguage.VsTools.TinyLanguageAdapterLauncher"
+  "ThreadingModel"="Both"
+
+  ; File extension association — .tlg files are debuggable by this engine
+  [$RootKey$\Languages\File Extensions\.tlg]
+  @="TinyLanguage"
+
+Resources\icon.png — 90x90 PNG with monogram "TL" or any small icon VS will
+accept. Do not block on icon perfection.
+
+launch.vs.json.template — drop into the user's `.vs\` folder for Open Folder
+debug:
+  {
+    "version": "0.2.1",
+    "defaults": {},
+    "configurations": [
+      {
+        "type": "tinylanguage",
+        "name": "Debug current TinyLanguage program",
+        "project": "CMakeLists.txt",
+        "program": "${file}",
+        "stopOnEntry": true
+      }
+    ]
+  }
+(NOTE: `"project": "CMakeLists.txt"` is the VS18 convention for non-project
+debug. If users hit "missing project" errors, this may need iteration — flag
+in your report.)
+
+README.md — five-step install:
+  1. Run install-vs-debugger.cmd from the solution root.
+  2. Wait for publish + VSIX build + VSIXInstaller (a few minutes).
+  3. Restart Visual Studio.
+  4. Open the .slnx (or any folder containing .tlg files via Open Folder mode).
+  5. Open a .tlg file, set a gutter breakpoint, press F5.
+Supported features: gutter breakpoints, conditional breakpoints, logpoints,
+Step Over (F10) / Step In (F11) / Step Out (Shift+F11), Continue (F5), Pause,
+Restart, Variables, Watch, Call Stack, hover-to-evaluate, Debug Console
+(Immediate Window).
+
+LICENSE.txt — short prose:
+"Local-use Visual Studio extension generated by the TinyLanguage build
+orchestration. No warranty."
+
+# WU-C — install-vs-debugger.cmd at solution root
+
+Idempotent, double-click-runnable. Same five-step shape as
+install-vscode-debugger.cmd:
+
+  1. Verify prereqs: dotnet, vswhere, MSBuild (resolved via vswhere), VSIXInstaller
+     (resolved via vswhere). Use the early-return :check_tool pattern from
+     install-vscode-debugger.cmd. NO parentheses inside any string substituted
+     into an if-block.
+  2. dotnet publish "%SCRIPT_DIR%TinyLanguage\TinyLanguage.csproj" -c Release.
+  3. Locate MSBuild + VSIXInstaller via vswhere. Save into %MSBUILD% and %VSIXINSTALLER%.
+  4. pushd "%SCRIPT_DIR%extensions\vs" && call "%MSBUILD%" TinyLanguage.VsTools.csproj
+     /restore /p:Configuration=Release /p:DeployExtension=false
+  5. call "%VSIXINSTALLER%" /quiet "%SCRIPT_DIR%extensions\vs\bin\Release\TinyLanguage.VsTools.vsix"
+     (per-user install — no admin needed)
+
+CMD parser gotcha (extra one, on top of the install-vscode-debugger.cmd gotcha) —
+the `%ProgramFiles(x86)%` environment variable contains literal `(x86)` parens
+that collide with cmd's if-block parsing if substituted inside `if not exist (...)`.
+Fix: introduce a `:resolve_pf86` callee subroutine that binds the value via
+setlocal/endlocal BEFORE any if-block sees it. Convert if-bodies to
+`goto :no_vswhere` style with an early return. Apply this pattern wherever
+%ProgramFiles(x86)% appears inside an if-block.
+
+Pause at the start (after printing the five-step plan). Pause on every error path.
+Print "Done. Restart VS, open a .tlg file, press F5." on success.
+
+# WU-D — slnx edit
+
+Append after the seven .NET projects (NOT inside Solution Items folder — this is
+a real Project entry):
+
+  <Project Path="extensions\extensions.shproj" />
+
+Verify the slnx still parses (load as XML).
+
+# Acceptance
+
+From the canonical solution path, run:
+  dotnet build                                                     # 0 errors / 0 warnings
+  dotnet test --no-build                                           # Failed: 0 (still 395 — Phase 4F adds NO tests)
+  & "${env:ProgramFiles(x86)}\...\vswhere.exe" -latest -property installationPath
+  & "<installationPath>\MSBuild\Current\Bin\MSBuild.exe" extensions\vs\TinyLanguage.VsTools.csproj /restore /p:Configuration=Release /p:DeployExtension=false   # builds the VSIX
+  devenv.com TinyLanguage.slnx /Rebuild "Debug|Any CPU" /Out $env:TEMP\rebuild.log    # "succeeded, 0 failed, 0 skipped"
+
+The /Out log MUST NOT contain `extensions.shproj : error : The project file
+cannot be opened by the project system` — if it does, the import chain in the
+.shproj is wrong.
+
+Then run install-vs-debugger.cmd end-to-end:
+  cmd /c install-vs-debugger.cmd < NUL > install-vs.log 2>&1   # exit 0 first run
+  cmd /c install-vs-debugger.cmd < NUL > install-vs.log 2>&1   # exit 0 second run (idempotent)
+
+Verify the extension installed: check %LOCALAPPDATA%\Microsoft\VisualStudio\18.0_*\Extensions\
+for a directory whose extension.vsixmanifest contains
+"TinyLanguage.VsTools.{8D86897A-2C9B-4A38-BFE2-2CA687B82AC3}". Per-user installs
+do NOT appear under Common7\IDE\Extensions\ — vswhere -find against that path
+returns empty even when the extension is installed correctly.
+
+# WU-E — Tests
+
+Phase 4F adds NO tests. The DAP server is already exercised by Phase 4C's 7 DAP
+integration tests + 9 debugger engine unit tests. The VS-side wiring (pkgdef
+loading, AsyncPackage initialization, IAdapterLauncher launching the exe) can
+only be verified by F5 inside a running VS18 — that requires a human and a
+running IDE. Phase 5's acceptance covers `devenv.com /Rebuild` (validates the
+extension assembly compiles + the Shared Project loads) but cannot validate F5
+itself. Document this limitation in your report.
+
+# Reporting
+
+Report:
+- The dotnet build summary line.
+- The dotnet test summary line.
+- The MSBuild VSIX build summary (errors/warnings, .vsix size).
+- The devenv /Rebuild summary line + a grep of the /Out log for
+  `extensions.shproj : error` (should find nothing).
+- The install-vs-debugger.cmd first-run + second-run exit codes.
+- The %LOCALAPPDATA%\...Extensions\ path of the installed extension.
+- The contents of the .vsix (Expand-Archive into a temp dir): verify pkgdef
+  + package DLL are present.
+- Any API deviations from the prompt's described shape.
+- Manual F5 verification checklist for the user (cannot be done from the agent).
 ```
 
 ---
@@ -1747,8 +2127,12 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 300 files
         - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
         - $canonical\TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj exists (Phase 4C)
-        - $canonical\vscode-extension\package.json          exists (Phase 4D)
+        - $canonical\extensions\vscode\package.json         exists (Phase 4D)
+        - $canonical\extensions\vs\TinyLanguage.VsTools.csproj exists (Phase 4F)
+        - $canonical\extensions\extensions.shproj           exists (Phase 4F)
+        - $canonical\extensions\extensions.projitems        exists (Phase 4F)
         - $canonical\install-vscode-debugger.cmd            exists (Phase 4D)
+        - $canonical\install-vs-debugger.cmd                exists (Phase 4F)
         - $canonical\TinyLanguage.wiki.md                   exists, > 200 lines (Phase 4E)
         - HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled DWORD = 1
           (verify via `(Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -EA SilentlyContinue).LongPathsEnabled -eq 1`).
@@ -1847,8 +2231,10 @@ Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." }
 Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 1C
 Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 1D
 
-// Phase 4E — single call, after 4D, before Phase 5 (wiki generation)
-Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 4E
+// Phase 4E + 4F — two calls in a SINGLE message (parallel, both after 4D, both before Phase 5)
+Agent({ subagent_type: "general-purpose", isolation: "worktree", prompt: "..." })  // 4E (wiki)
+Agent({ subagent_type: "general-purpose", isolation: "worktree",
+        model: "opus", prompt: "..." })  // 4F (VS18 shim + Shared Project)
 
 // Phase 2 — single call, awaited (sequential)
 Agent({ subagent_type: "general-purpose", isolation: "worktree",
@@ -1878,6 +2264,7 @@ orchestrating session always has a live view of build state.
 | 4C — Debugger + DAP | `claude-opus-4-6` | Cooperative threading + DAP wire protocol |
 | 4D — VS Code Extension | `claude-sonnet-4-6` | Small JSON + CommonJS shim |
 | 4E — Wiki Generation | `claude-sonnet-4-6` | Synthesis + cross-referencing, no novel design |
+| 4F — VS18 Shim + Shared Project | `claude-opus-4-6` | VS Debug Adapter Host wiring, pkgdef registry shape, .shproj import chain |
 | 5 — Validation | `claude-sonnet-4-6` | Fix-and-retry loop, targeted edits |
 
 ---
