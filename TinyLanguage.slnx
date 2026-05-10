@@ -6,6 +6,7 @@
     <File Path="Claude Usage.url" />
     <File Path="Claude--dangerously-skip-permissions--settings-lmstudio.cmd" />
     <File Path="Claude--dangerously-skip-permissions.cmd" />
+    <File Path="AGENTS.md" />
     <File Path="CLAUDE.md" />
     <File Path="LMStudio.Settings.json" />
     <File Path="Build.Plan.md" />
