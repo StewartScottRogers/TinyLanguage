@@ -713,15 +713,24 @@ The demo suite must be split into TWO TIERS, both produced by this phase:
     00026.function_no_params) — keep them small (≤ ~15 lines each) so a
     failure points at a single grammar feature.
 
-  TIER B — ADVANCED DATA STRUCTURE & ALGORITHM DEMOS (00400..00499+)
+  TIER B — ADVANCED DATA STRUCTURE & ALGORITHM DEMOS (00400..00499)
     Substantial, multi-subroutine .tlg programs that BUILD an advanced data
     structure and EXERCISE it with a meaningful workload. These prove the
     interpreter holds up under real, idiomatic programs — not just one-liners.
     See the "Tier B requirements" block below for the full specification.
 
-Both tiers together must total 300+ .tlg files in TinyLanguage.DemoFiles/,
+  TIER C — COMPREHENSIVE DATA-STRUCTURE CATALOGUE (00500..00699)
+    Wikipedia-style reference implementations covering 125 canonical data
+    structures across 6 categories (linear lists, trees, tries+B-trees,
+    heaps+hash, graphs+space partitioning, ADTs+composites). Each demo cites
+    its Wikipedia article in the header. See "Tier C" block below for the
+    full catalogue + per-demo contract.
+
+All three tiers together must total 500+ .tlg files in TinyLanguage.DemoFiles/,
 zero-padded numeric prefix (00001.fizzbuzz.tlg … etc.). Each .tlg file must
-have a matching .cmd runner using the template below.
+have a matching .cmd runner using the template below. Tier A targets ~300-330
+demos, Tier B targets ~50 (out of 100 numeric slots reserved), and Tier C
+targets exactly 125 demos per the catalogue below.
 
 ### Tier B requirements — advanced data structures + subroutines
 
@@ -804,7 +813,7 @@ Pick filenames in the 00400+ range; names must be descriptive
   - Infix → postfix (shunting-yard) using stacks
   - JSON-ish pretty-printer over nested arrays + maps (recursive)
 
-A recommended Tier B file count is ≥ 50 (out of the 300+ total). Anything
+A recommended Tier B file count is ≥ 50 (out of the 500+ total across Tier A, B, C). Anything
 on this list that the language cannot express should be flagged with a
 comment in the demo file (`# NOT IMPLEMENTABLE: <reason>`) AND the demo
 omitted — do not invent a watered-down replacement that no longer
@@ -823,7 +832,189 @@ Anti-patterns specific to Tier B that have shipped before and must not recur:
 - A demo that prints "ok" with no values — the printed output must let
   a reader reconstruct what the structure did, not just claim success.
 
-Create a matching .cmd runner for each demo file (both tiers).
+### Tier C — comprehensive data-structure catalogue (00500..00699)
+
+Tier C is a Wikipedia-style reference suite covering the canonical data
+structures from https://en.wikipedia.org/wiki/List_of_data_structures.
+Every demo is self-contained, didactic, deterministic, and exercised by a
+small workload. Each .tlg follows the same shape as Tier B (header comment,
+class-based implementation, named subroutines, state snapshots after each
+operation) but with an explicit Wikipedia reference in the header.
+
+Six numeric subranges, one per category. Each agent assigned a subrange
+authors every demo in its range:
+
+  Linear lists (00500..00514) — 15 demos:
+    00500.assoc_list                   Association list (key-value pairs)
+    00501.self_organizing_list         Move-to-front on Find
+    00502.skip_list                    Skip list, DETERMINISTIC level rule (no RNG)
+    00503.unrolled_linked_list         Multiple values per node
+    00504.vlist                        Bagwell's persistent VList
+    00505.conc_tree                    Concatenation tree (Scala parallel collections)
+    00506.xor_linked_list              XOR-encoded prev/next (simulated)
+    00507.zipper_list                  List zipper at a focus
+    00508.dcel                         Doubly Connected Edge List (planar subdivision)
+    00509.difference_list              Difference list (O(1) concat, flatten once)
+    00510.free_list                    Free-list memory pool
+    00511.array_list_growable          Dynamic array with explicit growth policy
+    00512.singly_linked_list_advanced  Reverse + Middle + Floyd cycle detection
+    00513.persistent_list              Immutable cons-list with structural sharing
+    00514.intrusive_list               Intrusive doubly-linked list
+
+  Trees, general-purpose (00520..00539) — 20 demos:
+    00520.aa_tree                      AA tree (Andersson's right-leaning RB)
+    00521.binary_tree_traversals       Pre/In/Post/Level-order
+    00522.cartesian_tree               From sequence via stack-based linear build
+    00523.left_child_right_sibling     LCRS general-tree representation
+    00524.order_statistic_tree         Size-augmented BST with KthSmallest/RankOf
+    00525.randomized_bst               Treap-style with SEEDED LCG priorities
+    00526.rope                         Tree of string fragments
+    00527.scapegoat_tree               Rebuild on alpha-imbalance (alpha=0.7)
+    00528.splay_tree                   Self-adjusting via splay
+    00529.threaded_binary_tree         InOrder pred/succ threads, no stack
+    00530.treap                        DETERMINISTIC priorities (hash key)
+    00531.wavl_tree                    Weak AVL (rank-based)
+    00532.weight_balanced_tree         BB[alpha] tree
+    00533.zip_tree                     Tarjan zip tree (geometric ranks)
+    00534.binary_search_tree_iterative Iterative insert/search/delete
+    00535.morris_traversal             O(1) extra space via threading
+    00536.full_binary_tree             Full-tree property check
+    00537.complete_binary_tree_check   Completeness property check
+    00538.bst_floor_ceiling            Floor/Ceiling queries
+    00539.bst_range_count              Range count via subtree-size augmentation
+
+  Tries and B-trees (00560..00579) — 20 demos:
+    00560.radix_tree                   Compressed trie with split-on-insert
+    00561.suffix_tree                  Brute-force build (Ukkonen optional)
+    00562.ternary_search_tree          3-way trie (lt/eq/gt)
+    00563.patricia_trie                Binary radix trie
+    00564.bit_trie                     8-bit binary trie + FindMaxXOR
+    00565.trie_autocomplete            Prefix → sorted completions
+    00566.compressed_trie_path         Side-by-side node count vs uncompressed
+    00567.dawg                         Shared-suffix DAWG (vs trie node count)
+    00568.suffix_array                 Suffix array + LCP construction
+    00569.aho_corasick                 Multi-pattern with failure links
+    00570.btree                        B-tree order m=3
+    00571.bplus_tree                   B+ tree (linked leaves)
+    00572.btree_two_three              2-3 tree
+    00573.btree_two_three_four         2-3-4 tree (RBT equivalence)
+    00574.btree_split_merge            B-tree (m=4) with delete merges
+    00575.bplus_range_scan             B+ tree range scan via leaf chain
+    00576.btree_bulk_load              Bottom-up bulk construction
+    00577.btree_split_visualization    Cascading splits printed step-by-step
+    00578.btree_iterator               Cursor-based in-order iterator
+    00579.btree_delete_cases           Three deletion cases enumerated
+
+  Heaps and hash-based (00580..00599) — 20 demos:
+    00580.binomial_heap                Forest of binomial trees
+    00581.fibonacci_heap               Lazy merge + cascading-cut
+    00582.pairing_heap                 Two-pass pairing on ExtractMin
+    00583.leftist_heap                 Rank (s-value) annotated
+    00584.skew_heap                    Always-swap merge variant
+    00585.d_ary_heap                   General arity (d=4)
+    00586.binary_heap_in_array         Array-backed with index math
+    00587.indexed_priority_queue       Reverse index for external-key DecreaseKey
+    00588.double_ended_priority_queue  Min-max heap
+    00589.median_heap                  Two heaps for running median
+    00590.hash_table_chained_resize    Chaining + load-factor rehash
+    00591.hamt                         Hash Array Mapped Trie (5-bit chunks)
+    00592.count_min_sketch             Probabilistic frequency estimator
+    00593.cuckoo_hashing               Two-table kick-out
+    00594.hopscotch_hashing            Neighbourhood-bitmap probing
+    00595.consistent_hashing           Sorted ring with virtual nodes
+    00596.linear_probing               Tombstones explicit
+    00597.quadratic_probing            i² probe sequence
+    00598.robin_hood_hashing           Distance-from-ideal swaps
+    00599.invertible_bloom_filter      Listable IBLT (count + keySum + valSum)
+
+  Graphs and space partitioning (00600..00629) — 30 demos:
+    00600.graph_adjacency_matrix       2-D bool/weight matrix
+    00601.graph_edge_list              Edge tuples
+    00602.graph_incidence_matrix       V×E incidence matrix
+    00603.graph_csr                    Compressed Sparse Row
+    00604.blockchain                   Linked blocks with prevHash + nonce (deterministic mini-PoW)
+    00605.directed_graph               In/Out degree
+    00606.undirected_graph_simple      Symmetric edges
+    00607.weighted_graph               Edge weights
+    00608.bipartite_graph              Two-coloured partition
+    00609.multigraph                   Parallel edges
+    00610.hypergraph                   Edges as vertex sets
+    00611.graph_transpose              Edge-reversed copy
+    00612.graph_contraction            Edge contraction merge
+    00613.graph_complement             Edge-flipped graph
+    00614.graph_isomorphism_check      Degree-sequence + brute-force mapping
+    00615.interval_tree                BST-on-start with subtree max-end
+    00616.range_tree                   1-D range queries
+    00617.bin_grid                     2-D uniform grid bin
+    00618.kd_tree_2d                   2-D K-d tree + NN search
+    00619.quadtree                     Region quadtree (capacity-based split)
+    00620.z_order_curve                Morton interleave/deinterleave
+    00621.bk_tree                      Levenshtein BK-tree
+    00622.r_tree_2d                    MBR-based R-tree (simplified)
+    00623.uniform_grid_3d              3-D uniform grid bin
+    00624.vp_tree                      Vantage-Point tree NN
+    00625.range_search_1d              Sorted array + bounds
+    00626.priority_search_tree         Heap-by-y + BST-by-x
+    00627.skip_quadtree                Multi-level quadtree, deterministic promotion
+    00628.point_region_quadtree        PR-quadtree (points in leaves only)
+    00629.morton_order_sort            Sort 2-D points by Z-order
+
+  ADTs and composites (00640..00659) — 20 demos:
+    00640.multimap                     key → list of values
+    00641.multiset                     element → count (bag)
+    00642.ordered_set                  BST-backed with range queries
+    00643.ordered_map                  BST-backed key→value, range queries
+    00644.disjoint_set_union_advanced  Path compression + union-by-rank
+    00645.bag                          Unordered multiset (no remove)
+    00646.indexed_list                 Random-access list via balanced BST
+    00647.persistent_set               Immutable BST set with sharing
+    00648.lru_set                      LRU set with eviction
+    00649.bidirectional_map            BiMap (O(1) both directions)
+    00650.record_struct                Class-backed record (Point, Rectangle)
+    00651.tagged_union                 Sum type dispatched via match
+    00652.tuple_pair                   Pair class
+    00653.tuple_triple                 Triple class + sort by field
+    00654.string_view                  Source + start + length wrapper
+    00655.optional                     Maybe / Option type
+    00656.either                       Either / Result type
+    00657.tagged_pointer               Low-bit flag packing (simulated)
+    00658.struct_array_of_structs      AoS vs SoA side-by-side
+    00659.union_with_discriminator     Discriminated union
+
+Per-demo contract — every Tier C .tlg MUST satisfy ALL of:
+
+1. Header comment: Structure / Category / Operations with Big-O / Reference
+   (Wikipedia URL). Example:
+     # Structure: Binomial heap
+     # Category: Heap
+     # Operations: Insert O(log n), Min O(log n), ExtractMin O(log n), Merge O(log n)
+     # Reference: https://en.wikipedia.org/wiki/Binomial_heap
+2. Implementation as a class (or cooperating classes) — authentic to the
+   structure. A "splay tree" must actually splay; a "treap" must actually
+   use heap-ordered priorities; a "B+ tree" must actually link its leaves.
+3. ≥ 3 named subroutines exercising the canonical operations.
+4. ≥ 8 distinct operations against a small instance (10-20 elements).
+5. Print labeled state snapshots after each operation. For trees: indented
+   ASCII or sideways with `├── ` / `└── ` / `│   ` prefixes. For linear
+   structures: horizontal `[a, b, c]` or `a -> b -> c` rendering.
+6. Deterministic output. Any randomized structure (Skip list, Treap,
+   Randomized BST, Cuckoo) uses a SEEDED LCG — never the system clock.
+7. 30-200 lines. Use `;` separator throughout per Note 21.
+8. Edge-case tests after the main demo: empty, single-element, one tricky
+   case appropriate to the structure.
+
+Coverage discipline: every item in the six lists above must have at least
+one demo. If a structure is genuinely infeasible in TinyLanguage (e.g.
+genuine closures for a curried difference-list), implement the closest
+faithful approximation and note the deviation in the header — do NOT omit
+the demo entirely; do NOT substitute a watered-down replacement that
+doesn't exercise the structure.
+
+The Phase 1D agent can split Tier C authoring across parallel sub-agents
+(one per category) or produce all six categories itself; either is
+acceptable as long as the final demo count and per-demo contract hold.
+
+Create a matching .cmd runner for each demo file (Tier A, Tier B, AND Tier C).
 
 Each .cmd file must work correctly regardless of the directory it is run from
 (arbitrary CWD, the script's own directory, or by double-click in Explorer).
@@ -1560,9 +1751,11 @@ The wiki is a SINGLE self-contained markdown document covering:
      exceptions (try/catch/finally/throw), pattern matching (every kind), built-in
      functions (len/str/int/bool/float), and truthiness rules.
   3. Quick reference card — a one-screen cheat sheet of operators and keywords.
-  4. Demo suite — describe Tier A (00001..00399, feature coverage) and Tier B
-     (00400..00499, advanced data structures) with a category table for Tier B,
-     plus how to run them (per-demo .cmd and run-all-demos.cmd).
+  4. Demo suite — describe Tier A (00001..00399, feature coverage), Tier B
+     (00400..00499, advanced data structures), and Tier C (00500..00699,
+     comprehensive Wikipedia-style data-structure catalogue across 6
+     categories) with a category table for Tier B + Tier C, plus how to run
+     them (per-demo .cmd and run-all-demos.cmd).
   5. Building and running — the four canonical commands; explain that .cmd
      demos require a prior dotnet publish.
   6. Debugging in VS Code — install vsce, package the extension, F5.
@@ -1604,8 +1797,8 @@ Acceptance:
 - Every fenced code block tagged ```tinylanguage parses cleanly through the
   built parser (run the lexer + parser smoke harness used in Phase 2 against
   each block, or write a quick ad-hoc check).
-- The Demo Suite section's Tier B category table is consistent with the
-  actual filenames in TinyLanguage.DemoFiles/.
+- The Demo Suite section's Tier B AND Tier C category tables are consistent
+  with the actual filenames in TinyLanguage.DemoFiles/.
 
 Reporting:
 - Final line count of TinyLanguage.wiki.md
@@ -2124,7 +2317,7 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\TinyLanguage.UnitTests\...csproj       exists
         - $canonical\TinyLanguage.IntegrationTests\...csproj exists
         - $canonical\TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj exists
-        - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 300 files
+        - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 500 files (Tier A + Tier B + Tier C)
         - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
         - $canonical\TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj exists (Phase 4C)
         - $canonical\extensions\vscode\package.json         exists (Phase 4D)

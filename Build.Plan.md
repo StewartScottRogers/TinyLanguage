@@ -25,7 +25,7 @@ orchestrator repo; UTC year/month/day/hour substituted at orchestration start).
   - UnitTests `TinyLanguage.UnitTests.dll`
   - IntegrationTests `TinyLanguage.IntegrationTests.dll`
   - Console Application `TinyLanguage.exe` (file-processor mode, demo mode — see deviation D1)
-  - Tiny Language Demonstration Suite `TinyLanguage.DemoFiles` (SDK-style csproj, 300+ `.tlg` + matching `.cmd`)
+  - Tiny Language Demonstration Suite `TinyLanguage.DemoFiles` (SDK-style csproj, 500+ `.tlg` + matching `.cmd` — Tier A feature coverage 00001-00399, Tier B advanced DS 00400-00499, Tier C Wikipedia-style DS catalogue 00500-00699)
 - **Unit Testing Strategy & Requirements**
   - Unit Testing Requirements (MSTest only; `UnitTests` / `IntegrationTests` suffix)
   - Test Validation Protocol (commands, acceptance criteria, fix-and-retry loop)
@@ -81,7 +81,7 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 | WU-1A | Solution Scaffold | `TinyLanguage.slnx` (Solution Items pre-declares `.gitignore`, both installers, wiki); `Directory.Build.props` (D6); `global.json` (D7); `.gitignore`; `.vscode\launch.json`; `TinyLanguage\app.manifest` (D6); six project subdirs with empty csproj | WU-0 | 1A |
 | WU-1B | Token & Lexer | `TinyLanguage.Lexer\` — `TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` (incl. `Pipe`, `This`, every kw) | WU-0 | 1B |
 | WU-1C | AST Nodes + Pretty Printer | `TinyLanguage.Lexer\` — one `*Node.cs` per AST class, `INodeVisitor.cs`, `AstPrettyPrinter.cs` | WU-0 | 1C |
-| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥300 `.tlg` (Tier A 00001–00399, Tier B 00400+), matching `.cmd` per demo, `run-all-demos.cmd` | WU-0 | 1D |
+| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥500 `.tlg` (Tier A 00001–00399 feature coverage, Tier B 00400–00499 advanced DS+algorithms, Tier C 00500–00699 Wikipedia-style DS catalogue across 6 categories), matching `.cmd` per demo, `run-all-demos.cmd` | WU-0 | 1D |
 | WU-2 | Parser | `TinyLanguage.Lexer\Parser.cs` (recursive-descent, full BNF, 23 notes), `ParserException.cs` | WU-1A, WU-1B, WU-1C | 2 |
 | WU-3A | Interpreter | `TinyLanguage.Interpreter\` — `IInterpreter.cs`, `Interpreter.cs`, `Scope.cs`, `InterpreterException.cs` | WU-2 | 3A |
 | WU-3B | Unit Tests | `TinyLanguage.UnitTests\` — `TestLog.cs` (D8), `LexerUnitTests.cs`, `ParserUnitTests.cs` | WU-2 | 3B |
@@ -190,7 +190,13 @@ TinyLanguage.YYYY.MM.DD.HH\
 ├── TinyLanguage.DemoFiles\
 │   ├── TinyLanguage.DemoFiles.csproj                       (1A)
 │   ├── 00001..00399.*.tlg                                  (1D — Tier A)
-│   ├── 00400..00499.*.tlg                                  (1D — Tier B)
+│   ├── 00400..00499.*.tlg                                  (1D — Tier B advanced DS)
+│   ├── 00500..00514.*.tlg                                  (1D — Tier C: Linear lists)
+│   ├── 00520..00539.*.tlg                                  (1D — Tier C: Trees)
+│   ├── 00560..00579.*.tlg                                  (1D — Tier C: Tries + B-trees)
+│   ├── 00580..00599.*.tlg                                  (1D — Tier C: Heaps + Hash-based)
+│   ├── 00600..00629.*.tlg                                  (1D — Tier C: Graphs + Space partitioning)
+│   ├── 00640..00659.*.tlg                                  (1D — Tier C: ADTs + Composites)
 │   ├── *.cmd (one per .tlg, CWD-independent)               (1D)
 │   ├── run-all-demos.cmd                                   (1D — D2)
 │   └── TinyLanguage.exe                                    (4B — ~36 MB, AfterTargets=Publish)
