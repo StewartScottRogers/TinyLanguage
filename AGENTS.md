@@ -160,6 +160,33 @@ The parser has 23 documented disambiguation rules (see `Build.Solution.md` §1.5
 
 When implementing parser rules, consult the BNF in `Build.Solution.md` §1.4 and the notes in §1.5 before writing any code.
 
+## Parser leniencies beyond the BNF (D10–D15)
+
+In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in six places to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all six — reverting any one will produce widespread demo failures:
+
+- **D10** Newlines act as implicit `;` separators between statements (Note 3 relaxation). `ParseStatementList` accepts a strictly-later upcoming-token line as separator when no explicit `;` was consumed.
+- **D11** Trailing `;` before block-enders (`end`, `else`, `}`, EOF, …) and leading `;` before a statement are silently tolerated (Note 21 relaxation). Multiple consecutive `;`s = zero-or-more empty statements.
+- **D12** `else if X then ... end` chains supported — `ParseIfStatement` recurses into a nested `if_stmt` after `else if`; the inner `end` closes the whole chain. FizzBuzz parses with one `end`.
+- **D13** Member assignment and postfix-LHS assignment/call: new AST nodes `MemberAssignStmtNode`, `PostfixAssignStmtNode`, `PostfixCallStmtNode`. `ParseStatement` dispatches both `Identifier` and `This` to a shared `ParsePostfixLedAssignOrCall` helper that parses a full postfix expression then specialises on `:=` or `(args)`. Supports `this.X := v`, `this.Items[i] := v`, `obj.a.b.c := v`, `this.Nodes[i].AddNeighbor(...)`.
+- **D14** `var x := 1` (type-inferred `var`) — BNF requires type annotation; relaxed to optional like `let`.
+- **D15** `new Foo.Bar(args)` — dotted type names accepted in `new`. The final segment resolves against the class table.
+
+Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "Deliberate deviations" §6 and the deviations table in `Build.Plan.md` §2.
+
+## Lexer trap fixed in-place: float `PeekIsDigit()`
+
+The `PeekIsDigit()` helper inside `Lexer.cs` decides whether `.` starts a float fractional part. The natural-looking implementation that checks `CurrentChar` is WRONG — at the call site `CurrentChar` IS the `.`, never a digit, so `1.5` lexes as Integer Dot Integer instead of Float. Use `Source.Peek()`:
+
+```csharp
+private bool PeekIsDigit()
+{
+    int nextChar = Source.Peek();
+    return nextChar != -1 && char.IsDigit((char)nextChar);
+}
+```
+
+Phase 1B agents must implement this correctly from the start.
+
 ---
 
 ## Coding Guidelines

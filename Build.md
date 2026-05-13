@@ -399,6 +399,103 @@ Future agents must NOT delete `extensions/vs/` on the assumption that "the
 spec doesn't mention it" or that "the debugger is already covered by item
 4". Both editors are deliberate.
 
+### 6. Parser leniencies (D10–D15)
+
+The 500+ demo corpus uses common scripting conventions that the strict
+BNF in `Build.Solution.md` does not accept. Rather than mass-rewriting
+the demos, the parser has been deliberately relaxed in six places. A
+future regeneration that reverts any of these will see widespread demo
+failures.
+
+  **D10 — Newlines as implicit `;` separators.** Implementation Note 3
+  says "Newlines are whitespace; they do not insert implicit semicolons."
+  Relaxed: inside any `ParseStatementList`, if no explicit `;` was
+  consumed AND the upcoming token sits on a strictly later source line
+  than the last token of the just-parsed statement, the parser accepts
+  it as the start of the next statement. Required because Phase 1D
+  authors the Tier A demos with the one-statement-per-line convention.
+
+  **D11 — Trailing `;` before block-enders tolerated.** Implementation
+  Note 21 says `;` before `end`, `else`, `catch`, `finally`, `while`,
+  `}`, or EOF is a parse error. Relaxed: trailing `;` is silently
+  accepted as an empty separator (any number of consecutive `;`s acts
+  as zero-or-more empty statements). Also tolerated at the START of a
+  statement list — so `function foo();` (with stray `;` right after
+  the closing paren of the param list) parses cleanly. Required for
+  the demo convention and the mechanical statement-separator fix-up.
+
+  **D12 — `else if` chains.** The BNF defines
+  `<if_stmt> ::= "if" <expr> "then" <stmt_list> ("else" <stmt_list>)? "end"`
+  which strictly requires nested ifs to have their own `end`. Relaxed:
+  inside `ParseIfStatement`, if the token after `else` is `if`, recurse
+  into a complete `if_stmt` and use it as the entire else-branch — the
+  inner `if`'s terminating `end` closes the whole chain. So FizzBuzz's
+  `if A then ... else if B then ... else ... end` parses with ONE `end`.
+
+  **D13 — Member assignment and postfix-LHS assignment.** The BNF only
+  defines `<id> := <expr>` and `<id>[expr] := <expr>`. There is no
+  `obj.field := value` form. Three additive AST nodes fix this:
+
+    * `MemberAssignStmtNode(receiver: List<string>, value, line)` —
+      flat dotted-identifier LHS like `this.X := 5` or `a.b.c := 7`.
+    * `PostfixAssignStmtNode(targetExpr, value, line)` — arbitrary
+      postfix-expression LHS like `this.Items[i] := v` or
+      `this.Data[i][j] := v`.
+    * `PostfixCallStmtNode(callExpr, line)` — method-chain call
+      statements like `this.Nodes[i].AddNeighbor(...)`.
+
+    Implementation: `ParseStatement` dispatches both `Identifier` and
+    `This` to a shared `ParsePostfixLedAssignOrCall`. It parses a full
+    postfix expression, then on `:=` specialises down to
+    `AssignStmtNode` / `ArrayElementAssignNode` / `MemberAssignStmtNode`
+    / `PostfixAssignStmtNode` based on the LHS shape, or wraps a call
+    expression in `CallStmtNode` / `PostfixCallStmtNode`. The
+    interpreter walks the receiver chain through `InstanceValue.Fields`
+    and `Dictionary<object,object>` for the simple `MemberAssign` form
+    and uses generic expression evaluation for the postfix forms.
+
+  **D14 — `var x := 1` (type-inferred `var`).** The BNF
+  `<var_declare_stmt> ::= "var" <id> ":" <type> ":=" <expr>` requires
+  the type annotation. Relaxed: type is optional (parallels `let`).
+  Required because Tier A demos like `00030.var_declaration_typed.tlg`
+  ship in both forms.
+
+  **D15 — Dotted type names in `new` expressions.** The BNF
+  `<new_expr> ::= "new" <id> "(" <arg_list>? ")"` accepts only a bare
+  identifier. Relaxed: `ParseNewExpression` accepts a dotted chain
+  (`new Shapes.Circle(5)`) and resolves the final segment against the
+  class table. Required for module-qualified instantiation patterns
+  that appear in several Tier C demos.
+
+  These six relaxations + the existing D1–D9 are the COMPLETE set of
+  documented deviations from the BNF. Anything else in the parser
+  matches the spec.
+
+### 7. Lexer bug repaired in-place: `PeekIsDigit()` look-ahead
+
+Phase 1B's initial implementation of `PeekIsDigit()` (the helper that
+decides whether `.` starts a float fractional part) reads `CurrentChar`
+— which AT THE POINT of the call IS the `.` itself, never a digit.
+Decimal-point floats like `1.5` therefore lexed as `Integer('1')`,
+`Dot('.')`, `Integer('5')` instead of `Float('1.5')`. Both Phase 3A
+and Phase 3B agents independently flagged this from their respective
+test work.
+
+The fix is one line — use `Source.Peek()` which returns the character
+AFTER `CurrentChar` without consuming it:
+
+```csharp
+private bool PeekIsDigit()
+{
+    int nextChar = Source.Peek();
+    return nextChar != -1 && char.IsDigit((char)nextChar);
+}
+```
+
+Phase 1B agents must implement `PeekIsDigit()` correctly from the
+start so Phase 3B doesn't have to invent "documents the bug" tests
+that later need to be rewritten when the bug is fixed.
+
 ---
 
 ## How to Run This Plan
@@ -672,6 +769,26 @@ get missed):
   Note 16 — `static` is its own token (TokenType.Static), not fused into
             static-function or static-class.
 
+Decimal-point float trap (do NOT repeat this bug from an earlier run):
+
+  When the number reader sees `.` it must decide between "fractional part
+  of a float" and "member-access dot after an integer". The natural way
+  to write the helper is wrong:
+
+      private bool PeekIsDigit() {                         // BROKEN
+          return CurrentChar != -1 && char.IsDigit((char)CurrentChar);
+      }
+
+  At the call site, CurrentChar IS the `.` — it is never a digit, so the
+  float branch is never taken and `1.5` lexes as Integer('1') Dot('.')
+  Integer('5'). Phase 3A and Phase 3B independently flagged this on the
+  previous run. Use Source.Peek() to look ONE character past the `.`:
+
+      private bool PeekIsDigit() {                         // CORRECT
+          int nextChar = Source.Peek();
+          return nextChar != -1 && char.IsDigit((char)nextChar);
+      }
+
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.
 ```
@@ -831,6 +948,63 @@ Anti-patterns specific to Tier B that have shipped before and must not recur:
   inherently unordered, sort the keys before printing.
 - A demo that prints "ok" with no values — the printed output must let
   a reader reconstruct what the structure did, not just claim success.
+
+GLOBAL anti-patterns (apply to all tiers; each one has shipped before and
+broken the demo sweep):
+
+- **Keywords used as parameter names.** TinyLanguage reserves these tokens:
+  `to`, `from` (not actually a kw, OK), `step`, `in`, `do`, `then`, `else`,
+  `end`, `as`, `is`, `new`, `static`, `base` (not a kw, OK), `int`, `float`,
+  `string`, `bool`, `array`, `object`, `map`, `void`, `null`, `true`,
+  `false`, plus all control-flow / declaration keywords. The Tower-of-Hanoi
+  pattern `function hanoi(n, from, to, via)` fails because `to` lexes as
+  TokenType.To, not Identifier (Note 5). Rename clashing params (`src`,
+  `dst`, `mid`, etc.).
+- **Closure-using lambdas.** The spec is explicit: "lambdas see only global
+  + own params" (Build.Solution.md "Scope Rules"). Demos like
+  `function(x) function(y) x + y` won't run — `x` is invisible to the
+  inner lambda. Use a class to hold the captured value instead:
+  `class Adder { let Base := 0; Constructor(b); this.Base := b end;
+   function Apply(y); return this.Base + y end }`.
+- **Bitwise operators.** TinyLanguage has NO bitwise operators. The BNF
+  has logical `and`/`or`/`not` only. `|` is `TokenType.Pipe` (pattern
+  alternation), `&` is `TokenType.Amp` (STRING CONCAT, per Note 10),
+  and `~`/`^` are not in the lexer at all. Demos that need bitwise ops
+  (Fenwick tree, XOR linked list, bitwise AND/OR/XOR/NOT) must either
+  be omitted with `# NOT IMPLEMENTABLE` or rewritten to the closest
+  in-spec analog (the bitwise-AND-based array indexing in Fenwick →
+  plain prefix-sum array; the XOR-pointer linked list → explicit
+  prev/next index arrays).
+- **`map` as a variable name.** `map` lexes as `TokenType.MapType`, so
+  `let map := new HashMap()` fails. Use `hmap`, `dict`, `kv`, etc.
+
+REQUIRED `;` separator hygiene:
+
+- Every consecutive pair of top-level statements must be separated by `;`
+  in source even though the parser's D10 leniency would forgive newlines
+  in this build. Authoring with explicit `;` future-proofs the demos
+  against a stricter parser regenerated by a future agent.
+- Do NOT add `;` after a `function NAME(...)` or `Constructor(...)` line
+  (the body follows; `;` there starts an "empty statement" inside the
+  function body which the parser's D11 leniency forgives — but ugly).
+- Do NOT add `;` before a closing `}`, `end`, `else`, `catch`, `finally`,
+  `while` (in do-while), or before EOF.
+
+CLEANUP rule:
+
+- Do NOT leave generator scripts (`_gen_*.py`, `_fix_*.py`, `generate_*.ps1`,
+  etc.) in `TinyLanguage.DemoFiles\`. The DemoFiles project's content glob
+  picks up `.tlg` and `.cmd`, so leftover scripts don't break the build,
+  but they pollute the deliverable. Delete them before reporting done.
+
+TERMINATION rule:
+
+- Every demo must terminate within ~5 seconds when run through the
+  published exe in file-processor mode. Demos with infinite loops
+  (e.g. mis-indexed traversal in the XOR-linked-list catalogue demo)
+  must be fixed or omitted with `# NOT IMPLEMENTABLE`. The Phase 5
+  acceptance step times each demo at 5s; anything slower fails the
+  sweep.
 
 ### Tier C — comprehensive data-structure catalogue (00500..00699)
 
@@ -1488,6 +1662,19 @@ For composite results (multiple fields), put each field on its own line via
 
   TestLog.Result("enters = [" + string.Join(",", host.FrameEnters) + "]\n"
                + "exits  = [" + string.Join(",", host.FrameExits) + "]");
+
+Test parallelism note (avoid intermittent failures): MSTest defaults to
+running test methods in parallel. The pre-existing Phase 3B / 4A tests
+share some console-redirection state which is not parallel-safe, and the
+DAP integration tests in particular touch shared Stream pairs. Add to
+BOTH test projects:
+
+  [assembly: Parallelize(Workers = 1, Scope = ExecutionScope.MethodLevel)]
+
+or set `<RunSettingsFilePath>` to a .runsettings with
+`<MSTest.Parallelize.Workers>1</MSTest.Parallelize.Workers>`. Without
+this, `dotnet test` exhibits flaky 6-25 failures on a clean checkout
+depending on parallel-worker count.
 
 # Reporting
 Report:
