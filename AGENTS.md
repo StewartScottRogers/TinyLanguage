@@ -67,6 +67,8 @@ dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 
 **Validating the per-demo `.cmd` files from PowerShell:** invoke each as `& cmd /c $c.FullName $out` (let PowerShell quote args). Do NOT manually double-quote the whole command (`cmd /c "<cmd>" "<out>"`) — when the line both begins and ends with a quote, `cmd.exe` strips the outer quotes and mangles it, making EVERY `.cmd` spuriously exit 1. If all/most `.cmd` "fail" while `run-all-demos.cmd` passes, suspect the harness invocation, not the demos.
 
+**PowerShell stdin pipes prepend a UTF-8 BOM.** Piping a PowerShell string into `TinyLanguage.exe` (zero-arg stdin mode) or `TinyLanguage.exe --dap` makes the lexer reject a leading BOM / corrupts DAP Content-Length framing. Smoke-test stdin via `cmd /c` (e.g. `echo print "hi" | cmd /c TinyLanguage.exe`) or a BOM-less byte write, not a raw PowerShell string pipe. File mode auto-strips a BOM, so `.cmd` demos are unaffected.
+
 > **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Three modes: zero args = read source from stdin and write to stdout; two args = file-processor mode; `--dap` = Debug Adapter Protocol server (used by VS Code). The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
 
 ## Debugging in VS Code
@@ -151,6 +153,7 @@ From `Build.Solution.md` — follow exactly:
 - **Streams over string loads** for file I/O.
 - **Test method naming:** `Subject_Action_ExpectedOutcome` (no "Test" in the name). Test class names end in `UnitTests` or `IntegrationTests`.
 - **Test framework:** MSTest only (no XUnit, no NUnit).
+- **MSTest 4.x:** The pinned SDK's `dotnet new mstest` template uses the **MSTest 4.0.2 meta-package** (it bundles the Microsoft.Testing.Platform runner — no separate `Microsoft.NET.Test.Sdk`) and emits a `MSTestSettings.cs` with an assembly-level `[Parallelize]` attribute. Omitting it trips analyzer **MSTEST0001** (warning → fails the 0-warning gate). Set it to `[assembly: Parallelize(Workers = 1, Scope = ExecutionScope.MethodLevel)]` (fully qualified; no implicit usings) to also avoid flaky console-redirection races across test projects. MSTest 4.x analyzers (**MSTEST0037**) reject several classic asserts — use the 4.x forms: `Assert.HasCount`, `Assert.Contains`/`Assert.DoesNotContain`, `Assert.IsGreaterThan`/`Assert.IsGreaterThanOrEqualTo`, `Assert.Throws<T>`.
 - **Test output:** Every test must print its input and result via the `TestLog` helper (NOT raw `Console.WriteLine`). Each test project (`TinyLanguage.UnitTests`, `TinyLanguage.IntegrationTests`) owns its own `TestLog.cs` with `Input(label, content)`, `Section(label, content)`, `Result(content)` static methods. The helper prints `--- Input: <label> ---` / `--- Result ---` / `---` framing with real-newline-indented bodies, so multi-line content (program source, multi-line stdout, token lists) stays readable in the test runner log.
 
   ```csharp
@@ -171,24 +174,30 @@ The parser has 23 documented disambiguation rules (see `Build.Solution.md` §1.5
 
 When implementing parser rules, consult the BNF in `Build.Solution.md` §1.4 and the notes in §1.5 before writing any code.
 
-## Parser leniencies beyond the BNF (D10–D17)
+## Parser leniencies beyond the BNF (D10–D21)
 
-In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in eight places (D10–D17) to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all eight — reverting any one will produce widespread demo failures:
+In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in ten places (D10–D21) to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all ten — reverting any one will produce widespread demo failures:
 
-- **D10** Newlines act as implicit `;` separators between statements (Note 3 relaxation). `ParseStatementList` accepts a strictly-later upcoming-token line as separator when no explicit `;` was consumed.
+- **D10** Newlines act as implicit `;` separators between statements (Note 3 relaxation). `ParseStatementList` accepts a strictly-later upcoming-token line as separator when no explicit `;` was consumed. Corollary: the postfix parser must NOT consume a `[` (index) or `(` (call) that BEGINS on a strictly-later source line as part of the previous statement's expression — otherwise a `print "x"` followed by a bracket-led next statement (e.g. a `[a, b] => ...` match case) is wrongly swallowed. A leading `.` member access may still continue across lines (`.` cannot start a statement). (Discovered fixing 00306.)
 - **D11** Trailing `;` before block-enders (`end`, `else`, `}`, EOF, …) and leading `;` before a statement are silently tolerated (Note 21 relaxation). Multiple consecutive `;`s = zero-or-more empty statements.
 - **D12** `else if X then ... end` chains supported — `ParseIfStatement` recurses into a nested `if_stmt` after `else if`; the inner `end` closes the whole chain. FizzBuzz parses with one `end`. The fold fires ONLY when the `if` is on the SAME source line as `else`; an `if` on a later line is an ordinary nested if owning its own `end` (the naive "any if after else" rule orphans the outer `end` and breaks nested-if-in-else demos).
 - **D13** Member assignment and postfix-LHS assignment/call: new AST nodes `MemberAssignStmtNode`, `PostfixAssignStmtNode`, `PostfixCallStmtNode`. `ParseStatement` dispatches both `Identifier` and `This` to a shared `ParsePostfixLedAssignOrCall` helper that parses a full postfix expression then specialises on `:=` or `(args)`. Supports `this.X := v`, `this.Items[i] := v`, `obj.a.b.c := v`, `this.Nodes[i].AddNeighbor(...)`.
 - **D14** `var x := 1` (type-inferred `var`) — BNF requires type annotation; relaxed to optional like `let`.
 - **D15** `new Foo.Bar(args)` — dotted type names accepted in `new`. The final segment resolves against the class table.
 - **D16** Built-in conversion call-syntax: `int(x)`, `float(x)`, `bool(x)`, `str(x)`. int/str/bool/float are spec built-in functions but lex as type-name keyword tokens; `ParsePrimary` treats a type-name keyword immediately followed by `(` as a conversion call (FunctionCallNode → same conversion as the `(int)x` cast). Casts, `: int` annotations, and `is`/`as int` are unaffected.
-- **D17** Lambda body by first token: a lambda body is a single expression if its first token starts an expression, else a statement BLOCK (optionally closed by `end`), decided by the first token (NOT by scanning for a matching `end`, which latches onto the enclosing function's `end`). Enables `function(n) print n`.
+- **D17** Lambda body by first token: a lambda body is a single expression if its first token starts an expression, else a statement BLOCK (optionally closed by `end`), decided by the first token (NOT by scanning for a matching `end`, which latches onto the enclosing function's `end`). Enables `function(n) print n`. The block-body decision uses the FULL statement-starting keyword set — return/print/if/while/for/foreach/let/var/const/throw/try/switch/match/break/continue/do — not a subset; in particular a body beginning with `return` is a statement block (the original implementation omitted `return`).
+- **D20** `export <definition>` — the strict BNF is `export <id>`, but the parser also accepts `export function|class|static|let|var|const <definition>`: it parses the inner definition (which lands in module/global scope, since modules promote exports to global with no qualified `M.f` access) and records the export marker (a runtime no-op). The bare `export <id>` form still works. Required by module demos 00291–00295. Lives in `ParseExportStatement`.
+- **D21** `static` instance-style fields (`static let X := 0`, `static var Y := 0`) — extends D19 (class `const` is static): the class-member parser accepts `static` before `let`/`var`/`const` field declarations and routes them to the class's static members, reachable and assignable as `ClassName.Field`. `FieldDeclareNode` carries `IsStatic`. Implementation Note 16 ("static modifies a field"). Required by 00216, 00237.
 
 Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "Deliberate deviations" §6 and the deviations table in `Build.Plan.md` §2.
 
 ## Language behaviours demo authors rely on (learned from the corpus)
 
 - **Built-in conversions work as BOTH casts and calls:** `(int)x` and `int(x)` are equivalent; same for float/bool/str. `len`/`str` are ordinary calls too.
+- **`as` is a CHECKED type assertion, not a converter.** `x as int` throws when the runtime type does not match (e.g. `3.7 as int` fails). To CONVERT use `int(3.7)` or `(int)3.7`. Demo authors must not write `x as T` expecting coercion.
+- **No map/object literal exists.** There is no `{ key: value }` literal — maps and objects are modeled as classes (e.g. a Dictionary class over parallel arrays). `let m := { ... }` does not parse. (`map` is also a reserved type-name keyword, so it cannot be a variable name.)
+- **`match` and `switch` use BRACE form.** `match X { pattern => body; ... }` — no `case`/`end` inside a match; `_` is the wildcard, `when cond` is a guard, `a | b | c =>` is alternation. `switch X { case v: ...; default: ... }`.
+- **Lambda EXPRESSION bodies are bare** — `function(n) n * n` (NO `=>` arrow). A statement-BLOCK body is `function(n) ... end` and is chosen by the first body token (see D17).
 - **`+` concatenates arrays** (`arr := arr + [x]`) as well as numbers/strings — this is the corpus's standard list-append idiom (no list-grow builtin exists).
 - **Class `const` fields are static** — reachable as `ClassName.CONST`.
 - **Modules have NO qualified access** — `module M { export function f() }` promotes `f` to global scope; call it `f(...)`, never `M.f(...)`.

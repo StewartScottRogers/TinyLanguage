@@ -3,13 +3,16 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
-> **Last verified full run:** 2026-05-28 → delivered to
-> `Z:\repos\TinyLanguage.<YYYY.MM.DD.HH>\` — 595 demos (Tier A 399 / B 71 / C 125),
-> 262 tests (173 unit + 89 integration), all gates green including
+> **Last verified full run:** 2026-05-29 → delivered to
+> `Z:\repos\TinyLanguage.2026.05.29.02\` — 520 demos (Tier A 00001–00340 / B ~55 / C 125),
+> 370 tests (281 unit + 89 integration), all gates green including
 > `devenv.com /Rebuild` (7 succeeded, 0 failed, no MAX_PATH). SDK pin was
-> `10.0.300` (no 10.0.2xx band installed). The deviations discovered that run are
-> folded into the relevant phases/preambles below (search D16, D17, "Demo
-> convergence", "Execution model", and the SDK/long-path preambles).
+> `10.0.300` (no 10.0.2xx band installed). For fuller feature coverage, extend
+> Tier A to the full `00001–00399` band (the 2026-05-28 run reached 399). The
+> deviations and build lessons discovered across runs are folded into the relevant
+> phases/preambles below (search D16–D21, the "MSTest 4.x" and "Demo sweep harness"
+> preambles, the `tools\sweep-demos.ps1` helper, "Demo convergence", "Execution
+> model", and the SDK/long-path preambles).
 
 > ## Output location — non-negotiable
 >
@@ -342,6 +345,35 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 
 ---
 
+## MSTest 4.x — non-negotiable
+
+The pinned .NET 10 SDK's `dotnet new mstest` template uses the **MSTest 4.0.2
+meta-package** (it bundles the Microsoft.Testing.Platform runner — there is NO
+separate `Microsoft.NET.Test.Sdk`) and emits a `MSTestSettings.cs` carrying an
+assembly-level `[Parallelize]` attribute. Phases 3B, 4A, 4C (and any future test
+phase) must honor three things or the `0-warning` / `Failed:0` gates break:
+
+1. **Keep `MSTestSettings.cs` and pin Workers = 1.** Omitting the `[Parallelize]`
+   attribute trips analyzer **MSTEST0001** (a warning → fails the 0-warning gate).
+   Set it (fully-qualified, no implicit usings):
+   `[assembly: Microsoft.VisualStudio.TestTools.UnitTesting.Parallelize(Workers = 1, Scope = Microsoft.VisualStudio.TestTools.UnitTesting.ExecutionScope.MethodLevel)]`
+   Workers = 1 also prevents the flaky console-redirection / shared-Stream races the
+   3B/4A/4C tests otherwise hit (6–25 intermittent failures depending on worker count).
+
+2. **Use the MSTest 4.x assertion APIs.** Analyzer **MSTEST0037** rejects several
+   classic asserts. Replacements: `Assert.HasCount` (not `AreEqual(n, x.Count)`),
+   `Assert.Contains` / `Assert.DoesNotContain`, `Assert.IsGreaterThan` /
+   `Assert.IsGreaterThanOrEqualTo`, `Assert.Throws<T>` (not `ThrowsException<T>`).
+
+3. **Name clash:** the lexer type is `TinyLanguage.Lexer.Lexer`; alias it
+   (`using LexerCore = TinyLanguage.Lexer.Lexer;`) in test files that also open the
+   `TinyLanguage.Lexer` namespace.
+
+Recorded so each test phase does not re-discover it — the 2026.05.29.02 run had
+three separate phases independently hit MSTEST0001/0037.
+
+---
+
 ## Deliberate deviations from Build.Solution.md
 
 `Build.Solution.md` is the locked specification, but a small number of points
@@ -450,6 +482,12 @@ failures.
   than the last token of the just-parsed statement, the parser accepts
   it as the start of the next statement. Required because Phase 1D
   authors the Tier A demos with the one-statement-per-line convention.
+  REFINEMENT (2026.05.29.02): as a corollary, the postfix parser must NOT consume a
+  `[` (index) or `(` (call) that BEGINS on a strictly-later source line as part of
+  the previous statement's expression — otherwise a bracket-led next statement
+  (e.g. a `[a, b] => ...` match case after `print "x"`) gets swallowed, yielding
+  "Expected ']' but found ','". A leading `.` member access MAY still continue
+  across lines (`.` cannot start a statement). Fixed demo 00306.
 
   **D11 — Trailing `;` before block-enders tolerated.** Implementation
   Note 21 says `;` before `end`, `else`, `catch`, `finally`, `while`,
@@ -523,8 +561,28 @@ failures.
   BLOCK (optionally closed by `end`) when its first token is a statement-only
   keyword. Decided by the first token, NOT by scanning for a matching `end` (which
   latches onto the enclosing function's `end`). Fixes `function(n) print n`.
+  REFINEMENT (2026.05.29.02): the block-vs-expression decision uses the FULL
+  statement-starting keyword set — return/print/if/while/for/foreach/let/var/const/
+  throw/try/switch/match/break/continue/do — NOT a subset. In particular a body
+  beginning with `return` is a statement block; the first implementation omitted
+  `return` and broke `function() return 1 end` (demo 00171).
 
-  These eight relaxations (D10–D17) + the existing D1–D9 are the COMPLETE set of
+  **D20 — `export <definition>`.** The BNF is `<export_stmt> ::= "export" <id>`
+  (bare identifier only). Relaxed: `ParseExportStatement` ALSO accepts a definition
+  after `export` — `export function|class|static|let|var|const <definition>` — by
+  parsing the inner definition (it lands in module/global scope, since modules
+  promote exports to global with no qualified `M.f` access) and recording the
+  export marker (a runtime no-op). The bare `export <id>` form still works.
+  Required by module demos 00291–00295. Lives in `ParseExportStatement`.
+
+  **D21 — `static` instance-style fields (`static let`/`static var`).** Extends D19
+  (class `const` is static). The BNF only puts `static` on `<method_def>`. Relaxed:
+  the class-member parser accepts `static` before `let`/`var`/`const` field
+  declarations and routes them to the class's static members (reachable AND
+  assignable as `ClassName.Field`); `FieldDeclareNode` gains an `IsStatic` flag.
+  Implementation Note 16 ("static modifies a field"). Required by 00216, 00237.
+
+  These ten relaxations (D10–D21) + the existing D1–D9 are the COMPLETE set of
   documented deviations from the BNF. Anything else in the parser
   matches the spec.
 
@@ -585,6 +643,35 @@ MSBuild output directories make these orderings MANDATORY:
 
 Launch a parallel pair in one message ONLY when they touch disjoint projects and
 neither builds the other's project.
+
+### Orchestration execution recipe (what worked — 2026.05.29.02 run)
+
+The dependency graph is mostly sequential (project-reference edges + shared `obj/`
+locks), but ONE big unit parallelizes cleanly and should overlap the whole chain:
+
+- **Run Phase 1D (demos) as a BACKGROUND fan-out concurrent with the build chain.**
+  Demos are pure text authoring with no build dependency until Phase 4.5, so start
+  them immediately (they create the canonical DemoFiles dir themselves). Fan out:
+  Tier A by FEATURE AREA (~7 agents over the FULL `00001–00399` band —
+  basics/operators/control-flow/functions/classes/arrays+exceptions/modules+patterns),
+  Tier B by 2 agents (00400–00449 structures, 00450–00499 algorithms), Tier C by the
+  6 enumerated categories. Authors write **`.tlg` ONLY**; a single final deterministic
+  step generates every `.cmd` from the `.tlg` set + `run-all-demos.cmd` (uniform, not
+  500 hand-written runners). Aim Tier A at the full 00001–00399 band — the 2026.05.29.02
+  run stopped at ~00340 and was lighter than it should have been.
+- **Serialize every build-running phase** (1A → 1B → 1C → 2 → 3A → 3B → 4B → 4A →
+  4.5 → 4C → 4D → {4E then 4F} → 5). Two `dotnet build`/`test`/`publish` processes on
+  the same solution race on `obj/` locks and produce spurious failures — do NOT run
+  two at once even when phase labels say "parallel". 4E (wiki; read-only against the
+  published exe) and 4F (heavy MSBuild + devenv) must especially not build
+  concurrently: run 4E first, then 4F.
+- **Gate between phases** on the exact acceptance (`build 0/0`, `test Failed:0`, the
+  sweep `FAILED=0 TIMEOUT=0`) so a cascading parser/interpreter bug is caught at the
+  phase that introduced it, not three phases later.
+- **Size the convergence problem with `tools\sweep-demos.ps1` FIRST** — it yields the
+  true failure list. The 2026.05.29.02 run's real failure set was only ~13 demos (a
+  few parser features + a few demo anti-patterns), trivial once the harness
+  false-negatives (null `ExitCode`, shared output file) were eliminated.
 
 ---
 
@@ -649,6 +736,22 @@ this layout (all paths relative to that solution root):
                                                               as a peer of the source projects.
                                                               Never outside, never under bin/,
                                                               never under any user temp path.
+
+The DemoFiles content-only csproj MUST glob the demos with NON-RECURSIVE flat
+patterns and NO copy-to-output (EnableDefaultCompileItems=false so it compiles
+no C#):
+
+  <Content Include="*.tlg" CopyToOutputDirectory="Never" />
+  <Content Include="*.cmd" CopyToOutputDirectory="Never" />
+
+Do NOT use `**/*.tlg` and do NOT set CopyToOutputDirectory="PreserveNewest". A
+manually-authored <Content Include> does NOT inherit DefaultItemExcludes, so a
+`**/` glob re-globs the bin\ copies on every build and nests them one level
+deeper each rebuild — unbounded growth that eventually exceeds MAX_PATH and
+breaks the Phase 5 §6i `devenv /Rebuild` gate. The demos run from the DemoFiles
+ROOT (the .cmd files use %~dp0) and the published exe is copied to that root,
+never to bin\, so CopyToOutputDirectory is pointless here. (Discovered in the
+2026.05.29.02 run after the recursion had already begun.)
 
 All `<ProjectReference>` entries in csproj files use solution-relative paths (e.g.
 `..\TinyLanguage.Lexer\TinyLanguage.Lexer.csproj`). No absolute paths. No paths
@@ -773,7 +876,7 @@ TinyLanguage/TinyLanguage.csproj must include:
   <!-- Trade-off: users who want to run .cmd demos must run dotnet publish first.  -->
   <!-- For fast dev iteration without publishing, use `dotnet run` on the          -->
   <!-- TinyLanguage project (demo mode runs the .tlg files in-process). NOTE: XML  -->
-  <!-- comments forbid the `--` digraph, so write `dotnet run` rather than the     -->
+  <!-- comments forbid the double-hyphen digraph, so write `dotnet run` not the    -->
   <!-- equivalent flag spelling that uses two dashes — paste this comment block    -->
   <!-- verbatim into the csproj or MSBuild rejects it with MSB4025.                -->
   <Target Name="CopySingleFileExeToDemoFiles" AfterTargets="Publish"
@@ -1414,10 +1517,25 @@ Implement TinyLanguage.Lexer/Parser.cs:
   built-in functions.
 - Lambda body decided by FIRST token (deviation D17): a lambda body is a single
   expression when its first token starts an expression, or a statement BLOCK
-  (optionally closed by `end`) when its first token is a statement-only keyword
-  (print/if/while/for/foreach/return/let/var/...). Decide by that first token; do
-  NOT scan ahead for a matching `end` (that latches onto the ENCLOSING function's
-  `end` and mis-parses `function(n) print n`).
+  (optionally closed by `end`) when its first token is a statement-only keyword.
+  Decide by the FULL statement-keyword set — print/if/while/for/foreach/return/let/
+  var/const/throw/try/switch/match/break/continue/do (do NOT omit `return`, or
+  `function() return 1 end` fails). Decide by that first token; do NOT scan ahead
+  for a matching `end` (that latches onto the ENCLOSING function's `end` and
+  mis-parses `function(n) print n`).
+- `export <definition>` (deviation D20): besides the BNF's `export <id>`, accept a
+  definition after `export` (export function|class|static|let|var|const ...) — parse
+  the inner definition (it lands in module/global scope; modules promote to global
+  with no qualified `M.f` access) and record the export marker (runtime no-op).
+  Required by demos 00291–00295. Lives in ParseExportStatement.
+- `static` instance-style fields (deviation D21): accept `static` before
+  `let`/`var`/`const` field declarations in a class body (not just before
+  `function`); route them to the class's static members (reachable/assignable as
+  `ClassName.Field`). `FieldDeclareNode` carries `IsStatic`. Required by 00216, 00237.
+- Newline-gated postfix (D10 corollary): do NOT consume a `[` or `(` that begins on
+  a strictly-later source line as an index/call on the previous statement's
+  expression (a leading `.` member access may still cross lines). Without this a
+  `print "x"` before a `[a, b] => ...` match case swallows the case. Fixed 00306.
 
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.
@@ -1452,6 +1570,11 @@ Implement TinyLanguage.Interpreter/:
 - Class `const` fields belong to the CLASS, not the instance: route
   `FieldKind.Const` declarations in a class body into `StaticMembers` so they are
   reachable via `ClassName.CONST` (a const is immutable and instance-independent).
+- `static` instance-style fields (deviation D21): also route class-body `static let`
+  and `static var` declarations (parser sets `FieldDeclareNode.IsStatic`) into
+  `StaticMembers`, and EXCLUDE them from per-instance `Fields`. Unlike `const` these
+  are MUTABLE, so `MemberSet` must accept a `ClassInfo` owner (and a static reached
+  through an instance) so `ClassName.Field := v` and `static`-counter demos work.
 - Built-in conversions int/float/bool/str must be invokable BOTH as casts
   `(int)x` AND as calls `int(x)` (parser D16 routes the call form here) — share
   one conversion code path.
@@ -1599,17 +1722,24 @@ access (demo → unqualified); array `+` (interpreter); static `const`
 `match`-as-name / `while ... then` typo / closures-over-locals / catch-less
 `finally` / sci-notation / field-annotation (all demo fixes).
 
-Sweep harness (PowerShell, from the canonical path) — note the INVOCATION GOTCHA
-in Phase 5 Step 5 applies here too:
+Sweep harness — use the reusable, hardened script in the orchestrator repo
+(`tools\sweep-demos.ps1`). It uses `System.Diagnostics.Process` for a RELIABLE
+ExitCode, a UNIQUE output file per demo, async stdout/stderr drains, and a 5s
+per-demo TIMEOUT so an infinite-loop demo is reported as a TIMEOUT instead of
+hanging the run. It exits 0 only when FAILED=0 AND TIMEOUT=0, so callers can gate:
+
 ```powershell
-$dir = "$canonical\TinyLanguage.DemoFiles"; $exe = "$dir\TinyLanguage.exe"
-$fail = @()
-foreach ($f in (Get-ChildItem $dir -Filter *.tlg | Sort-Object Name)) {
-  $p = Start-Process $exe -ArgumentList "`"$($f.FullName)`"","`"$env:TEMP\s.out`"" -NoNewWindow -PassThru -Wait -RedirectStandardError "$env:TEMP\s.err"
-  if ($p.ExitCode -ne 0) { $fail += $f.Name }
-}
-"FAILED=$($fail.Count)"; $fail
+powershell -File Z:\repos\TinyLanguage\tools\sweep-demos.ps1 -Canonical "$canonical"
+# prints e.g.  TOTAL=520 FAILED=0 TIMEOUT=0  (exe 35.83 MB)  + a categorized failure list
 ```
+
+Harness FALSE-NEGATIVE traps that wasted a cycle in the 2026.05.29.02 run — do NOT
+hand-roll around them: (a) `Start-Process -PassThru` WITHOUT `-Wait` leaves the
+returned object's `.ExitCode` null/blank, so `$p.ExitCode -ne 0` is TRUE for EVERY
+demo (a false "519 of 520 failed" run); (b) sharing ONE output file across runs
+yields false "being used by another process" I/O errors. The script avoids both.
+The INVOCATION GOTCHA in Phase 5 Step 5 (`& cmd /c $c.FullName $out`, never the
+whole command double-quoted) applies to any per-`.cmd` loop too.
 
 ---
 
@@ -2276,17 +2406,27 @@ TinyLanguage.VsTools.csproj — legacy MSBuild csproj (NOT SDK-style):
 - <CreateVsixContainer>true</CreateVsixContainer>
 - <DeployExtension>false</DeployExtension>  — do NOT auto-launch experimental hive
 - <GeneratePkgDefFile>true</GeneratePkgDefFile>
-- PackageReferences (these are the packages that ACTUALLY exist on nuget.org —
-  do NOT reach for the prompt-suggested Microsoft.VisualStudio.VSCodeDebugAdapterHost,
-  it doesn't exist):
-    Microsoft.VSSDK.BuildTools 17.x or 18.x
-    Microsoft.VisualStudio.SDK
+- PackageReferences (these ACTUALLY exist on nuget.org — do NOT reach for the
+  prompt-suggested Microsoft.VisualStudio.VSCodeDebugAdapterHost, it doesn't exist).
+  Use these EXACT versions that built 0/0 in the 2026.05.29.02 run (NU1603 version
+  floats otherwise emit warnings that fail the 0-warning gate):
+    Microsoft.VSSDK.BuildTools 17.14.2094
+    Microsoft.VisualStudio.SDK 17.0.32112.339
     Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces 16.6.40406.1
         (the interface contract; the implementation DLL ships INSIDE VS18 at
          Common7\IDE\Extensions\Microsoft\DebugAdapterHost\ and is not redistributable)
-    Microsoft.VisualStudio.Shared.VSCodeDebugProtocol
+    Microsoft.VisualStudio.Shared.VSCodeDebugProtocol 17.10.10123.1
+- REQUIRED legacy-csproj plumbing (the 2026.05.29.02 run had to add ALL of these or
+  restore silently no-op'd and the VsSDK import failed MSB4226):
+    * <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    * an <Import ...Microsoft.CSharp.targets> BEFORE the VsSDK import — a legacy
+      csproj has no `Restore` target until the common C# targets load, so without
+      this `$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets` fails with MSB4226.
+    * guard the VsSDK import with Condition="Exists(...)".
 - Add EXPLICIT framework references — <Reference Include="System" />,
   <Reference Include="System.Core" />, <Reference Include="System.Xml" />.
+  Add `using Microsoft.VisualStudio;` (for VSConstants) and mark LICENSE.txt as
+  Content with IncludeInVSIX=true (VSSDK1310 — the manifest <License> asset).
   The VSSDK metapackage does NOT auto-add them, so System.Diagnostics.Process /
   DataReceivedEventHandler fail with CS1069/CS0012 without them.
 - VS18-era VSSDK BuildTools (17.14+) enforce analyzer VSSDK1311: EACH
@@ -2432,11 +2572,18 @@ install-vscode-debugger.cmd:
      install-vscode-debugger.cmd. NO parentheses inside any string substituted
      into an if-block.
   2. dotnet publish "%SCRIPT_DIR%TinyLanguage\TinyLanguage.csproj" -c Release.
-  3. Locate MSBuild + VSIXInstaller via vswhere. Save into %MSBUILD% and %VSIXINSTALLER%.
+  3. Locate MSBuild + VSIXInstaller via vswhere → %MSBUILD% / %VSIXINSTALLER%. NOTE
+     (2026.05.29.02): `vswhere -latest` can return a BuildTools-only install that has
+     NO IDE and NO VSIXInstaller. Select the install that has the CoreEditor/MSBuild
+     workload AND both MSBuild.exe and Common7\IDE\VSIXInstaller.exe present (iterate
+     `vswhere -products * -requires Microsoft.Component.MSBuild` and pick the first
+     whose Common7\IDE\VSIXInstaller.exe exists) so the Community/Pro/Enterprise IDE
+     install wins over BuildTools.
   4. pushd "%SCRIPT_DIR%extensions\vs" && call "%MSBUILD%" TinyLanguage.VsTools.csproj
      /restore /p:Configuration=Release /p:DeployExtension=false
   5. call "%VSIXINSTALLER%" /quiet "%SCRIPT_DIR%extensions\vs\bin\Release\TinyLanguage.VsTools.vsix"
-     (per-user install — no admin needed)
+     (per-user install — no admin needed). Treat VSIXInstaller exit 0 AND 1001
+     ("already installed") as success so re-runs stay idempotent.
 
 CMD parser gotcha (extra one, on top of the install-vscode-debugger.cmd gotcha) —
 the `%ProgramFiles(x86)%` environment variable contains literal `(x86)` parens
