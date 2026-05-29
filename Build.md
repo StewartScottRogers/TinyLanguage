@@ -3,6 +3,14 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
+> **Last verified full run:** 2026-05-28 → delivered to
+> `Z:\repos\TinyLanguage.<YYYY.MM.DD.HH>\` — 595 demos (Tier A 399 / B 71 / C 125),
+> 262 tests (173 unit + 89 integration), all gates green including
+> `devenv.com /Rebuild` (7 succeeded, 0 failed, no MAX_PATH). SDK pin was
+> `10.0.300` (no 10.0.2xx band installed). The deviations discovered that run are
+> folded into the relevant phases/preambles below (search D16, D17, "Demo
+> convergence", "Execution model", and the SDK/long-path preambles).
+
 > ## Output location — non-negotiable
 >
 > The generated .NET solution folder is delivered to a **fixed canonical absolute path**
@@ -66,6 +74,27 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 
 ---
 
+> ## Execution model — subagents write to the canonical path directly
+>
+> Each phase subagent — **even when worktree-isolated** — writes its outputs to the
+> canonical ABSOLUTE path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`, which lies OUTSIDE
+> any repo or git worktree. Consequence: the assembled solution accumulates in ONE
+> place as phases complete; there are no per-phase branches to merge.
+>
+> Therefore, in this execution model:
+> - Phase 2's "Merge worktree outputs from Phase 1A/1B/1C" is a **no-op** — those
+>   outputs are already co-located at the canonical path.
+> - Phase 5 Step 6a/6b (remove canonical + robocopy from a merge worktree) are
+>   **no-ops** — the solution is already AT the canonical path. Skip them and
+>   validate in place (Steps 6c–6i).
+>
+> The merge/robocopy instructions remain below only as a FALLBACK for an alternate
+> model where agents build INSIDE their worktree and the result must be copied out.
+> If you ran agents in the direct-to-canonical model (the default here), just
+> verify the solution in situ.
+
+---
+
 > ## Long-path support — non-negotiable
 >
 > The canonical solution path `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` is 37
@@ -88,10 +117,10 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 > ```
 >
 > No reboot required, but Visual Studio must be restarted to pick it up. The
-> install-vscode-debugger.cmd installer (Phase 4D) must verify this key reads
-> 1 and abort with a clear "run the registry command above as admin" error if
-> not — fixing it after a 30-minute build failure is far worse than refusing
-> to start.
+> install-vscode-debugger.cmd installer (Phase 4D) should verify this key and,
+> if 0, WARN with the admin `reg add` command — but treat a clean Step 6i
+> `devenv /Rebuild` as authoritative rather than hard-aborting on the registry
+> value alone (see Phase 5 §6c).
 >
 > ### Layer 2 — Solution-level Directory.Build.props
 >
@@ -167,30 +196,37 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 >
 > ### The fix
 >
-> Phase 1A authors a `global.json` at the canonical solution root that
-> pins the SDK to a stable version VS understands:
+> Phase 1A authors a `global.json` at the canonical solution root pinning the SDK
+> to the **newest STABLE (non-preview, non-rc) .NET SDK actually installed on the
+> build machine**. Determine it with `dotnet --list-sdks` — the literal version is
+> a moving target, NOT a constant:
 >
 > ```json
 > {
 >   "sdk": {
->     "version": "10.0.203",
+>     "version": "<newest-stable-installed, e.g. 10.0.300>",
 >     "rollForward": "latestPatch"
 >   }
 > }
 > ```
 >
-> `rollForward: latestPatch` is critical — `latestFeature` rolls *up*
-> across feature bands (e.g. from 10.0.203 to 10.0.300-preview), which
-> defeats the purpose. `latestPatch` keeps you on the same feature band
-> (10.0.2xx) and only picks newer patch revisions inside that band.
-> `disable` (exact match) is also acceptable but more brittle.
+> On the reference machine (last successful run, 2026-05) only `10.0.300` (stable)
+> and `10.0.100-rc.1` were installed — there was **no `10.0.2xx` band at all** — so
+> the pin was `10.0.300`. Do NOT hard-require the literal `10.0.203`: that band may
+> not be installed, in which case a `10.0.203` pin fails outright (latestPatch can
+> only roll *within* the 2xx band).
 >
-> Update the version string when a newer stable SDK ships; until then,
-> 10.0.203 is the floor that .NET 10 GA aligned around.
+> The non-negotiable invariants are: **(a)** a STABLE build VS18 understands —
+> never a `-preview`/`-rc` SDK; **(b)** `rollForward: latestPatch`, NEVER
+> `latestFeature` (which rolls *up* across feature bands and can land on a
+> `-preview` build that NRE's VS18's `ResolvePackageAssets`). If a newer stable
+> band (10.0.4xx, 11.x, …) is installed in future, pin that.
 >
-> Phase 5 Step 6c verifies `global.json` exists at the canonical path and
-> that `dotnet --version` from that path reports a 10.0.2xx SDK (NOT
-> a -preview build).
+> Phase 5 Step 6c verifies `global.json` exists at the canonical path, pins the
+> newest installed stable band with `rollForward: latestPatch`, and that
+> `dotnet --version` from that path reports a STABLE (non-preview, non-rc) SDK.
+> Step 6c rejects only `-preview`/`-rc` builds — it must NOT require a specific
+> `10.0.2xx` number.
 
 ---
 
@@ -399,7 +435,7 @@ Future agents must NOT delete `extensions/vs/` on the assumption that "the
 spec doesn't mention it" or that "the debugger is already covered by item
 4". Both editors are deliberate.
 
-### 6. Parser leniencies (D10–D15)
+### 6. Parser leniencies (D10–D17)
 
 The 500+ demo corpus uses common scripting conventions that the strict
 BNF in `Build.Solution.md` does not accept. Rather than mass-rewriting
@@ -431,6 +467,12 @@ failures.
   into a complete `if_stmt` and use it as the entire else-branch — the
   inner `if`'s terminating `end` closes the whole chain. So FizzBuzz's
   `if A then ... else if B then ... else ... end` parses with ONE `end`.
+  CRITICAL refinement: the `else if` fold fires ONLY when the `if` token is on the
+  SAME source line as `else`. An `if` on a LATER line after `else` is an ordinary
+  nested if-statement that owns its own `end` — do NOT fold it into the chain. The
+  naive "any `if` after `else`" rule consumes the nested if's `end` and orphans the
+  outer `end`, breaking ~17 nested-if-in-else demos (DP tables, tree methods).
+  FizzBuzz uses the same-line idiom and still parses with ONE `end`.
 
   **D13 — Member assignment and postfix-LHS assignment.** The BNF only
   defines `<id> := <expr>` and `<id>[expr] := <expr>`. There is no
@@ -467,7 +509,22 @@ failures.
   class table. Required for module-qualified instantiation patterns
   that appear in several Tier C demos.
 
-  These six relaxations + the existing D1–D9 are the COMPLETE set of
+  **D16 — Built-in conversion call-syntax.** Build.Solution.md lists `int`/`str`/
+  `bool`/`float` (and `len`) as built-in FUNCTIONS, but the lexer emits keyword
+  tokens (IntType/FloatType/BoolType/StringType) for those names, so `int("7")`,
+  `float(n)`, `bool(x)`, `str(v)` would not parse in expression position. Relaxed:
+  in `ParsePrimary`, a type-name keyword immediately followed by `(` is parsed as a
+  conversion call (canonical builtin name int/float/bool/str → FunctionCallNode →
+  same conversion logic as the `(int)x` cast). Casts, annotations, and `is`/`as`
+  are unaffected. ~32 demos depend on this.
+
+  **D17 — Lambda body by first token.** A lambda/anonymous-function body is a
+  single-expression body when its first token starts an expression, or a statement
+  BLOCK (optionally closed by `end`) when its first token is a statement-only
+  keyword. Decided by the first token, NOT by scanning for a matching `end` (which
+  latches onto the enclosing function's `end`). Fixes `function(n) print n`.
+
+  These eight relaxations (D10–D17) + the existing D1–D9 are the COMPLETE set of
   documented deviations from the BNF. Anything else in the parser
   matches the spec.
 
@@ -509,6 +566,25 @@ Read Build.md and execute the full orchestration plan using parallel agents.
 Claude Code will decompose `Build.Solution.md` into the work units below, spin up
 specialised sub-agents (some in parallel git worktrees), track progress with Tasks,
 and assemble the final solution at the canonical sibling path defined above.
+
+### Phase sequencing — project references override the "parallel" labels
+
+The diagrams show parallel fan-out, but `<ProjectReference>` edges and shared
+MSBuild output directories make these orderings MANDATORY:
+- **1A before 1B and 1C** — 1B/1C build the `TinyLanguage.Lexer` csproj that 1A
+  scaffolds. (1A and 1D may run together; 1D is pure text authoring.)
+- **3A before 3B** — `TinyLanguage.UnitTests` references `TinyLanguage.Interpreter`,
+  so testing it requires the interpreter to compile.
+- **4B before 4A** — `TinyLanguage.IntegrationTests` references the
+  `TinyLanguage` console project; build/test of it requires the real Program.cs.
+- **4E and 4F must not run concurrent `dotnet build`/`publish`/`devenv`** — two
+  MSBuild processes on the same solution race on `obj/` locks. Run them
+  sequentially (4E is light and read-only against the published exe; 4F is heavy).
+- **1D is independent of everything** (authoring `.tlg`/`.cmd` text) — run it
+  alongside any phase.
+
+Launch a parallel pair in one message ONLY when they touch disjoint projects and
+neither builds the other's project.
 
 ---
 
@@ -977,6 +1053,21 @@ broken the demo sweep):
   prev/next index arrays).
 - **`map` as a variable name.** `map` lexes as `TokenType.MapType`, so
   `let map := new HashMap()` fails. Use `hmap`, `dict`, `kv`, etc.
+- **Module qualified access is NOT supported.** `module M { export function f()
+  ... }` promotes `f` to GLOBAL scope; there is NO `M.f()` dotted-access form.
+  Call exported members UNQUALIFIED (`MathOps.Abs(x)` fails "Undefined variable
+  MathOps").
+- **`try` requires a `catch`.** There is no catch-less `try/finally`; always
+  write `try ... catch ... finally ... end` (finally optional, catch mandatory).
+- **Scientific-notation float literals (`6.6e-34`) are OUT of the BNF.** Avoid
+  them; if a structure truly needs one, mark `# NOT IMPLEMENTABLE` and use a plain
+  decimal so the demo still runs.
+- **Field-level annotations are OUT of the BNF.** Annotations are statement/
+  member-level only — do NOT put `@Foo` on a class field.
+- Add **`step`** to the reserved-words-that-cannot-be-parameter-names list
+  (alongside `to`, `in`, `do`, `then`, `else`, `end`, `as`, `is`, `new`, `static`,
+  the type-name keywords, etc.).
+- **`match` is a keyword** — never use it as a variable or loop-variable name.
 
 REQUIRED `;` separator hygiene:
 
@@ -1300,7 +1391,9 @@ Do NOT run any of them yet — the interpreter is not built.
 **Model:** `claude-opus-4-6`  *(complex recursive-descent work)*
 **Prompt:**
 ```
-Merge worktree outputs from Phase 1A, 1B, 1C into a single working branch.
+No merge needed — Phases 1A/1B/1C already wrote to the canonical path (see
+'Execution model' preamble). Confirm the scaffold + lexer + AST are present at the
+canonical path.
 
 Read Build.Solution.md: "BNF Grammar" (full), all 23 Implementation Notes.
 
@@ -1311,6 +1404,20 @@ Implement TinyLanguage.Lexer/Parser.cs:
 - Bare return support (note 4).
 - Correct operator precedence table (note 11).
 - ParserException.cs with source line number.
+- Built-in conversion CALL-syntax (deviation D16): `int(x)` / `float(x)` / `bool(x)` /
+  `str(x)` must parse as builtin calls. The lexer emits IntType/FloatType/BoolType/
+  StringType keyword tokens for those names, so in ParsePrimary, when one of these
+  type-name keywords is IMMEDIATELY followed by `(`, parse it as a conversion CALL
+  (emit the canonical builtin identifier int/float/bool/str so the postfix loop
+  builds a FunctionCallNode). Must NOT break casts `(int)x`, annotations `: int`,
+  or `is int`/`as int`. ~32 demos need this; the spec lists int/str/bool/float as
+  built-in functions.
+- Lambda body decided by FIRST token (deviation D17): a lambda body is a single
+  expression when its first token starts an expression, or a statement BLOCK
+  (optionally closed by `end`) when its first token is a statement-only keyword
+  (print/if/while/for/foreach/return/let/var/...). Decide by that first token; do
+  NOT scan ahead for a matching `end` (that latches onto the ENCLOSING function's
+  `end` and mis-parses `function(n) print n`).
 
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.
@@ -1336,6 +1443,18 @@ Implement TinyLanguage.Interpreter/:
 - All operator semantics from note 10.
 - Foreach-over-string (note 6), ArrayElementAssign mutation (note 7).
 - InterpreterException.cs with source line.
+- Operator `+` is overloaded by operand type: numeric add when both numeric,
+  string concat when either is a string, and **array/list concatenation** when
+  both are arrays (returns a NEW list). The demo corpus's universal append idiom
+  is `arr := arr + [x]` (there is no in-spec list-grow builtin and indexed assign
+  cannot extend a list), so list `+` is REQUIRED even though the spec is silent on
+  list operands.
+- Class `const` fields belong to the CLASS, not the instance: route
+  `FieldKind.Const` declarations in a class body into `StaticMembers` so they are
+  reachable via `ClassName.CONST` (a const is immutable and instance-independent).
+- Built-in conversions int/float/bool/str must be invokable BOTH as casts
+  `(int)x` AND as calls `int(x)` (parser D16 routes the call form here) — share
+  one conversion code path.
 
 Run: dotnet build TinyLanguage.Interpreter
 Accept only: 0 errors, 0 warnings.
@@ -1454,6 +1573,42 @@ Smoke-test:
   TinyLanguage.exe TinyLanguage.DemoFiles/00001.hello_world.tlg out.txt
                                                           → out.txt contains "Hello, World!", exit 0
   TinyLanguage.exe foo                                    → usage on stderr, exit 1
+```
+
+---
+
+## Phase 4.5 — Demo convergence  *(after 3A/3B/4A/4B; before final validation)*
+
+**Agent:** `general-purpose`  **Model:** `claude-opus-4-6` (spec triage)
+
+Publish the exe, then run a FULL sweep — every `*.tlg` through the published exe
+in file mode, COLLECTING all non-zero exits (do NOT use `run-all-demos.cmd` for
+this; it aborts on the first failure). Triage each failing demo against the spec:
+spec-defined feature → fix code (parser/interpreter); out-of-spec anti-pattern →
+fix the demo (or `# NOT IMPLEMENTABLE` + keep it running deterministically).
+Re-sweep until **0 failures of 595+**, keeping the test suite green and
+republishing after any code change.
+
+With the D16/D17 parser relaxations, the same-line-D12 refinement, and the
+array-`+`/static-const interpreter fixes folded into Phases 2 and 3A, most
+failures will not recur — but run the sweep as a HARD gate. Expected failure
+categories on a from-scratch run (each with its resolution): builtin call-syntax
+(D16, parser); nested-if-in-else `end` (D12 same-line, parser); module qualified
+access (demo → unqualified); array `+` (interpreter); static `const`
+(interpreter); lambda statement body (D17, parser); reserved-word params /
+`match`-as-name / `while ... then` typo / closures-over-locals / catch-less
+`finally` / sci-notation / field-annotation (all demo fixes).
+
+Sweep harness (PowerShell, from the canonical path) — note the INVOCATION GOTCHA
+in Phase 5 Step 5 applies here too:
+```powershell
+$dir = "$canonical\TinyLanguage.DemoFiles"; $exe = "$dir\TinyLanguage.exe"
+$fail = @()
+foreach ($f in (Get-ChildItem $dir -Filter *.tlg | Sort-Object Name)) {
+  $p = Start-Process $exe -ArgumentList "`"$($f.FullName)`"","`"$env:TEMP\s.out`"" -NoNewWindow -PassThru -Wait -RedirectStandardError "$env:TEMP\s.err"
+  if ($p.ExitCode -ne 0) { $fail += $f.Name }
+}
+"FAILED=$($fail.Count)"; $fail
 ```
 
 ---
@@ -2130,6 +2285,13 @@ TinyLanguage.VsTools.csproj — legacy MSBuild csproj (NOT SDK-style):
         (the interface contract; the implementation DLL ships INSIDE VS18 at
          Common7\IDE\Extensions\Microsoft\DebugAdapterHost\ and is not redistributable)
     Microsoft.VisualStudio.Shared.VSCodeDebugProtocol
+- Add EXPLICIT framework references — <Reference Include="System" />,
+  <Reference Include="System.Core" />, <Reference Include="System.Xml" />.
+  The VSSDK metapackage does NOT auto-add them, so System.Diagnostics.Process /
+  DataReceivedEventHandler fail with CS1069/CS0012 without them.
+- VS18-era VSSDK BuildTools (17.14+) enforce analyzer VSSDK1311: EACH
+  <InstallationTarget> in source.extension.vsixmanifest must contain a
+  <ProductArchitecture>amd64</ProductArchitecture> child element.
 
 source.extension.vsixmanifest — Identity Id="TinyLanguage.VsTools.{package-GUID}"
 Version="0.1.0" Publisher="tinylanguage-local". InstallationTarget for VS18:
@@ -2158,19 +2320,22 @@ TinyLanguageAdapterLauncher.cs — implements IAdapterLauncher from
 Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces. Class decorated with
 [Guid("A08C993B-F229-4376-B2D4-994E825527A1")].
 
-API deviations from naive expectations (verified empirically against the actual
-shipped interface):
-- IAdapterLauncher extends IDebugAdapterHostComponent, which requires a
-  no-op Initialize(IDebugAdapterHostContext) method.
-- LaunchAdapter signature is:
-    ITargetHostProcess LaunchAdapter(LaunchAdapterRequest request, ITargetHostInterop interop)
-  (NOT IAdapterLaunchEventCallback)
-- UpdateLaunchOptions(UpdateLaunchOptionsRequest request) — pass-through, return request.Args.
-- There is NO TargetHostProcess.AttachToProcess helper class — provide a thin
-  wrapper (TinyLanguageTargetHostProcess.cs, separate file per one-type-per-file rule)
-  that implements ITargetHostProcess by wrapping a System.Diagnostics.Process.
-- ITargetHostProcess.ErrorDataReceived is DataReceivedEventHandler (the BCL one),
-  not EventHandler<string>.
+API deviations (verified by reflecting the shipped
+`Microsoft.VisualStudio.Debugger.DebugAdapterHost.Interfaces.dll` — these are the
+REAL signatures; the naive shape does NOT compile):
+- `LaunchAdapter` is `ITargetHostProcess LaunchAdapter(IAdapterLaunchInfo launchInfo, ITargetHostInterop interop)`
+  — NOT `LaunchAdapterRequest`. The launch config (program/exe) arrives as a JSON
+  STRING in `IAdapterLaunchInfo.LaunchJson`, not as typed properties — parse it;
+  in a .NET Framework 4.7.2 in-proc extension AVOID a JSON dependency and use a
+  tiny flat-JSON string extractor.
+- `UpdateLaunchOptions(IAdapterLaunchInfo launchInfo)` returns VOID (pass-through).
+- `Initialize(IDebugAdapterHostContext context)` from `IDebugAdapterHostComponent`
+  — no-op.
+- `ITargetHostProcess`: `Handle` is `IntPtr`; `StandardInput`/`StandardOutput`
+  are `System.IO.Stream`; `ErrorDataReceived` is `DataReceivedEventHandler` (BCL);
+  `Exited` is `EventHandler`; plus `Terminate()` and `HasExited`. Provide a thin
+  wrapper over `System.Diagnostics.Process` forwarding `.StandardInput.BaseStream`
+  / `.StandardOutput.BaseStream`.
 
 Exe-resolution chain (mirror the VS Code extension's logic from extensions/vscode/extension.js):
   1. request.LaunchJson.exe (explicit override)
@@ -2437,6 +2602,14 @@ Protocol below. Every step must pass before you may declare the plan complete.
     the stdout was the apphost-not-finding-its-dll error from a build-clobbered
     DemoFiles\TinyLanguage.exe. Caught by criterion (d).
 
+  **INVOCATION GOTCHA (caused a total false-negative once).** Invoke each `.cmd`
+  from PowerShell as `& cmd /c $c.FullName $out` and let PowerShell quote the
+  arguments. Do NOT manually double-quote the whole command as
+  `cmd /c "<cmd>" "<out>"` — when the command line both begins and ends with a
+  quote, `cmd.exe` strips the outer quotes and mangles the line, making EVERY `.cmd`
+  spuriously exit 1. If a validation run reports all/most `.cmd` failing while
+  `run-all-demos.cmd` passes, suspect the harness invocation, not the demos.
+
   Suggested PowerShell loop (run from the solution root):
     $dir = "TinyLanguage.DemoFiles"
     if ((Get-Item "$dir\TinyLanguage.exe").Length -lt 30000000) {
@@ -2495,7 +2668,7 @@ that canonical copy has been re-validated end-to-end.
 
   6c. Verify the structural standards from the preamble hold at the canonical path:
         - $canonical\TinyLanguage.slnx                     exists
-        - $canonical\global.json                            exists, pins to 10.0.203 with rollForward "latestPatch"; verify `dotnet --version` from $canonical reports a 10.0.2xx SDK (NOT a preview build)
+        - $canonical\global.json  exists, pins the newest STABLE (non-preview, non-rc) installed SDK band with rollForward "latestPatch"; verify `dotnet --version` from $canonical reports a STABLE 10.0.x+ SDK. Reject ONLY -preview/-rc builds — do NOT require a literal 10.0.2xx. (Reference run pinned 10.0.300 because no 10.0.2xx band was installed.)
         - $canonical\Directory.Build.props                  exists, contains <_LongPathsEnabled>true
         - $canonical\TinyLanguage\TinyLanguage.csproj       exists, contains <ApplicationManifest>
         - $canonical\TinyLanguage\app.manifest              exists, contains <longPathAware>true
@@ -2514,10 +2687,18 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\install-vscode-debugger.cmd            exists (Phase 4D)
         - $canonical\install-vs-debugger.cmd                exists (Phase 4F)
         - $canonical\TinyLanguage.wiki.md                   exists, > 200 lines (Phase 4E)
-        - HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled DWORD = 1
-          (verify via `(Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -EA SilentlyContinue).LongPathsEnabled -eq 1`).
-          If missing/zero, abort delivery with the exact admin-elevated `reg add` command
-          from the Long-path support preamble.
+        - HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled DWORD —
+          read it (`(Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -EA SilentlyContinue).LongPathsEnabled`).
+          If 1, good. If missing/0, **WARN** and print the admin command
+          `reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f`
+          — but do **NOT** abort delivery solely because it is 0. The key only matters
+          when the canonical path + deepest publish intermediates exceed 260 chars; with
+          the short canonical path (`...YYYY.MM.DD.HH\` ≈ 36 chars) and long-path
+          Layers 2-3 (Directory.Build.props `_LongPathsEnabled` + app.manifest
+          `longPathAware`) present, VS Batch Rebuild succeeds regardless. Treat a clean
+          Step 6i `devenv.com /Rebuild` (exit 0, no MAX_PATH errors) as the AUTHORITATIVE
+          proof. On the reference run the registry value was 0 yet Step 6i was fully clean.
+          Only escalate to a hard block if Step 6i actually reports a MAX_PATH error.
       Fail loudly with a specific path if any of these is missing.
 
   6d. Re-run the full build, test, publish, and run-all-demos chain at the
@@ -2602,7 +2783,10 @@ refactor unrelated code. Do not alter Build.Solution.md.
 
 ## Agent Tool Invocation Pattern
 
-When Claude Code executes this plan, each phase maps to an `Agent` tool call:
+When Claude Code executes this plan, each phase maps to an `Agent` tool call.
+Before launching any parallel pair, re-read "Phase sequencing — project references
+override the 'parallel' labels" in "How to Run This Plan": project-reference edges
+make 1A→1B/1C, 3A→3B, and 4B→4A mandatory, and 4E/4F must not build concurrently.
 
 ```jsonc
 // Phase 1 — four calls in a SINGLE message (parallel)

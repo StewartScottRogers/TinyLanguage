@@ -8,22 +8,31 @@ TinyLanguage is a complete .NET 10.0 implementation of a small programming langu
 
 ## SDK pin (`global.json`) — required so VS and CLI agree
 
-The solution root contains `global.json` pinning the .NET SDK:
+The solution root contains `global.json` pinning the .NET SDK to the **newest
+STABLE (non-preview, non-rc) SDK installed on the build machine** — determine it
+with `dotnet --list-sdks`:
 
 ```json
 {
   "sdk": {
-    "version": "10.0.203",
+    "version": "10.0.300",
     "rollForward": "latestPatch"
   }
 }
 ```
 
-This exists because VS18's bundled NuGet NRE'd reading lockfiles produced by `10.0.300-preview` SDKs that happened to be on PATH (`MSB4018: ResolvePackageAssets`). With the pin, both `dotnet` from the canonical path and Visual Studio resolve `10.0.203`, lockfiles match, VS Batch Rebuild succeeds.
+The literal version is a moving target, not a constant. On the current machine
+only `10.0.300` (stable) and `10.0.100-rc.1` are installed — there is **no
+`10.0.2xx` band** — so the pin is `10.0.300`. (Earlier docs pinned `10.0.203`;
+that band is not installed here, so a `10.0.203` pin would fail outright.)
 
-**Critical:** `rollForward: latestPatch` (NOT `latestFeature`). `latestFeature` rolls *up* from 10.0.203 to 10.0.300-preview because preview is the latest *feature band*; `latestPatch` keeps you on 10.0.2xx.
-
-When a newer stable SDK ships (10.0.3xx, 10.0.4xx GA), bump the version. Until then, do not "simplify" this away — see deviation D7 in `Build.md` and `Build.Plan.md`.
+This pin exists because VS18's NuGet integration must resolve the SAME SDK the
+CLI publish used, or lockfiles mismatch and VS NRE's `ResolvePackageAssets`
+(`MSB4018`). The invariants: **(a)** a STABLE build VS18 understands — never a
+`-preview`/`-rc` SDK; **(b)** `rollForward: latestPatch`, NEVER `latestFeature`
+(which rolls UP across feature bands and can land on a `-preview` build that
+defeats the pin). When a newer STABLE band ships (10.0.4xx, 11.x GA), bump the
+version to it. Do NOT revert to a frozen `10.0.203`. Do not "simplify" this away — see deviation D7 in `Build.md` and `Build.Plan.md`.
 
 ## Long paths (machine prereq for VS Batch Rebuild)
 
@@ -55,6 +64,8 @@ dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 ```
 
 **Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `TinyLanguage.DemoFiles\run-all-demos.cmd` → exit 0.
+
+**Validating the per-demo `.cmd` files from PowerShell:** invoke each as `& cmd /c $c.FullName $out` (let PowerShell quote args). Do NOT manually double-quote the whole command (`cmd /c "<cmd>" "<out>"`) — when the line both begins and ends with a quote, `cmd.exe` strips the outer quotes and mangles it, making EVERY `.cmd` spuriously exit 1. If all/most `.cmd` "fail" while `run-all-demos.cmd` passes, suspect the harness invocation, not the demos.
 
 > **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Three modes: zero args = read source from stdin and write to stdout; two args = file-processor mode; `--dap` = Debug Adapter Protocol server (used by VS Code). The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
 
@@ -160,18 +171,30 @@ The parser has 23 documented disambiguation rules (see `Build.Solution.md` §1.5
 
 When implementing parser rules, consult the BNF in `Build.Solution.md` §1.4 and the notes in §1.5 before writing any code.
 
-## Parser leniencies beyond the BNF (D10–D15)
+## Parser leniencies beyond the BNF (D10–D17)
 
-In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in six places to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all six — reverting any one will produce widespread demo failures:
+In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in eight places (D10–D17) to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all eight — reverting any one will produce widespread demo failures:
 
 - **D10** Newlines act as implicit `;` separators between statements (Note 3 relaxation). `ParseStatementList` accepts a strictly-later upcoming-token line as separator when no explicit `;` was consumed.
 - **D11** Trailing `;` before block-enders (`end`, `else`, `}`, EOF, …) and leading `;` before a statement are silently tolerated (Note 21 relaxation). Multiple consecutive `;`s = zero-or-more empty statements.
-- **D12** `else if X then ... end` chains supported — `ParseIfStatement` recurses into a nested `if_stmt` after `else if`; the inner `end` closes the whole chain. FizzBuzz parses with one `end`.
+- **D12** `else if X then ... end` chains supported — `ParseIfStatement` recurses into a nested `if_stmt` after `else if`; the inner `end` closes the whole chain. FizzBuzz parses with one `end`. The fold fires ONLY when the `if` is on the SAME source line as `else`; an `if` on a later line is an ordinary nested if owning its own `end` (the naive "any if after else" rule orphans the outer `end` and breaks nested-if-in-else demos).
 - **D13** Member assignment and postfix-LHS assignment/call: new AST nodes `MemberAssignStmtNode`, `PostfixAssignStmtNode`, `PostfixCallStmtNode`. `ParseStatement` dispatches both `Identifier` and `This` to a shared `ParsePostfixLedAssignOrCall` helper that parses a full postfix expression then specialises on `:=` or `(args)`. Supports `this.X := v`, `this.Items[i] := v`, `obj.a.b.c := v`, `this.Nodes[i].AddNeighbor(...)`.
 - **D14** `var x := 1` (type-inferred `var`) — BNF requires type annotation; relaxed to optional like `let`.
 - **D15** `new Foo.Bar(args)` — dotted type names accepted in `new`. The final segment resolves against the class table.
+- **D16** Built-in conversion call-syntax: `int(x)`, `float(x)`, `bool(x)`, `str(x)`. int/str/bool/float are spec built-in functions but lex as type-name keyword tokens; `ParsePrimary` treats a type-name keyword immediately followed by `(` as a conversion call (FunctionCallNode → same conversion as the `(int)x` cast). Casts, `: int` annotations, and `is`/`as int` are unaffected.
+- **D17** Lambda body by first token: a lambda body is a single expression if its first token starts an expression, else a statement BLOCK (optionally closed by `end`), decided by the first token (NOT by scanning for a matching `end`, which latches onto the enclosing function's `end`). Enables `function(n) print n`.
 
 Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "Deliberate deviations" §6 and the deviations table in `Build.Plan.md` §2.
+
+## Language behaviours demo authors rely on (learned from the corpus)
+
+- **Built-in conversions work as BOTH casts and calls:** `(int)x` and `int(x)` are equivalent; same for float/bool/str. `len`/`str` are ordinary calls too.
+- **`+` concatenates arrays** (`arr := arr + [x]`) as well as numbers/strings — this is the corpus's standard list-append idiom (no list-grow builtin exists).
+- **Class `const` fields are static** — reachable as `ClassName.CONST`.
+- **Modules have NO qualified access** — `module M { export function f() }` promotes `f` to global scope; call it `f(...)`, never `M.f(...)`.
+- **`try` requires `catch`** — no catch-less `try/finally`.
+- **Out of the BNF (avoid / mark `# NOT IMPLEMENTABLE`):** scientific-notation float literals (`6.6e-34`), field-level annotations (`@Foo` on a class field).
+- **Reserved words can't be parameter/variable names** — includes `step`, `to`, `in`, `do`, `match`, the type-name keywords, etc.
 
 ## Lexer trap fixed in-place: float `PeekIsDigit()`
 

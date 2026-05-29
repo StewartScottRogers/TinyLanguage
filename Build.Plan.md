@@ -7,6 +7,12 @@ Working architect document for the Claude Code orchestration build defined in
 Canonical solution root: `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\` (sibling of the
 orchestrator repo; UTC year/month/day/hour substituted at orchestration start).
 
+> **Execution model.** Subagents (even worktree-isolated) write directly to the
+> canonical absolute path, which is OUTSIDE any repo/worktree. So the solution
+> accumulates in one place — Phase 2's "merge worktree outputs" and Phase 5 Step
+> 6a/6b robocopy are NO-OPS; validate the solution in place. (Robocopy remains a
+> fallback only for an alternate build-inside-worktree model.)
+
 ---
 
 ## 1. Hierarchical Outline of Build.Solution.md
@@ -65,15 +71,19 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 | D4 | Interactive debugger via DAP (additive) | Silent on debugging | Three-layer DAP: engine `IDebuggerHost` in Interpreter, new `TinyLanguage.DebugAdapter`, editor shims at `extensions\vscode\` and `extensions\vs\` (see D9). Activation flag `--dap`. | 4C, 4D, 4F |
 | D5 | User-facing wiki (additive) | Silent on a wiki | Single self-contained `TinyLanguage.wiki.md` at solution root, generated after 4D and before 5. Pre-declared in slnx Solution Items by 1A. | 4E |
 | D6 | Long-path support (additive) | Silent | Three layers so VS Batch Rebuild handles the timestamped path: (1) HKLM `LongPathsEnabled`=1 (admin, machine prereq), (2) `Directory.Build.props` with `<_LongPathsEnabled>true`, (3) `TinyLanguage\app.manifest` `<longPathAware>true` via `<ApplicationManifest>`. Phase 5 §6c verifies; §6i drives `devenv.com /Rebuild`. | 1A, 5 |
-| D7 | SDK pin via global.json (additive) | Silent on SDK selection | `global.json` pins `10.0.203` `rollForward: latestPatch` so VS and `dotnet`-on-PATH produce compatible lockfiles. `latestFeature` would roll up to `10.0.300-preview` and NRE VS18's `ResolvePackageAssets`. Phase 5 §6c verifies. | 1A, 5 |
+| D7 | SDK pin via global.json (additive) | Silent on SDK selection | `global.json` pins the NEWEST STABLE (non-preview/-rc) SDK installed (via `dotnet --list-sdks`), with `rollForward: latestPatch` so VS and `dotnet`-on-PATH produce compatible lockfiles. The literal version is a moving target — the reference run pinned `10.0.300` (no 10.0.2xx band was installed; a `10.0.203` pin would have failed). NEVER `latestFeature` (rolls up to a -preview and NRE's VS18 ResolvePackageAssets). Phase 5 §6c verifies (accepts any stable build; rejects only -preview/-rc). | 1A, 5 |
 | D8 | TestLog helper (additive) | Tests print via raw `Console.WriteLine` | Tests route through `TestLog.Input/Section/Result` with `--- Input ---` / `--- Result ---` framing and real-newline indentation. Replaces the older `Visible(s)` pattern that escaped `\n` and collapsed multi-line stdout onto one line. Exact source in Build.md preamble. | 3B, 4A, 4C |
 | D9 | Editor shims under a Shared Project (additive) | Silent on editor integration | Both shims live under `extensions\`. `extensions.shproj` + `extensions.projitems` list every shim file as `<None>` items, giving Solution Explorer one navigable tree. The Shared Project produces no assembly — `dotnet build` silently skips it, `devenv.com /Rebuild` loads it via `Microsoft.CodeSharing.CSharp.targets`. The VS18 VSIX (`extensions\vs\TinyLanguage.VsTools.csproj`, net472) is built outside the slnx by `install-vs-debugger.cmd`. GUIDs in §6. | 1A, 4D, 4F |
 | D10 | Newlines as implicit `;` separators | Note 3: "Newlines are whitespace; they do not insert implicit semicolons." | `ParseStatementList` accepts a strictly-later upcoming-token line as an implicit separator when no explicit `;` was consumed. Required because Tier A demos use one-statement-per-line convention. | 2 |
 | D11 | Trailing `;` before block-enders tolerated | Note 21: `;` before `end`/`else`/`catch`/`finally`/`while`/`}`/EOF is a parse error. | Trailing `;` is silently accepted as an empty separator; leading `;`s before a statement also tolerated. `function foo();` (with stray `;` after `()` closing paren) parses cleanly. Demo-corpus convention. | 2 |
-| D12 | `else if` chains | BNF: `<if_stmt> ::= "if" <expr> "then" <stmt_list> ("else" <stmt_list>)? "end"` (nested ifs require their own `end`). | `ParseIfStatement` special-cases `else if` — recurses into a complete inner if-statement and uses its `end` to close the whole chain. FizzBuzz-style `if A then ... else if B then ... else ... end` parses with ONE `end`. | 2 |
+| D12 | `else if` chains | BNF: `<if_stmt> ::= "if" <expr> "then" <stmt_list> ("else" <stmt_list>)? "end"` (nested ifs require their own `end`). | `ParseIfStatement` special-cases `else if` — recurses into a complete inner if-statement and uses its `end` to close the whole chain. FizzBuzz-style `if A then ... else if B then ... else ... end` parses with ONE `end`. REFINEMENT: the fold fires ONLY when `if` is on the SAME source line as `else`; an `if` on a later line is a normal nested if that owns its own `end` (the naive "any if after else" rule orphans the outer `end` and breaks ~17 nested-if-in-else demos). | 2 |
 | D13 | Member assignment + postfix-LHS forms | BNF allows only `<id> := <expr>` and `<id>[expr] := <expr>`. No `obj.field := value`. | New AST nodes `MemberAssignStmtNode`, `PostfixAssignStmtNode`, `PostfixCallStmtNode`. `ParseStatement` dispatches `Identifier` AND `This` to a shared `ParsePostfixLedAssignOrCall` that parses a full postfix expression then specialises on `:=` or `(args)`. Supports `this.X := v`, `this.Items[i] := v`, `this.Data[i][j] := v`, `this.Nodes[i].AddNeighbor(...)`. | 1C (new node files), 2, 3A |
 | D14 | `var x := 1` without type annotation | BNF: `<var_declare_stmt> ::= "var" <id> ":" <type> ":=" <expr>`. | Type annotation made optional, parallels `let`. Demo corpus uses both forms. | 2 |
 | D15 | Dotted type names in `new` | BNF: `<new_expr> ::= "new" <id> "(" <arg_list>? ")"` (single identifier). | `ParseNewExpression` accepts a dotted chain (`new Shapes.Circle(5)`); final segment resolves against the class table. Module-qualified instantiation in Tier C demos. | 2 |
+| D16 | Built-in conversion call-syntax `int(x)`/`float(x)`/`bool(x)`/`str(x)` | Spec lists int/str/bool/float as built-in functions but lexer makes them keyword tokens | ParsePrimary parses a type-name keyword immediately followed by `(` as a builtin conversion CALL (FunctionCallNode, canonical name int/float/bool/str). Casts/annotations/is/as unaffected. ~32 demos. | 2, 3A |
+| D17 | Lambda body by first token | Note 14 (expr body vs block body) | A lambda body is a single expression if its first token starts an expression, else a statement BLOCK (optional `end`). Decided by first token, NOT by scanning for a matching `end` (which latches onto the enclosing function's `end`). Fixes `function(n) print n`. | 2 |
+| D18 | Array/list `+` concatenation | Note 10 silent on list operands | Interpreter `+` concatenates two arrays into a new list (corpus append idiom `arr := arr + [x]`; no in-spec list-grow builtin). | 3A |
+| D19 | Class `const` → static member | Class body allows `const` | Interpreter routes class-body `const` to StaticMembers (reachable via `ClassName.CONST`), not per-instance Fields. | 3A |
 
 ---
 
@@ -138,6 +148,13 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 - WU-3A and WU-3B parallel after WU-2.
 - WU-4A and WU-4B parallel after WU-3A + WU-3B; WU-4C sequential after WU-3A + WU-4B; WU-4D after WU-4C; WU-4E and WU-4F parallel after WU-4D (neither overlaps the other's outputs).
 - WU-5 joins WU-4A, WU-4E, WU-4F, WU-1D.
+
+> **Project-reference serializations (override the "parallel" labels).** Although
+> the graph fans out, these edges force ordering: 1A → 1B/1C (Lexer csproj);
+> 3A → 3B (UnitTests → Interpreter); 4B → 4A (IntegrationTests → console project);
+> 4E and 4F must not run concurrent MSBuild on the solution (obj-lock races). 1D
+> (demo authoring) is independent of all. Insert a **Demo-convergence** gate after
+> 3A/3B/4A/4B (sweep all demos to 0 failures) before final validation.
 
 **Critical path** (longest chain): WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-4F → WU-5.
 
@@ -238,7 +255,7 @@ Pin these. Future regenerations must NOT reroll values that are baked into the V
 | VS18 engine GUID | `{BAFF8877-1B8C-4D5C-ABB2-A4918F45F244}` | pkgdef `AD7Metrics\Engine\{...}` key | 4F |
 | VS18 launcher CLSID | `{A08C993B-F229-4376-B2D4-994E825527A1}` | pkgdef `CLSID\{...}`; AD7Metrics `AdapterLauncher` field; `[Guid(...)]` on launcher class | 4F |
 | VS18 stock DAP-host CLSID | `{DAB324E9-7B35-454C-ACA8-F6BB0D5C8673}` | pkgdef AD7Metrics `CLSID` field — REUSED from VS, not generated | 4F |
-| .NET SDK pin | `10.0.203` / `rollForward: latestPatch` | `global.json` | 1A (D7) |
+| .NET SDK pin | newest STABLE installed band (ref run: `10.0.300`) / `rollForward: latestPatch` | `global.json` | 1A (D7) |
 | Extension version | `0.1.0` | `source.extension.vsixmanifest` + `extensions/vscode/package.json` | 4D, 4F |
 | VS Code extension ID | `tinylanguage-local.tinylanguage-debug` | `code --list-extensions`; `code --install-extension` arg | 4D |
 | VS18 install hive | `%LOCALAPPDATA%\Microsoft\VisualStudio\18.0_*\Extensions\` | per-user (no admin); `vswhere -find` against `Common7\IDE\Extensions\` returns empty | 4F |
