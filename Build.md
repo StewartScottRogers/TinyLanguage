@@ -4,15 +4,16 @@ This file drives a **Claude Code multi-agent build** of the TinyLanguage solutio
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
 > **Last verified full run:** 2026-05-29 → delivered to
-> `Z:\repos\TinyLanguage.2026.05.29.02\` — 520 demos (Tier A 00001–00340 / B ~55 / C 125),
-> 370 tests (281 unit + 89 integration), all gates green including
-> `devenv.com /Rebuild` (7 succeeded, 0 failed, no MAX_PATH). SDK pin was
-> `10.0.300` (no 10.0.2xx band installed). For fuller feature coverage, extend
-> Tier A to the full `00001–00399` band (the 2026-05-28 run reached 399). The
-> deviations and build lessons discovered across runs are folded into the relevant
-> phases/preambles below (search D16–D21, the "MSTest 4.x" and "Demo sweep harness"
-> preambles, the `tools\sweep-demos.ps1` helper, "Demo convergence", "Execution
-> model", and the SDK/long-path preambles).
+> `Z:\repos\TinyLanguage.2026.05.29.23\` — 624 demos (Tier A 00001–00399 / B 00400–00499 / C 00500–00659),
+> EACH with a golden `.expected` file, validated by the golden sweep
+> (`FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared to `.expected`, not just exit 0);
+> 270 tests (185 unit + 85 integration), all gates green including `devenv.com /Rebuild`
+> (7 succeeded, 0 failed, no MAX_PATH); a `GENERATED.md` provenance stamp at the solution
+> root. SDK pin was `10.0.300` (no 10.0.2xx band installed). The deviations and build
+> lessons discovered across runs are folded into the relevant phases/preambles below
+> (search D16–D22, the "Output formatting contract", "MSTest 4.x", and "Demo sweep harness"
+> preambles, the `tools\sweep-demos.ps1` helper, the "Orchestration execution recipe",
+> "Phase 4.7", "Demo convergence", "Execution model", and the SDK/long-path preambles).
 
 > ## Output location — non-negotiable
 >
@@ -345,6 +346,33 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 
 ---
 
+## Output formatting contract — non-negotiable
+
+Every demo ships a golden `<name>.expected` file (the EXACT predicted file-mode stdout).
+For those predictions to be reliable, the interpreter's textual output MUST be
+deterministic and pinned, and Phases 1D (demo authors) and 3A (the interpreter) MUST
+both follow this single contract. The interpreter routes `print`, `str()`, and
+array-element rendering through ONE `Stringify(value, topLevel)`:
+
+- `print x` writes x's text then ONE `\n` (LF, never `\r\n`).
+- Integer → decimal digits, no decimal point (`42`, `-7`, `0`).
+- Float → shortest round-trip decimal; a WHOLE-valued float gets a trailing `.0`
+  (`3.0`, `-2.0`, `0.0`); non-whole as-is (`3.5`, `0.25`). Invariant culture.
+- Bool → `true` / `false`. null → `null`.
+- String → its raw characters, NO surrounding quotes at top level.
+- Array → `[a, b, c]` with `, ` separators; STRING elements INSIDE an array are wrapped
+  in double quotes; nested arrays recurse; empty → `[]`.
+- `str(x)` and `&`/`+` string concatenation use this same textual form.
+
+The convergence gate (Phase 4.5) and final validation (Phase 5) compare each demo's
+actual stdout to its `.expected` (CRLF→LF normalized, trailing newline trimmed) via
+`tools\sweep-demos.ps1` (golden mode is on by default). A demo "passes" only when it
+exits 0 AND its output matches — this catches wrong-but-non-crashing demos (e.g. a tree
+that prints duplicate keys, or a float printed as an int) that an exit-0-only gate ships
+silently.
+
+---
+
 ## MSTest 4.x — non-negotiable
 
 The pinned .NET 10 SDK's `dotnet new mstest` template uses the **MSTest 4.0.2
@@ -467,13 +495,14 @@ Future agents must NOT delete `extensions/vs/` on the assumption that "the
 spec doesn't mention it" or that "the debugger is already covered by item
 4". Both editors are deliberate.
 
-### 6. Parser leniencies (D10–D17)
+### 6. Parser leniencies (D10–D22)
 
-The 500+ demo corpus uses common scripting conventions that the strict
+The 600+ demo corpus uses common scripting conventions that the strict
 BNF in `Build.Solution.md` does not accept. Rather than mass-rewriting
-the demos, the parser has been deliberately relaxed in six places. A
-future regeneration that reverts any of these will see widespread demo
-failures.
+the demos, the parser/interpreter have been deliberately relaxed in the
+places below (D10–D17 parser; D18–D19 + D22 interpreter; D20–D21 parser+
+interpreter). A future regeneration that reverts any of these will see
+widespread demo failures.
 
   **D10 — Newlines as implicit `;` separators.** Implementation Note 3
   says "Newlines are whitespace; they do not insert implicit semicolons."
@@ -582,7 +611,21 @@ failures.
   assignable as `ClassName.Field`); `FieldDeclareNode` gains an `IsStatic` flag.
   Implementation Note 16 ("static modifies a field"). Required by 00216, 00237.
 
-  These ten relaxations (D10–D21) + the existing D1–D9 are the COMPLETE set of
+  **D22 — indexed-assign append at `index == Length`.** Implementation Note 7 says
+  `arr[i] := v` mutates an EXISTING element. Relaxed (INTERPRETER side, not the
+  parser): an indexed assignment where `index == array.Length` APPENDS the value
+  (grow-by-one); `index < Length` mutates in place; `index > Length` or `index < 0`
+  stays an out-of-bounds error. Implement it in the ONE shared `StoreIndexed` helper
+  so it covers BOTH `arr[i] := v` (ArrayElementAssignNode) and `this.data[i] := v`
+  (PostfixAssignStmtNode). Required because the corpus's algorithm demos build arrays
+  by indexed assignment from empty in load loops (`for i := 0 to n-1 do arr[i] := src[i] end`).
+  Safe: it only converts a former runtime error into a success, so it cannot regress a
+  previously-passing program. (Note: this is the STORE counterpart to a spec-compliance
+  fix on the READ side — a list/string out-of-bounds READ returns `null` per
+  Build.Solution.md Layer-4 "Out-of-bounds index returns null without crashing"; that
+  read behavior is spec compliance, NOT a deviation. A map missing-key still throws.)
+
+  These eleven relaxations (D10–D22) + the existing D1–D9 are the COMPLETE set of
   documented deviations from the BNF. Anything else in the parser
   matches the spec.
 
@@ -644,34 +687,42 @@ MSBuild output directories make these orderings MANDATORY:
 Launch a parallel pair in one message ONLY when they touch disjoint projects and
 neither builds the other's project.
 
-### Orchestration execution recipe (what worked — 2026.05.29.02 run)
+### Orchestration execution recipe (what worked — through the 2026.05.29.23 run)
 
 The dependency graph is mostly sequential (project-reference edges + shared `obj/`
 locks), but ONE big unit parallelizes cleanly and should overlap the whole chain:
 
 - **Run Phase 1D (demos) as a BACKGROUND fan-out concurrent with the build chain.**
-  Demos are pure text authoring with no build dependency until Phase 4.5, so start
-  them immediately (they create the canonical DemoFiles dir themselves). Fan out:
-  Tier A by FEATURE AREA (~7 agents over the FULL `00001–00399` band —
-  basics/operators/control-flow/functions/classes/arrays+exceptions/modules+patterns),
-  Tier B by 2 agents (00400–00449 structures, 00450–00499 algorithms), Tier C by the
-  6 enumerated categories. Authors write **`.tlg` ONLY**; a single final deterministic
-  step generates every `.cmd` from the `.tlg` set + `run-all-demos.cmd` (uniform, not
-  500 hand-written runners). Aim Tier A at the full 00001–00399 band — the 2026.05.29.02
-  run stopped at ~00340 and was lighter than it should have been.
-- **Serialize every build-running phase** (1A → 1B → 1C → 2 → 3A → 3B → 4B → 4A →
-  4.5 → 4C → 4D → {4E then 4F} → 5). Two `dotnet build`/`test`/`publish` processes on
-  the same solution race on `obj/` locks and produce spurious failures — do NOT run
-  two at once even when phase labels say "parallel". 4E (wiki; read-only against the
-  published exe) and 4F (heavy MSBuild + devenv) must especially not build
-  concurrently: run 4E first, then 4F.
+  Demos are pure text authoring with no build dependency until Phase 4.5, so start them
+  immediately. Fan out: Tier A by FEATURE AREA (~8 agents over the FULL `00001–00399`
+  band — basics / operators / control-flow×2 / functions / classes / arrays+exceptions /
+  modules+patterns), Tier B by 2 agents (00400–00449 structures, 00450–00499 algorithms),
+  Tier C by the 6 enumerated categories. Every author writes **TWO files per demo**:
+  `<name>.tlg` AND `<name>.expected` (the EXACT predicted file-mode stdout, hand-traced
+  against the "Output formatting contract" preamble). A single final deterministic step
+  generates every `.cmd` from the `.tlg` set + `run-all-demos.cmd`.
+- **HARDCODE the canonical absolute path into each fan-out agent prompt** — do NOT rely
+  on a Workflow's `args` reaching subagents. In the 2026.05.29.23 run `args` arrived as
+  `undefined` for some agents, which wrote one demo band into the ORCHESTRATOR repo
+  (`Z:\repos\TinyLanguage\TinyLanguage.DemoFiles`) instead of the canonical path. After
+  1D, VERIFY every band landed at `<canonical>\TinyLanguage.DemoFiles` (nothing under the
+  orchestrator repo) and that `.cmd`/`.expected` counts match `.tlg`.
+- **Serialize every build-running phase**, with convergence AND the adversarial review
+  BEFORE the test phases so 3B/4A are authored against already-stable code (no rework).
+  The order that worked:
+  `1A → 1B → 1C → 2 → 3A → 4B → 4.5 (converge + golden) → 4.7 (adversarial review) →
+  3B + 4A (tests) → 4C → 4D → {4E then 4F} → 5`. Two `dotnet build`/`test`/`publish`
+  processes on the same solution race on `obj/` locks — do NOT run two at once. 4E (wiki;
+  read-only against the published exe) and 4F (heavy MSBuild + devenv) especially must
+  not build concurrently: run 4E first, then 4F.
 - **Gate between phases** on the exact acceptance (`build 0/0`, `test Failed:0`, the
-  sweep `FAILED=0 TIMEOUT=0`) so a cascading parser/interpreter bug is caught at the
-  phase that introduced it, not three phases later.
-- **Size the convergence problem with `tools\sweep-demos.ps1` FIRST** — it yields the
-  true failure list. The 2026.05.29.02 run's real failure set was only ~13 demos (a
-  few parser features + a few demo anti-patterns), trivial once the harness
-  false-negatives (null `ExitCode`, shared output file) were eliminated.
+  golden sweep `FAILED=0 TIMEOUT=0 GOLD=0`) so a cascading bug is caught at the phase
+  that introduced it, not three phases later.
+- **Size convergence with `tools\sweep-demos.ps1` FIRST** (it now does the golden compare
+  too). The 2026.05.29.23 run's real failures were ~61 crashes (one systematic
+  array-build idiom fixed by D22 + a dozen `=`/`<>` demo anti-patterns) and only 3 golden
+  mismatches — and the golden gate caught a real B-tree logic bug plus a wrong prediction
+  that an exit-0-only gate would have shipped silently.
 
 ---
 
@@ -1482,6 +1533,18 @@ Correct template:
   echo All demos completed successfully.
   exit /b 0
 
+GOLDEN OUTPUT — every demo ships a matching `<name>.expected` file. For EACH demo, in
+addition to `<name>.tlg`, author `<name>.expected` containing the EXACT stdout the program
+produces in file mode, hand-traced against the "Output formatting contract" preamble at the
+top of this file (concatenation of every `print`, each followed by `\n`; integer vs float
+`.0`; array `[a, b]` spacing with quoted string elements; sorted map keys; no stray blank
+lines). If you cannot confidently predict a value, SIMPLIFY the demo so its output is
+predictable (prefer integer/string output over float; print labeled, one value per line).
+These golden files are byte-compared to actual output in Phase 4.5 / Phase 5, so an honest,
+carefully-traced prediction is REQUIRED — a "close" guess fails the gate. (The per-demo
+`.cmd` runners are generated by a single deterministic final step from the `.tlg` set, per
+the "Orchestration execution recipe" — fan-out authors need only write `.tlg` + `.expected`.)
+
 Do NOT run any of them yet — the interpreter is not built.
 ```
 
@@ -1575,6 +1638,18 @@ Implement TinyLanguage.Interpreter/:
   `StaticMembers`, and EXCLUDE them from per-instance `Fields`. Unlike `const` these
   are MUTABLE, so `MemberSet` must accept a `ClassInfo` owner (and a static reached
   through an instance) so `ClassName.Field := v` and `static`-counter demos work.
+- Indexed-assign append at `index == Length` (deviation D22): in the ONE shared
+  `StoreIndexed` helper (used by BOTH `arr[i] := v` / ArrayElementAssignNode AND
+  `this.data[i] := v` / PostfixAssignStmtNode), an indexed assignment where
+  `index == list.Count` APPENDS the value; `index < Count` mutates in place;
+  `index > Count` or `index < 0` stays an out-of-bounds error. Required by the Tier B
+  algorithm demos that build arrays by indexed assignment from empty in load loops.
+- Out-of-bounds index READ returns null (SPEC COMPLIANCE, not a deviation): per
+  Build.Solution.md Layer-4 "Out-of-bounds index returns null without crashing", a LIST
+  or STRING read at `index < 0` or `index >= length` returns `null` (do NOT throw). A map
+  missing-key still throws "Key not found". This specific Layer-4 rule overrides the
+  general "no silent failures" principle. (Consequence for Phase 1D: a "catchable index
+  error" demo must index a NON-collection like `let n := 5; n[0]`, not do an OOB read.)
 - Built-in conversions int/float/bool/str must be invokable BOTH as casts
   `(int)x` AND as calls `int(x)` (parser D16 routes the call form here) — share
   one conversion code path.
@@ -1726,12 +1801,25 @@ Sweep harness — use the reusable, hardened script in the orchestrator repo
 (`tools\sweep-demos.ps1`). It uses `System.Diagnostics.Process` for a RELIABLE
 ExitCode, a UNIQUE output file per demo, async stdout/stderr drains, and a 5s
 per-demo TIMEOUT so an infinite-loop demo is reported as a TIMEOUT instead of
-hanging the run. It exits 0 only when FAILED=0 AND TIMEOUT=0, so callers can gate:
+hanging the run. It ALSO does the GOLDEN compare: when a `<name>.expected` file
+exists beside a `<name>.tlg`, the demo passes only when its stdout byte-matches
+`.expected` (CRLF→LF + trailing-newline normalized). It exits 0 only when FAILED=0,
+TIMEOUT=0, AND GOLD=0, so callers can gate:
 
 ```powershell
 powershell -File Z:\repos\TinyLanguage\tools\sweep-demos.ps1 -Canonical "$canonical"
-# prints e.g.  TOTAL=520 FAILED=0 TIMEOUT=0  (exe 35.83 MB)  + a categorized failure list
+# prints e.g.  TOTAL=624 FAILED=0 TIMEOUT=0 GOLD=0  (exe 35.83 MB)  + categorized failures + GOLD list
 ```
+
+THE GOLDEN GATE (this run's headline) — triage is NOT done at FAILED=0 TIMEOUT=0; it is
+done at GOLD=0 too. For each golden mismatch decide which side is right: if the program's
+logic is correct and the interpreter output matches the Output Formatting Contract, the
+author's PREDICTION was wrong → overwrite the `.expected` with the verified-correct actual
+output; if the program logic is wrong → fix the `.tlg` (and its `.expected`); if the
+interpreter is wrong → fix the interpreter. The 2026.05.29.23 run's golden gate caught a
+real B-tree logic bug (duplicate keys) and a wrong float prediction an exit-0 gate would
+have shipped silently. On a from-scratch run the dominant CRASH category is the
+array-build-by-index idiom → fix once with D22 (interpreter), not with 46 demo edits.
 
 Harness FALSE-NEGATIVE traps that wasted a cycle in the 2026.05.29.02 run — do NOT
 hand-roll around them: (a) `Start-Process -PassThru` WITHOUT `-Wait` leaves the
@@ -2445,6 +2533,11 @@ Prerequisite: Microsoft.VisualStudio.Component.CoreEditor [18.0,)
 Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project"
 d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|"
 
+ELEMENT-ORDER GOTCHA (VSSDK1062, hit in the 2026.05.29.23 run): inside `<Metadata>`,
+`<License>` MUST appear BEFORE `<Icon>` — the VSX-2011 schema enforces this order and a
+reversed pair fails the build with VSSDK1062. (If the first MSBuild attempt reuses a stale
+generated obj manifest, clean `extensions\vs\obj` and rebuild.)
+
 TinyLanguagePackage.cs — namespace TinyLanguage.VsTools; public sealed class :
 AsyncPackage decorated with:
   [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
@@ -2656,6 +2749,42 @@ Report:
 
 ---
 
+## Phase 4.7 — Adversarial review of parser + interpreter  *(after Phase 4.5; before Phase 5)*
+
+**Agent:** `general-purpose`  **Model:** `claude-opus-4-6`  *(load-bearing-code scrutiny)*
+
+After demo convergence (4.5) is green and BEFORE final validation, run an adversarial
+correctness review of the load-bearing code — the parser and interpreter. Tests and demos
+prove behavior on COVERED inputs; they do not prove the absence of bugs. The reviewer reads
+`TinyLanguage.Lexer\Parser.cs` + `Lexer.cs`, `TinyLanguage.Interpreter\Interpreter.cs` +
+`Scope.cs` and the authoritative spec (Implementation Notes, Type System, Arithmetic
+Promotion, Operator rules, Truthiness, Scope Rules, Runtime Error Policy), then PROBES with
+small throwaway `.tlg` programs run through the published exe — operator precedence/
+associativity corners; int/float promotion + floor div/mod with negatives + div-by-zero;
+truthiness; empty/negative/aliasing collection cases; recursion-depth limit; no-caller-local
+capture; class static/inherit/const-write; break/continue/switch/try-finally ordering;
+pattern-match exhaustiveness; lexer traps. For each GENUINE discrepancy from the spec: minimal
+repro → fix the root cause → re-verify. A behavior matching the spec or a documented deviation
+(D1–D22) is CORRECT — do NOT "fix" it; surface genuine spec AMBIGUITIES as questions instead
+of guessing.
+
+HARD GUARDRAIL after every change set: `dotnet build` 0/0; `dotnet publish TinyLanguage -c
+Release`; re-run `tools\sweep-demos.ps1` and confirm it STILL reports FAILED=0 TIMEOUT=0
+GOLD=0 over all demos. A fix that can't keep the golden sweep green is reverted and reported.
+
+The 2026.05.29.23 review found 0 latent bugs across ~58 probes but surfaced ONE real
+spec-divergence it fixed: array out-of-bounds READ was throwing, but Build.Solution.md
+Layer-4 explicitly requires it to return null (now folded into Phase 3A). When a fix like this
+invalidates a demo whose premise was the OLD behavior (here, a "try index error" demo relying
+on OOB throwing), adapt that demo to a spec-compliant equivalent (index a non-collection) and
+keep the golden sweep at 0/0/0.
+
+ACCEPTANCE: `dotnet build` 0/0; `dotnet test` Failed:0; golden sweep FAILED=0 TIMEOUT=0
+GOLD=0; every fix spec-justified. REPORT genuine bugs (repro + spec rule + fix), the edge
+cases verified correct, and any ambiguity left unchanged.
+
+---
+
 ## Phase 5 — Final Validation & Assembly  *(sequential, all branches merged)*
 
 **Agent:** `general-purpose`
@@ -2692,6 +2821,16 @@ Protocol below. Every step must pass before you may declare the plan complete.
   If any demo fails: read the error from stderr (run-all-demos prints
   `run-all-demos: <demo> failed with exit code N`), fix the interpreter or
   demo file, rebuild + republish, re-run.
+
+### Step 3b — Golden-output gate  *(this run's headline acceptance)*
+  `run-all-demos.cmd` only checks exit 0 — it does NOT check output CORRECTNESS. Run the
+  golden sweep so every demo's stdout is byte-compared to its `.expected` file:
+    powershell -File Z:\repos\TinyLanguage\tools\sweep-demos.ps1 -Canonical "$canonical"
+  Accept ONLY `FAILED=0 TIMEOUT=0 GOLD=0` over all demos (the script exits 0 only then). A
+  GOLD>0 means a demo ran but produced WRONG output — triage per the "Demo sweep harness"
+  preamble (fix the interpreter, fix the demo, or correct a wrong `.expected` prediction). Do
+  NOT declare the plan complete with any golden mismatch — this is the gate that catches
+  wrong-but-non-crashing demos an exit-0 check would ship.
 
 ### Step 4 — Release publish (single-file exe)
   dotnet publish TinyLanguage -c Release
@@ -2882,6 +3021,15 @@ that canonical copy has been re-validated end-to-end.
       at the canonical solution root, is more than 200 lines, and references
       Build.Solution.md as the source of truth. If the file is missing or empty,
       Phase 4E was skipped — re-run Phase 4E before declaring complete.
+
+  6h2. **Provenance stamp.** Create `<canonical>\GENERATED.md` recording: the generation UTC
+      date + canonical folder name; the orchestrator repo URL + the exact commit SHA that
+      produced this build (`git -C Z:\repos\TinyLanguage rev-parse --short HEAD`); the SDK pin;
+      the demo count + tiers (each demo ships a golden `.expected` + a `.cmd`); the test counts;
+      the deviation set applied (D1–D22); and the validation summary (build 0/0, test Failed:0,
+      golden sweep FAILED=0 TIMEOUT=0 GOLD=0, run-all-demos exit 0, devenv /Rebuild succeeded
+      with no MAX_PATH). State that Build.Solution.md is the source of truth and that the folder
+      is self-contained. Verify the counts you write against the actual files.
 
   6i. **Visual Studio Batch Rebuild smoke test** *(blocks plan completion)*
 

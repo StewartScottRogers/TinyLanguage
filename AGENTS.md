@@ -69,6 +69,10 @@ dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
 
 **PowerShell stdin pipes prepend a UTF-8 BOM.** Piping a PowerShell string into `TinyLanguage.exe` (zero-arg stdin mode) or `TinyLanguage.exe --dap` makes the lexer reject a leading BOM / corrupts DAP Content-Length framing. Smoke-test stdin via `cmd /c` (e.g. `echo print "hi" | cmd /c TinyLanguage.exe`) or a BOM-less byte write, not a raw PowerShell string pipe. File mode auto-strips a BOM, so `.cmd` demos are unaffected.
 
+**Workflow `args` do not reliably reach fan-out subagents.** When fanning out demo authoring via a Workflow, HARDCODE the canonical absolute path into each agent prompt — do NOT depend on `args` interpolation. In the 2026.05.29.23 run `args` arrived as `undefined` for some agents, which wrote one demo band into the orchestrator repo (`Z:\repos\TinyLanguage\TinyLanguage.DemoFiles`) instead of the canonical solution path. Add a post-1D check that every demo band landed at `<canonical>\TinyLanguage.DemoFiles` (nothing under the orchestrator repo) and that `.cmd` and `.expected` counts match the `.tlg` count.
+
+**VSIX manifest element order (VSSDK1062).** In `extensions\vs\source.extension.vsixmanifest`, `<License>` must appear BEFORE `<Icon>` inside `<Metadata>`, or VSX-2011 schema validation fails `VSSDK1062`.
+
 > **Console exe override (deviation from Build.Solution.md):** Build.Solution.md describes a "Demo mode (no arguments)" baked into the exe. The project owner removed it — `TinyLanguage.exe` is now interpreter-only. Three modes: zero args = read source from stdin and write to stdout; two args = file-processor mode; `--dap` = Debug Adapter Protocol server (used by VS Code). The demo-walking job moved to `TinyLanguage.DemoFiles\run-all-demos.cmd` (an aggregator script alongside the per-demo `.cmd` files). See "Deliberate deviations from Build.Solution.md" at the top of `Build.md` for the full record. Do NOT add `LocateDemoDirectory`, demo-walking, or banner-printing back into `Program.cs`.
 
 ## Debugging in VS Code
@@ -174,9 +178,9 @@ The parser has 23 documented disambiguation rules (see `Build.Solution.md` §1.5
 
 When implementing parser rules, consult the BNF in `Build.Solution.md` §1.4 and the notes in §1.5 before writing any code.
 
-## Parser leniencies beyond the BNF (D10–D21)
+## Parser leniencies beyond the BNF (D10–D22)
 
-In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in ten places (D10–D21) to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all ten — reverting any one will produce widespread demo failures:
+In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in eleven places (D10–D22) to accept the demo corpus's idiomatic style. Future regenerations MUST preserve all eleven — reverting any one will produce widespread demo failures:
 
 - **D10** Newlines act as implicit `;` separators between statements (Note 3 relaxation). `ParseStatementList` accepts a strictly-later upcoming-token line as separator when no explicit `;` was consumed. Corollary: the postfix parser must NOT consume a `[` (index) or `(` (call) that BEGINS on a strictly-later source line as part of the previous statement's expression — otherwise a `print "x"` followed by a bracket-led next statement (e.g. a `[a, b] => ...` match case) is wrongly swallowed. A leading `.` member access may still continue across lines (`.` cannot start a statement). (Discovered fixing 00306.)
 - **D11** Trailing `;` before block-enders (`end`, `else`, `}`, EOF, …) and leading `;` before a statement are silently tolerated (Note 21 relaxation). Multiple consecutive `;`s = zero-or-more empty statements.
@@ -188,6 +192,7 @@ In addition to D1–D9 in `Build.md`, the parser deliberately relaxes the BNF in
 - **D17** Lambda body by first token: a lambda body is a single expression if its first token starts an expression, else a statement BLOCK (optionally closed by `end`), decided by the first token (NOT by scanning for a matching `end`, which latches onto the enclosing function's `end`). Enables `function(n) print n`. The block-body decision uses the FULL statement-starting keyword set — return/print/if/while/for/foreach/let/var/const/throw/try/switch/match/break/continue/do — not a subset; in particular a body beginning with `return` is a statement block (the original implementation omitted `return`).
 - **D20** `export <definition>` — the strict BNF is `export <id>`, but the parser also accepts `export function|class|static|let|var|const <definition>`: it parses the inner definition (which lands in module/global scope, since modules promote exports to global with no qualified `M.f` access) and records the export marker (a runtime no-op). The bare `export <id>` form still works. Required by module demos 00291–00295. Lives in `ParseExportStatement`.
 - **D21** `static` instance-style fields (`static let X := 0`, `static var Y := 0`) — extends D19 (class `const` is static): the class-member parser accepts `static` before `let`/`var`/`const` field declarations and routes them to the class's static members, reachable and assignable as `ClassName.Field`. `FieldDeclareNode` carries `IsStatic`. Implementation Note 16 ("static modifies a field"). Required by 00216, 00237.
+- **D22** indexed-assign append at `index == Length` — Implementation Note 7 says `arr[i] := v` mutates an EXISTING element. Relaxed (interpreter side): an indexed assignment where `index == array.Length` APPENDS the value (grow-by-one); `index < Length` mutates in place; `index > Length` or `index < 0` stays an out-of-bounds error. Applies to BOTH `arr[i] := v` (ArrayElementAssignNode) and `this.data[i] := v` (PostfixAssignStmtNode) via one shared `StoreIndexed` helper. Required because the corpus's algorithm demos build arrays by indexed assignment from empty in load loops (`for i := 0 to n-1 do arr[i] := src[i] end`). Safe: only converts a former error into a success, so it cannot regress a passing program.
 
 Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "Deliberate deviations" §6 and the deviations table in `Build.Plan.md` §2.
 
@@ -204,6 +209,19 @@ Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "
 - **`try` requires `catch`** — no catch-less `try/finally`.
 - **Out of the BNF (avoid / mark `# NOT IMPLEMENTABLE`):** scientific-notation float literals (`6.6e-34`), field-level annotations (`@Foo` on a class field).
 - **Reserved words can't be parameter/variable names** — includes `step`, `to`, `in`, `do`, `match`, the type-name keywords, etc.
+- **Out-of-bounds index READ returns null** (spec compliance, NOT a deviation). Build.Solution.md Layer-4 Interpreter Coverage states "Out-of-bounds index returns null without crashing", so reading a LIST or STRING at an index `< 0` or `>= length` yields `null` (a map missing-key still throws "Key not found"). This specific rule overrides the general "no silent failures" principle. Demo implication: a "catchable index error" demo must index a NON-collection (e.g. `let n := 5; print n[0]` -> "Cannot index into a value of type Integer"), NOT do an out-of-range read (which returns null, not a throwable error).
+- **Every demo ships a golden `.expected` file.** Beside each `<name>.tlg` is a `<name>.expected` holding the EXACT predicted file-mode stdout. Convergence (Phase 4.5) and final validation (Phase 5) validate BOTH no-crash AND output == `.expected` (CRLF->LF normalized, trailing newline trimmed) — this catches wrong-but-non-crashing demos that an exit-0-only gate ships silently. Predictions are made against the pinned Output Formatting Contract (below).
+
+## Output formatting contract (pinned)
+
+The interpreter's `print`/`str()`/array rendering go through ONE `Stringify`, and demo `.expected` files are predicted against it:
+
+- `print x` writes x's text + one `\n` (LF, never CRLF).
+- Integer -> decimal digits, no decimal point. Float -> shortest round-trip; a WHOLE-valued float gets a trailing `.0` (3.0, -2.0); non-whole as-is (3.5). Invariant culture.
+- Bool -> `true`/`false`. null -> `null`.
+- String -> raw characters, NO surrounding quotes at top level.
+- Array -> `[a, b, c]` with `, ` separators; STRING elements inside an array are wrapped in double quotes; nested arrays recurse; empty -> `[]`.
+- `str(x)` and `&`/`+` string concatenation use this same textual form.
 
 ## Lexer trap fixed in-place: float `PeekIsDigit()`
 

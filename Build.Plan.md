@@ -65,6 +65,8 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 
 > The 2026.05.29.02 run also surfaced non-deviation build lessons (MSTest 4.0.2 specifics, the `DemoFiles.csproj` non-recursive-glob requirement, and the correct demo-sweep harness invocation) now captured in `Build.md` and `AGENTS.md` — so this table stays focused on grammar/semantics deviations.
 
+> **Spec compliance, not a deviation (2026.05.29.23 run):** the interpreter was made spec-compliant on array out-of-bounds READ — Build.Solution.md Layer 4 ("Out-of-bounds index returns null without crashing") requires a list/string OOB read to return `null` (not throw); map missing-key still throws. This aligns the implementation with the locked spec and so is NOT recorded as a deviation below.
+
 | ID | Title | Spec says | Override | Phases |
 |----|-------|-----------|----------|--------|
 | D1 | `TinyLanguage.exe` has no demo mode | Zero-arg walks `DemoFiles\` and prints "All demos completed successfully." | Two modes: zero-arg stdin pipe, two-arg file mode. Anything else → usage to stderr + exit 1. No `Console.IsInputRedirected` branching. | 4B, 5 |
@@ -88,6 +90,7 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 | D19 | Class `const` → static member | Class body allows `const` | Interpreter routes class-body `const` to StaticMembers (reachable via `ClassName.CONST`), not per-instance Fields. | 3A |
 | D20 | `export <definition>` leniency | BNF: `<export_stmt> ::= "export" <id>` (bare identifier only). | `ParseExportStatement` also accepts `export function|class|static|let|var|const <definition>`: parses the inner definition (it lands in module/global scope — modules promote exports to global, no qualified `M.f` access) and records the export marker (runtime no-op). Bare `export <id>` still works. Required by module demos 00291–00295. | 2 |
 | D21 | `static` instance-style fields (`static let`/`static var`) | BNF `static` appears only on `<method_def>`; fields are non-static. | Extends D19: the class-member parser accepts `static` before `let`/`var`/`const` field declarations and routes them to the class's StaticMembers (reachable/assignable as `ClassName.Field`). `FieldDeclareNode` gains `IsStatic`. Note 16 ("static modifies a field"). Required by 00216, 00237. | 1C, 2, 3A |
+| D22 | Indexed-assign append at `index == Length` | BNF/Note 7: `<id>[expr] := <expr>` mutates an existing element. | Interpreter: an indexed assignment where `index == array.Length` APPENDS (grow-by-one); `index < Length` mutates in place; `index > Length`/`< 0` still errors. Applies to both `arr[i] := v` (ArrayElementAssignNode) and `this.data[i] := v` (PostfixAssignStmtNode) via one shared `StoreIndexed`. Required by Tier B algorithm demos that build arrays by indexed assignment from empty. Safe: only converts a former error to success. | 3A |
 
 ---
 
@@ -101,7 +104,7 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 | WU-1A | Solution Scaffold | `TinyLanguage.slnx` (Solution Items pre-declares `.gitignore`, both installers, wiki); `Directory.Build.props` (D6); `global.json` (D7); `.gitignore`; `.vscode\launch.json`; `TinyLanguage\app.manifest` (D6); six project subdirs with empty csproj | WU-0 | 1A |
 | WU-1B | Token & Lexer | `TinyLanguage.Lexer\` — `TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` (incl. `Pipe`, `This`, every kw) | WU-0 | 1B |
 | WU-1C | AST Nodes + Pretty Printer | `TinyLanguage.Lexer\` — one `*Node.cs` per AST class, `INodeVisitor.cs`, `AstPrettyPrinter.cs` | WU-0 | 1C |
-| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥500 `.tlg` (delivered set: Tier A 00001–00340 feature coverage, Tier B 00400–00499 advanced DS+algorithms ~55 demos, Tier C 00500–00659 Wikipedia-style DS catalogue 125 demos across 6 categories; 520 `.tlg` total), matching `.cmd` per demo, `run-all-demos.cmd` | WU-0 | 1D |
+| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥500 `.tlg` (delivered set: Tier A 00001–00399 feature coverage 399 demos, Tier B 00400–00499 advanced DS+algorithms 100 demos, Tier C 00500–00659 Wikipedia-style DS catalogue 125 demos across 6 categories; 624 `.tlg` total), matching `.cmd` per demo, a matching golden `<name>.expected` file per demo (the EXACT predicted stdout), `run-all-demos.cmd` | WU-0 | 1D |
 | WU-2 | Parser | `TinyLanguage.Lexer\Parser.cs` (recursive-descent, full BNF, 23 notes), `ParserException.cs` | WU-1A, WU-1B, WU-1C | 2 |
 | WU-3A | Interpreter | `TinyLanguage.Interpreter\` — `IInterpreter.cs`, `Interpreter.cs`, `Scope.cs`, `InterpreterException.cs` | WU-2 | 3A |
 | WU-3B | Unit Tests | `TinyLanguage.UnitTests\` — `TestLog.cs` (D8), `LexerUnitTests.cs`, `ParserUnitTests.cs` | WU-2 | 3B |
@@ -111,7 +114,8 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 | WU-4D | VS Code Editor Shim | `extensions\vscode\` (`package.json`, `extension.js`, `README.md`, `.vscodeignore`, `LICENSE.txt`); `install-vscode-debugger.cmd`; `.vscode\launch.json` adds `tinylanguage` config; `.vscode\tasks.json` adds `publish` task | WU-4C | 4D |
 | WU-4E | Wiki | `TinyLanguage.wiki.md` (>200 lines, language tour / demo suite / debugger / architecture / regen steps) | WU-4D | 4E |
 | WU-4F | VS18 Shim + Shared Project | `extensions\extensions.shproj` + `extensions.projitems`; `extensions\vs\` VSIX (`TinyLanguage.VsTools.csproj` net472, `source.extension.vsixmanifest`, `TinyLanguagePackage.cs` AsyncPackage, `TinyLanguageAdapterLauncher.cs` `IAdapterLauncher`, `TinyLanguageTargetHostProcess.cs`, `Resources\PackageRegistration.pkgdef`, `Resources\icon.png`, `launch.vs.json.template`, `README.md`, `LICENSE.txt`); `install-vs-debugger.cmd` (paren-safe `:check_tool` + `:resolve_pf86` for the `(x86)` literal-paren bug); slnx gains `<Project Path="extensions\extensions.shproj" />`. GUIDs in §6. | WU-4D | 4F |
-| WU-5 | Final Validation & Delivery | `dotnet build` 0/0; `dotnet test` Failed: 0; `dotnet publish` produces ~36 MB exe in `DemoFiles\`; `run-all-demos.cmd` exits 0; `.cmd` validation loop a-d all pass; `devenv.com /Rebuild` reports "succeeded, 0 failed, 0 skipped" with the Shared Project loaded cleanly | WU-4A, WU-4B, WU-4C, WU-4D, WU-4E, WU-4F | 5 |
+| WU-4.7 | Adversarial Review (parser+interpreter) | Edge-case probing of `Parser.cs`/`Interpreter.cs`/`Scope.cs`/`Lexer.cs` via throwaway programs; fix genuine spec-divergences; keep the golden sweep at CRASH=0 TIMEOUT=0 GOLD=0 | WU-4.5 | 4.7 |
+| WU-5 | Final Validation & Delivery | `dotnet build` 0/0; `dotnet test` Failed: 0; `dotnet publish` produces ~36 MB exe in `DemoFiles\`; `run-all-demos.cmd` exits 0; `.cmd` validation loop a-d all pass; `devenv.com /Rebuild` reports "succeeded, 0 failed, 0 skipped" with the Shared Project loaded cleanly | WU-4A, WU-4B, WU-4C, WU-4D, WU-4E, WU-4F, WU-4.7 | 5 |
 
 ---
 
@@ -144,6 +148,10 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
                 WU-4E  WU-4F
                    \   /
                     \ /
+              demo-convergence gate
+                     |
+                  WU-4.7  <- adversarial review (parser+interpreter)
+                     |
                     WU-5  <- joins WU-4A and WU-1D leaves as well
 ```
 
@@ -158,9 +166,14 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 > 3A → 3B (UnitTests → Interpreter); 4B → 4A (IntegrationTests → console project);
 > 4E and 4F must not run concurrent MSBuild on the solution (obj-lock races). 1D
 > (demo authoring) is independent of all. Insert a **Demo-convergence** gate after
-> 3A/3B/4A/4B (sweep all demos to 0 failures) before final validation.
+> 3A/3B/4A/4B (sweep all demos to 0 failures — each demo's actual stdout must
+> byte-compare equal to its golden `<name>.expected`, not merely exit 0) before
+> final validation. The **WU-4.7 adversarial review** (edge-case probing of
+> `Parser.cs`/`Interpreter.cs`/`Scope.cs`/`Lexer.cs`, fixing genuine spec
+> divergences) runs AFTER the convergence gate and BEFORE final validation,
+> keeping the golden sweep at CRASH=0 TIMEOUT=0 GOLD=0.
 
-**Critical path** (longest chain): WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-4F → WU-5.
+**Critical path** (longest chain): WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-4F → demo-convergence gate → WU-4.7 → WU-5.
 
 ---
 
@@ -216,8 +229,8 @@ TinyLanguage.YYYY.MM.DD.HH\
 │   └── DebugAdapterIntegrationTests.cs                     (4C)
 ├── TinyLanguage.DemoFiles\
 │   ├── TinyLanguage.DemoFiles.csproj                       (1A)
-│   ├── 00001..00340.*.tlg                                  (1D — Tier A)
-│   ├── 00400..00499.*.tlg                                  (1D — Tier B advanced DS, ~55 demos)
+│   ├── 00001..00399.*.tlg                                  (1D — Tier A, 399 demos)
+│   ├── 00400..00499.*.tlg                                  (1D — Tier B advanced DS, 100 demos)
 │   ├── 00500..00514.*.tlg                                  (1D — Tier C: Linear lists)
 │   ├── 00520..00539.*.tlg                                  (1D — Tier C: Trees)
 │   ├── 00560..00579.*.tlg                                  (1D — Tier C: Tries + B-trees)
@@ -225,6 +238,7 @@ TinyLanguage.YYYY.MM.DD.HH\
 │   ├── 00600..00629.*.tlg                                  (1D — Tier C: Graphs + Space partitioning)
 │   ├── 00640..00659.*.tlg                                  (1D — Tier C: ADTs + Composites)
 │   ├── *.cmd (one per .tlg, CWD-independent)               (1D)
+│   ├── *.expected (golden stdout, one per .tlg)            (1D)
 │   ├── run-all-demos.cmd                                   (1D — D2)
 │   └── TinyLanguage.exe                                    (4B — ~36 MB, AfterTargets=Publish)
 └── extensions\                                              (Shared Project container — D9)
