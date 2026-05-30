@@ -129,7 +129,7 @@ Seven projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed f
 | `TinyLanguage` | Console app (stdin / file / DAP modes) |
 | `TinyLanguage.UnitTests` | MSTest unit tests (lexer, parser, debugger engine) |
 | `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter end-to-end + DAP) |
-| `TinyLanguage.DemoFiles` | 520+ `.tlg` demos (Tier A feature coverage 00001–00399, Tier B data structures 00400–00499, Tier C comprehensive DS catalogue 00500–00699) + matching `.cmd` runners + `run-all-demos.cmd` |
+| `TinyLanguage.DemoFiles` | 600+ `.tlg` demos (Tier A feature coverage 00001–00399, Tier B data structures 00400–00499, Tier C comprehensive DS catalogue 00500–00659) + a golden `.expected` file per demo + matching `.cmd` runners + `run-all-demos.cmd` |
 
 Plus `extensions/vscode/` and `extensions/vs/` at the solution root — small editor shims for VS Code (CommonJS extension) and Visual Studio 2026 (managed VSIX with an `IAdapterLauncher`). Both register the `tinylanguage` debug type and spawn the same `TinyLanguage.exe --dap`.
 

@@ -2330,8 +2330,8 @@ The wiki is a SINGLE self-contained markdown document covering:
      (no closure capture of caller locals; no bitwise ops; no map literals;
      single-threaded; no super() call). Frame these as design choices, not bugs.
  11. Regenerating the solution — point at Build.md and list every phase
-     (0, 1A–1D parallel, 2, 3A–3B parallel, 4A–4B parallel, 4C, 4D, **4E (this
-     wiki)**, 5).
+     (0, 1A–1D parallel, 2, 3A, 3B, 4A–4B, 4.5 demo convergence + golden-output
+     gate, 4.7 adversarial review, 4C, 4D, **4E (this wiki)**, 4F, 5).
  12. References — Build.Solution.md, Build.md, CLAUDE.md, Build.Plan.md, the DAP spec.
 
 Constraints:
@@ -3120,6 +3120,8 @@ orchestrating session always has a live view of build state.
 | 3A — Interpreter | `claude-opus-4-6` | Scope chain, operator semantics, tree-walking |
 | 3B — Unit Tests | `claude-sonnet-4-6` | Systematic coverage, lower complexity |
 | 4A–4B — Integration + CLI | `claude-sonnet-4-6` | Straightforward integration work |
+| 4.5 — Demo convergence + golden gate | `claude-opus-4-6` | Spec triage; fix code vs demos; reconcile golden-output mismatches |
+| 4.7 — Adversarial review (parser+interpreter) | `claude-opus-4-6` | Edge-case scrutiny of load-bearing code; spec-divergence hunting |
 | 4C — Debugger + DAP | `claude-opus-4-6` | Cooperative threading + DAP wire protocol |
 | 4D — VS Code Extension | `claude-sonnet-4-6` | Small JSON + CommonJS shim |
 | 4E — Wiki Generation | `claude-sonnet-4-6` | Synthesis + cross-referencing, no novel design |
