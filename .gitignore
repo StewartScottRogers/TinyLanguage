@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# --- TinyLanguage orchestration: ambient/runtime state (not source) ---
+# Cipher MCP SQLite session store: the shared-memory / write-ahead-log sidecars
+# churn every session and must never be tracked (the .db itself stays tracked).
+*.db-shm
+*.db-wal
+
+# Claude Code agent worktree scratch (ephemeral orchestration sandboxes)
+.claude/worktrees/
