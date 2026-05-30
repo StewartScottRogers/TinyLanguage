@@ -3,17 +3,21 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
-> **Last verified full run:** 2026-05-29 → delivered to
-> `Z:\repos\TinyLanguage.2026.05.29.23\` — 624 demos (Tier A 00001–00399 / B 00400–00499 / C 00500–00659),
-> EACH with a golden `.expected` file, validated by the golden sweep
-> (`FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared to `.expected`, not just exit 0);
-> 270 tests (185 unit + 85 integration), all gates green including `devenv.com /Rebuild`
-> (7 succeeded, 0 failed, no MAX_PATH); a `GENERATED.md` provenance stamp at the solution
-> root. SDK pin was `10.0.300` (no 10.0.2xx band installed). The deviations and build
-> lessons discovered across runs are folded into the relevant phases/preambles below
-> (search D16–D22, the "Output formatting contract", "MSTest 4.x", and "Demo sweep harness"
-> preambles, the `tools\sweep-demos.ps1` helper, the "Orchestration execution recipe",
-> "Phase 4.7", "Demo convergence", "Execution model", and the SDK/long-path preambles).
+> **Last verified full run:** 2026-05-30 → delivered to
+> `Z:\repos\TinyLanguage.2026.05.30.12\` — 633 demos (Tier A 00001–00399 / B 00400–00499 /
+> C 00500–00659 + catalogue-completion 00700–00752), EACH with a golden `.expected` file,
+> validated by the golden sweep (`FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared to
+> `.expected`, not just exit 0); **425 tests (138 unit + 67 integration + 220 Data Structures
+> catalogue)**, all gates green including `devenv.com /Rebuild` (8 succeeded, 0 failed, no
+> MAX_PATH); a `GENERATED.md` provenance stamp at the solution root. SDK pin was `10.0.300`
+> (no 10.0.2xx band installed). Baseline convergence was unusually clean (FAILED=3 GOLD=12 of
+> 633). The deviations and build lessons discovered across runs are folded into the relevant
+> phases/preambles below (search D16–D22, the "Output formatting contract", "MSTest 4.x", and
+> "Demo sweep harness" preambles, the `tools\sweep-demos.ps1` helper, the "Orchestration
+> execution recipe", "Phase 4.7", "Demo convergence", "Execution model", and the SDK/long-path
+> preambles). The 2026.05.30 run added three interpreter behaviors to Phase 3A (enum-as-integer-
+> constant; `switch` no-fall-through; uncaught top-level control-flow → `Runtime error` exit 1)
+> and a CRLF requirement for generated `.cmd` files (Phase 4D/4F installers) — see those phases.
 
 > ## Output location — non-negotiable
 >
@@ -1723,6 +1727,23 @@ Implement TinyLanguage.Interpreter/:
 - Built-in conversions int/float/bool/str must be invokable BOTH as casts
   `(int)x` AND as calls `int(x)` (parser D16 routes the call form here) — share
   one conversion code path.
+- Enum members are named INTEGER CONSTANTS (Build.Solution.md "the enum form declares
+  named constants"): UNWRAP an `EnumValue` to its underlying integer in `Visit(BinaryOpNode)`
+  (both operands) and at the top of `ValuesEqual` (covers `switch` + `match` equality), and
+  `Stringify(EnumValue)` renders the underlying value. So `Level.Low + Level.High`,
+  `Priority.High == 9`, and `switch Signal.Go { case 1: ... }` all work. (2026.05.30 Phase 4.5
+  fixed this interpreter-side; 6 enum demos depend on it — implement it here from the start.)
+- `switch` is NO-FALL-THROUGH (Build.Solution.md interpreter coverage: "non-matching case
+  body does not execute"; "default executes when no case matches"): the FIRST matching case
+  runs its body and the switch ENDS; `break` only exits a case body early; `default` runs only
+  when no case matched. Do NOT implement C-style implicit fall-through. (2026.05.30 Phase 4.5
+  fixed this; 4 switch demos depend on it.)
+- Uncaught top-level control-flow must NOT escape as a raw .NET exception: in the top-level
+  `Run` loop, catch an escaped `BreakSignal`/`ContinueSignal`/`ReturnSignal` (stray `break`/
+  `continue`/`return` outside a loop/function) and an uncaught `ThrownValue` (user `throw` with
+  no enclosing `try`), and rethrow each as an `InterpreterException` carrying the offending
+  statement's line — so `Program.cs` reports `Runtime error (line N): …` and exits 1 (Runtime
+  Error Policy), NOT a CLR stack trace + exit 127. (2026.05.30 Phase 4.7 adversarial-review find.)
 
 Run: dotnet build TinyLanguage.Interpreter
 Accept only: 0 errors, 0 warnings.
@@ -2293,6 +2314,15 @@ Pause at the start (after printing the five-step plan) so a double-click user
 can read it before committing. Pause on every error path so the cmd window
 doesn't vanish when run from Explorer. Print a final "Done. Open a .tlg file
 and press F5." message on success.
+
+## CRLF line endings — non-negotiable for any generated `.cmd`/`.bat`
+
+Write `install-vscode-debugger.cmd` (and any batch file you emit) with CRLF line
+endings. `cmd.exe` resolves `call :label` / `goto :label` by byte offset and
+miscounts on LF-only files, so an LF-only installer aborts at the first
+`call :check_tool` with "The system cannot find the batch label specified" even
+though the script is correct. This bit the 2026.05.30 run (Phase 4D). Same rule
+applies to Phase 4F's `install-vs-debugger.cmd` and the Phase 1D `.cmd` finalizer.
 
 ## CMD parser gotcha to avoid (this bit a prior run; do NOT repeat it)
 
