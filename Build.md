@@ -654,6 +654,27 @@ Phase 1B agents must implement `PeekIsDigit()` correctly from the
 start so Phase 3B doesn't have to invent "documents the bug" tests
 that later need to be rewritten when the bug is fixed.
 
+### 8. "Data Structures" catalogue test project (additive)
+
+`Build.Solution.md` is silent on a per-data-structure test suite. The project owner
+asked for a complete, **numbered** set of tests — one per data structure on Wikipedia's
+*List of data structures* — each **implemented in the TinyLanguage language** and asserted
+against a golden output. The full catalogue (220 numbered entries), the per-entry
+feasibility classification, the demo-coverage rule, and the generation/acceptance spec
+live in a dedicated companion file that Build.md consumes **every run**:
+
+  `Z:\repos\TinyLanguage\Build.DataStructures.md`
+  (machine-readable catalogue: `Z:\repos\TinyLanguage\tools\data-structures.catalogue.json`)
+
+It adds an **eighth .NET project**, `TinyLanguage.DataStructures.Tests` (exactly 220
+numbered `[TestMethod]`s), **extends Tier C** with catalogue-completion demos in the
+reserved band `00700–00899`, and is wired through Phases **1A** (scaffold csproj + slnx
+entry), **1D** (author the new demos + write `catalogue.manifest.tsv`), **4.5** (the new
+demos join the golden sweep), **4G** (generate the test project — new phase below), and
+**5** (gate on the 220-count + manifest + `Failed: 0`). Recorded as **D23** in
+`Build.Plan.md`. Future agents MUST read `Build.DataStructures.md` on every run and MUST
+NOT delete the project on the assumption "the spec doesn't mention it."
+
 ---
 
 ## How to Run This Plan
@@ -711,7 +732,10 @@ locks), but ONE big unit parallelizes cleanly and should overlap the whole chain
   BEFORE the test phases so 3B/4A are authored against already-stable code (no rework).
   The order that worked:
   `1A → 1B → 1C → 2 → 3A → 4B → 4.5 (converge + golden) → 4.7 (adversarial review) →
-  3B + 4A (tests) → 4C → 4D → {4E then 4F} → 5`. Two `dotnet build`/`test`/`publish`
+  3B + 4A + 4G (tests) → 4C → 4D → {4E then 4F} → 5`. Phase 4G (Data Structures catalogue
+  tests, see `Build.DataStructures.md`) is part of the test wave: it needs the interpreter
+  (3A) and a green golden sweep incl. the catalogue-completion demos (4.5), so it runs with
+  3B/4A and is serialized with their builds. Two `dotnet build`/`test`/`publish`
   processes on the same solution race on `obj/` locks — do NOT run two at once. 4E (wiki;
   read-only against the published exe) and 4F (heavy MSBuild + devenv) especially must
   not build concurrently: run 4E first, then 4F.
@@ -782,6 +806,12 @@ this layout (all paths relative to that solution root):
   TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj  ← classlib (net10.0)
   TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj      ← MSTest
   TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj  ← MSTest
+  TinyLanguage.DataStructures.Tests/TinyLanguage.DataStructures.Tests.csproj  ← MSTest
+                                                              (empty scaffold here; filled by
+                                                              Phase 4G — see Build.DataStructures.md
+                                                              §2. ProjectReferences:
+                                                              ..\TinyLanguage.Interpreter and
+                                                              ..\TinyLanguage.Lexer)
   TinyLanguage.DemoFiles/TinyLanguage.DemoFiles.csproj      ← SDK-style content-only project,
                                                               **lives INSIDE the solution folder**
                                                               as a peer of the source projects.
@@ -839,15 +869,22 @@ Exact slnx contents:
     <Project Path="TinyLanguage.Interpreter\TinyLanguage.Interpreter.csproj" />
     <Project Path="TinyLanguage.UnitTests\TinyLanguage.UnitTests.csproj" />
     <Project Path="TinyLanguage.IntegrationTests\TinyLanguage.IntegrationTests.csproj" />
+    <Project Path="TinyLanguage.DataStructures.Tests\TinyLanguage.DataStructures.Tests.csproj" />
     <Project Path="TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj" />
   </Solution>
 
 (Phase 4C inserts `<Project Path="TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj" />`
 between Interpreter and UnitTests when it adds the DAP project — see Phase 4C below.
-Phase 4F appends `<Project Path="extensions\extensions.shproj" />` after the seven
+Phase 4F appends `<Project Path="extensions\extensions.shproj" />` after the eight
 .NET projects when it adds the Shared Project container — see Phase 4F below.
 Both projects are real files at the time they're added to the slnx; do not
 pre-declare them in Phase 1A.)
+
+`TinyLanguage.DataStructures.Tests` IS pre-declared here (above) and its empty MSTest
+csproj IS scaffolded in Phase 1A — exactly like the other two test projects — with
+`<ProjectReference>`s to `..\TinyLanguage.Interpreter` and `..\TinyLanguage.Lexer`. Its
+test bodies (220 numbered tests) are authored by Phase 4G from `Build.DataStructures.md`.
+Do not pre-author the tests here.
 
 .vscode/launch.json must target the TinyLanguage console project so VS Code F5
 launches it directly:
@@ -1078,6 +1115,11 @@ zero-padded numeric prefix (00001.fizzbuzz.tlg … etc.). Each .tlg file must
 have a matching .cmd runner using the template below. Tier A targets ~300-330
 demos, Tier B targets ~50 (out of 100 numeric slots reserved), and Tier C
 targets exactly 125 demos per the catalogue below.
+
+PLUS: the **Tier C catalogue completion** demos in band `00700–00899`, driven by
+`Build.DataStructures.md` (see the dedicated block after the Tier C catalogue). These
+fill every gap so all 220 Wikipedia data structures have a backing demo + golden, and
+Phase 1D also emits `catalogue.manifest.tsv`. They lift the total well above 500 — expected.
 
 ### Tier B requirements — advanced data structures + subroutines
 
@@ -1432,6 +1474,34 @@ doesn't exercise the structure.
 The Phase 1D agent can split Tier C authoring across parallel sub-agents
 (one per category) or produce all six categories itself; either is
 acceptable as long as the final demo count and per-demo contract hold.
+
+### Tier C catalogue completion (00700..00899) — REQUIRED, driven by Build.DataStructures.md
+
+`Z:\repos\TinyLanguage\Build.DataStructures.md` is the authoritative coverage list: it
+enumerates ALL 220 data structures from Wikipedia's "List of data structures", classifies
+each (yes / approx / primitive / no), and maps each to a demo + a pinned `Ds###` test
+name. Phase 1D MUST guarantee EVERY catalogue entry has a backing demo:
+
+- Where the catalogue's `existing_demo` is the authentic 1:1 implementation of that exact
+  structure (most of Tier A/B/C), reuse it as-is.
+- For every catalogue entry with NO authentic demo yet — the `_new_` rows AND any row
+  whose hint is a *closest-related* demo of a DIFFERENT structure (evident from the
+  entry's `approach`) — author a NEW demo in the reserved band `00700–00899`, named
+  `007NN.<snake_name>.tlg`, satisfying the SAME Tier C per-demo contract (header
+  Structure/Category/Operations(Big-O)/Reference; class-based; ≥3 named subroutines; ≥8
+  distinct operations; deterministic labelled output; 30–200 lines; `;` separators; a
+  golden `.expected`; a matching `.cmd`). Follow the entry's `approach` for the faithful
+  approximation (arithmetic bit-slicing for bit tricks; an in-program seeded LCG for
+  randomized structures; single-process modeling for distributed ones). The per-entry
+  data is in `Z:\repos\TinyLanguage\tools\data-structures.catalogue.json`.
+- Write `TinyLanguage.DemoFiles\catalogue.manifest.tsv` — one tab-separated row per
+  catalogue n: `n<TAB>structure<TAB>demo_basename<TAB>test_method` — covering ALL 220
+  entries (duplicate/synonym entries point at their canonical entry's demo). This is the
+  authoritative entry→demo binding Phase 4G consumes. HARDCODE the canonical absolute
+  DemoFiles path into each fan-out agent (the `args`-don't-reach-subagents lesson applies).
+
+These catalogue-completion demos are ordinary demos: they get `.cmd` runners, join the
+Phase 4.5 golden sweep, and are walked by `run-all-demos.cmd`.
 
 Create a matching .cmd runner for each demo file (Tier A, Tier B, AND Tier C).
 
@@ -2702,7 +2772,7 @@ Verify the slnx still parses (load as XML).
 
 From the canonical solution path, run:
   dotnet build                                                     # 0 errors / 0 warnings
-  dotnet test --no-build                                           # Failed: 0 (still 395 — Phase 4F adds NO tests)
+  dotnet test --no-build                                           # Failed: 0 (Phase 4F adds NO tests; count unchanged from the 3B/4A/4C/4G total)
   & "${env:ProgramFiles(x86)}\...\vswhere.exe" -latest -property installationPath
   & "<installationPath>\MSBuild\Current\Bin\MSBuild.exe" extensions\vs\TinyLanguage.VsTools.csproj /restore /p:Configuration=Release /p:DeployExtension=false   # builds the VSIX
   devenv.com TinyLanguage.slnx /Rebuild "Debug|Any CPU" /Out $env:TEMP\rebuild.log    # "succeeded, 0 failed, 0 skipped"
@@ -2782,6 +2852,55 @@ keep the golden sweep at 0/0/0.
 ACCEPTANCE: `dotnet build` 0/0; `dotnet test` Failed:0; golden sweep FAILED=0 TIMEOUT=0
 GOLD=0; every fix spec-justified. REPORT genuine bugs (repro + spec rule + fix), the edge
 cases verified correct, and any ambiguity left unchanged.
+
+---
+
+## Phase 4G — Data Structures catalogue tests  *(after 3A + 4.5; in the test wave with 3B/4A)*
+
+**Agent:** `general-purpose`
+**Prompt:**
+```
+Read Z:\repos\TinyLanguage\Build.DataStructures.md IN FULL (the catalogue + the test-project
+spec) and Z:\repos\TinyLanguage\tools\data-structures.catalogue.json (the 220-entry
+machine-readable catalogue). Also read the "Test output formatting — non-negotiable" and
+"MSTest 4.x — non-negotiable" preambles at the top of Build.md.
+
+Prerequisites that MUST already hold (do not start until they do):
+  - Phase 3A interpreter builds (TinyLanguage.DataStructures.Tests references it + the Lexer).
+  - Phase 1D authored the catalogue-completion demos (band 00700-00899) AND
+    TinyLanguage.DemoFiles\catalogue.manifest.tsv exists with 220 rows.
+  - Phase 4.5 golden sweep is green (FAILED=0 TIMEOUT=0 GOLD=0) over the FULL demo set,
+    so every demo the tests assert against has a correct .expected.
+
+Fill in the TinyLanguage.DataStructures.Tests project (scaffolded empty by Phase 1A) at the
+canonical path Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.DataStructures.Tests\.
+Author, per Build.DataStructures.md §2:
+  - MSTestSettings.cs  — [assembly: ...Parallelize(Workers = 1, Scope = ...MethodLevel)]
+  - TestLog.cs         — the exact D8 helper, namespace TinyLanguage.DataStructures.Tests
+  - DataStructureGoldenRunner.cs — ResolveDemoDirectory() (walk up from AppContext.BaseDirectory
+    to the dir containing TinyLanguage.slnx, then TinyLanguage.DemoFiles), Run(basename)
+    (lex→parse→interpret a <basename>.tlg in-process, capture stdout, normalize CRLF->LF +
+    trim trailing newline), Golden(basename), AssertMatchesGolden(basename).
+  - DataStructureCatalogueIntegrationTests.cs (one class, or several *IntegrationTests
+    partial classes split by category) with EXACTLY 220 [TestMethod]s — one per catalogue
+    entry n=1..220. Each method is named `<test_method>_MatchesGoldenOutput` (e.g.
+    Ds079_SplayTree_MatchesGoldenOutput) and calls AssertMatchesGolden(<demo_basename from
+    catalogue.manifest.tsv for that n>). For any future entry whose feasible=="no", emit
+    [Ignore("NOT IMPLEMENTABLE: <reason>")] on its method (currently there are none).
+
+Generate the 220 methods deterministically by JOINING data-structures.catalogue.json (gives
+n + test_method) with catalogue.manifest.tsv (gives n -> demo_basename). Do NOT hand-write
+220 methods from memory — read the two files and emit from them so the suite stays in lockstep
+with the catalogue.
+
+Run: dotnet test TinyLanguage.DataStructures.Tests --verbosity normal
+Accept only: Failed: 0, AND the run reports exactly 220 tests (Passed + Ignored = 220).
+If a test fails on a golden mismatch, the demo or its .expected is wrong — triage per the
+Phase 4.5 rules (do NOT loosen the assertion). Keep dotnet build at 0 errors/0 warnings.
+
+Report: the test count (passed/ignored/total), the build summary line, and any catalogue
+entry whose manifest demo was missing (must be none).
+```
 
 ---
 
@@ -2962,8 +3081,11 @@ that canonical copy has been re-validated end-to-end.
         - $canonical\TinyLanguage.Interpreter\...csproj     exists
         - $canonical\TinyLanguage.UnitTests\...csproj       exists
         - $canonical\TinyLanguage.IntegrationTests\...csproj exists
+        - $canonical\TinyLanguage.DataStructures.Tests\...csproj exists (Phase 4G; Build.DataStructures.md)
+        - $canonical\TinyLanguage.DemoFiles\catalogue.manifest.tsv exists, EXACTLY 220 rows; every demo_basename it names exists with a .tlg AND a .expected; every new basename is in 00700-00899 (Phase 1D)
+        - TinyLanguage.DataStructures.Tests exposes EXACTLY 220 [TestMethod]s (Ds001..Ds220) — grep the generated .cs for `[TestMethod]`; count must be 220
         - $canonical\TinyLanguage.DemoFiles\TinyLanguage.DemoFiles.csproj exists
-        - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 500 files (Tier A + Tier B + Tier C)
+        - $canonical\TinyLanguage.DemoFiles\*.tlg           ≥ 500 files (Tier A + Tier B + Tier C + catalogue-completion 00700-00899)
         - $canonical\TinyLanguage.DemoFiles\*.cmd           one per .tlg
         - $canonical\TinyLanguage.DebugAdapter\TinyLanguage.DebugAdapter.csproj exists (Phase 4C)
         - $canonical\extensions\vscode\package.json         exists (Phase 4D)
@@ -3126,6 +3248,7 @@ orchestrating session always has a live view of build state.
 | 4D — VS Code Extension | `claude-sonnet-4-6` | Small JSON + CommonJS shim |
 | 4E — Wiki Generation | `claude-sonnet-4-6` | Synthesis + cross-referencing, no novel design |
 | 4F — VS18 Shim + Shared Project | `claude-opus-4-6` | VS Debug Adapter Host wiring, pkgdef registry shape, .shproj import chain |
+| 4G — Data Structures catalogue tests | `claude-sonnet-4-6` | Deterministic generation from the catalogue + manifest; systematic, low novelty |
 | 5 — Validation | `claude-sonnet-4-6` | Fix-and-retry loop, targeted edits |
 
 ---

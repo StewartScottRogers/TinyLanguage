@@ -91,6 +91,7 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 | D20 | `export <definition>` leniency | BNF: `<export_stmt> ::= "export" <id>` (bare identifier only). | `ParseExportStatement` also accepts `export function|class|static|let|var|const <definition>`: parses the inner definition (it lands in module/global scope — modules promote exports to global, no qualified `M.f` access) and records the export marker (runtime no-op). Bare `export <id>` still works. Required by module demos 00291–00295. | 2 |
 | D21 | `static` instance-style fields (`static let`/`static var`) | BNF `static` appears only on `<method_def>`; fields are non-static. | Extends D19: the class-member parser accepts `static` before `let`/`var`/`const` field declarations and routes them to the class's StaticMembers (reachable/assignable as `ClassName.Field`). `FieldDeclareNode` gains `IsStatic`. Note 16 ("static modifies a field"). Required by 00216, 00237. | 1C, 2, 3A |
 | D22 | Indexed-assign append at `index == Length` | BNF/Note 7: `<id>[expr] := <expr>` mutates an existing element. | Interpreter: an indexed assignment where `index == array.Length` APPENDS (grow-by-one); `index < Length` mutates in place; `index > Length`/`< 0` still errors. Applies to both `arr[i] := v` (ArrayElementAssignNode) and `this.data[i] := v` (PostfixAssignStmtNode) via one shared `StoreIndexed`. Required by Tier B algorithm demos that build arrays by indexed assignment from empty. Safe: only converts a former error to success. | 3A |
+| D23 | "Data Structures" catalogue test project (additive) | Silent on a per-data-structure test suite. | New 8th .NET project `TinyLanguage.DataStructures.Tests` with EXACTLY 220 numbered `[TestMethod]`s — one per structure on Wikipedia's *List of data structures* — each running a `.tlg` implementation in-process and asserting its golden `.expected`. The full catalogue, per-entry feasibility (yes/approx/primitive/no), demo-coverage rule, and generation/acceptance spec live in `Build.DataStructures.md` (machine-readable `tools\data-structures.catalogue.json`). Extends Tier C with catalogue-completion demos in reserved band `00700–00899` plus a `catalogue.manifest.tsv`. | 1A, 1D, 4.5, 4G, 5 |
 
 ---
 
@@ -101,10 +102,10 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 | ID | Title | Outputs | Dependencies | Phase |
 |----|-------|---------|--------------|-------|
 | WU-0 | Architect Analysis | This file (orchestrator working doc) | none | 0 |
-| WU-1A | Solution Scaffold | `TinyLanguage.slnx` (Solution Items pre-declares `.gitignore`, both installers, wiki); `Directory.Build.props` (D6); `global.json` (D7); `.gitignore`; `.vscode\launch.json`; `TinyLanguage\app.manifest` (D6); six project subdirs with empty csproj | WU-0 | 1A |
+| WU-1A | Solution Scaffold | `TinyLanguage.slnx` (Solution Items pre-declares `.gitignore`, both installers, wiki); `Directory.Build.props` (D6); `global.json` (D7); `.gitignore`; `.vscode\launch.json`; `TinyLanguage\app.manifest` (D6); seven project subdirs with empty csproj (incl. `TinyLanguage.DataStructures.Tests`, D23) | WU-0 | 1A |
 | WU-1B | Token & Lexer | `TinyLanguage.Lexer\` — `TokenType.cs`, `Token.cs`, `Lexer.cs`, `LexerException.cs` (incl. `Pipe`, `This`, every kw) | WU-0 | 1B |
 | WU-1C | AST Nodes + Pretty Printer | `TinyLanguage.Lexer\` — one `*Node.cs` per AST class, `INodeVisitor.cs`, `AstPrettyPrinter.cs` | WU-0 | 1C |
-| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥500 `.tlg` (delivered set: Tier A 00001–00399 feature coverage 399 demos, Tier B 00400–00499 advanced DS+algorithms 100 demos, Tier C 00500–00659 Wikipedia-style DS catalogue 125 demos across 6 categories; 624 `.tlg` total), matching `.cmd` per demo, a matching golden `<name>.expected` file per demo (the EXACT predicted stdout), `run-all-demos.cmd` | WU-0 | 1D |
+| WU-1D | Demo Files | `TinyLanguage.DemoFiles\` — ≥500 `.tlg` (delivered set: Tier A 00001–00399 feature coverage 399 demos, Tier B 00400–00499 advanced DS+algorithms 100 demos, Tier C 00500–00659 Wikipedia-style DS catalogue 125 demos across 6 categories; 624 `.tlg` total) + Tier C catalogue-completion 00700–00899 (per `Build.DataStructures.md`, D23) so all 220 Wikipedia structures have a backing demo, matching `.cmd` per demo, a matching golden `<name>.expected` file per demo (the EXACT predicted stdout), `run-all-demos.cmd`, `catalogue.manifest.tsv` (220 rows) | WU-0 | 1D |
 | WU-2 | Parser | `TinyLanguage.Lexer\Parser.cs` (recursive-descent, full BNF, 23 notes), `ParserException.cs` | WU-1A, WU-1B, WU-1C | 2 |
 | WU-3A | Interpreter | `TinyLanguage.Interpreter\` — `IInterpreter.cs`, `Interpreter.cs`, `Scope.cs`, `InterpreterException.cs` | WU-2 | 3A |
 | WU-3B | Unit Tests | `TinyLanguage.UnitTests\` — `TestLog.cs` (D8), `LexerUnitTests.cs`, `ParserUnitTests.cs` | WU-2 | 3B |
@@ -115,6 +116,7 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 | WU-4E | Wiki | `TinyLanguage.wiki.md` (>200 lines, language tour / demo suite / debugger / architecture / regen steps) | WU-4D | 4E |
 | WU-4F | VS18 Shim + Shared Project | `extensions\extensions.shproj` + `extensions.projitems`; `extensions\vs\` VSIX (`TinyLanguage.VsTools.csproj` net472, `source.extension.vsixmanifest`, `TinyLanguagePackage.cs` AsyncPackage, `TinyLanguageAdapterLauncher.cs` `IAdapterLauncher`, `TinyLanguageTargetHostProcess.cs`, `Resources\PackageRegistration.pkgdef`, `Resources\icon.png`, `launch.vs.json.template`, `README.md`, `LICENSE.txt`); `install-vs-debugger.cmd` (paren-safe `:check_tool` + `:resolve_pf86` for the `(x86)` literal-paren bug); slnx gains `<Project Path="extensions\extensions.shproj" />`. GUIDs in §6. | WU-4D | 4F |
 | WU-4.7 | Adversarial Review (parser+interpreter) | Edge-case probing of `Parser.cs`/`Interpreter.cs`/`Scope.cs`/`Lexer.cs` via throwaway programs; fix genuine spec-divergences; keep the golden sweep at CRASH=0 TIMEOUT=0 GOLD=0 | WU-4.5 | 4.7 |
+| WU-4G | Data Structures catalogue tests | `TinyLanguage.DataStructures.Tests\` — `MSTestSettings.cs`, `TestLog.cs`, `DataStructureGoldenRunner.cs`, `DataStructureCatalogueIntegrationTests.cs` (EXACTLY 220 `[TestMethod]`s generated from `tools\data-structures.catalogue.json` joined with `catalogue.manifest.tsv`); see `Build.DataStructures.md` (D23) | WU-3A, WU-1D, WU-4.5 | 4G |
 | WU-5 | Final Validation & Delivery | `dotnet build` 0/0; `dotnet test` Failed: 0; `dotnet publish` produces ~36 MB exe in `DemoFiles\`; `run-all-demos.cmd` exits 0; `.cmd` validation loop a-d all pass; `devenv.com /Rebuild` reports "succeeded, 0 failed, 0 skipped" with the Shared Project loaded cleanly | WU-4A, WU-4B, WU-4C, WU-4D, WU-4E, WU-4F, WU-4.7 | 5 |
 
 ---
@@ -152,14 +154,17 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
                      |
                   WU-4.7  <- adversarial review (parser+interpreter)
                      |
-                    WU-5  <- joins WU-4A and WU-1D leaves as well
+                  WU-4G   <- Data Structures catalogue tests (needs 3A + 1D + 4.5; D23)
+                     |
+                    WU-5  <- joins WU-4A, WU-4G and WU-1D leaves as well
 ```
 
 - Phases 1A-1D parallel (four worktrees).
 - WU-2 joins 1A + 1B + 1C; WU-1D feeds WU-5 directly.
 - WU-3A and WU-3B parallel after WU-2.
 - WU-4A and WU-4B parallel after WU-3A + WU-3B; WU-4C sequential after WU-3A + WU-4B; WU-4D after WU-4C; WU-4E and WU-4F parallel after WU-4D (neither overlaps the other's outputs).
-- WU-5 joins WU-4A, WU-4E, WU-4F, WU-1D.
+- WU-4G (Data Structures catalogue tests, D23) runs after WU-3A + WU-1D + the demo-convergence gate (WU-4.5), in the test wave alongside WU-3B/WU-4A; serialized with their builds.
+- WU-5 joins WU-4A, WU-4E, WU-4F, WU-4G, WU-1D.
 
 > **Project-reference serializations (override the "parallel" labels).** Although
 > the graph fans out, these edges force ordering: 1A → 1B/1C (Lexer csproj);
@@ -173,7 +178,7 @@ Paths under canonical root `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`.
 > divergences) runs AFTER the convergence gate and BEFORE final validation,
 > keeping the golden sweep at CRASH=0 TIMEOUT=0 GOLD=0.
 
-**Critical path** (longest chain): WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-4F → demo-convergence gate → WU-4.7 → WU-5.
+**Critical path** (longest chain): WU-0 → WU-1B/1C → WU-2 → WU-3A → WU-4B → WU-4C → WU-4D → WU-4F → demo-convergence gate → WU-4.7 → WU-4G → WU-5.
 
 ---
 
@@ -183,7 +188,7 @@ Paths under `Z:\repos\TinyLanguage.YYYY.MM.DD.HH\`. Annotation `(Pn)` = producin
 
 ```
 TinyLanguage.YYYY.MM.DD.HH\
-├── TinyLanguage.slnx                                       (1A; +DebugAdapter 4C; +extensions.shproj 4F)
+├── TinyLanguage.slnx                                       (1A, incl. DataStructures.Tests D23; +DebugAdapter 4C; +extensions.shproj 4F)
 ├── Directory.Build.props                                   (1A — D6)
 ├── global.json                                             (1A — D7)
 ├── .gitignore                                              (1A)
@@ -227,6 +232,12 @@ TinyLanguage.YYYY.MM.DD.HH\
 │   ├── TestLog.cs                                          (4A — D8)
 │   ├── InterpreterIntegrationTests.cs                      (4A)
 │   └── DebugAdapterIntegrationTests.cs                     (4C)
+├── TinyLanguage.DataStructures.Tests\                      (csproj 1A; bodies 4G — D23)
+│   ├── TinyLanguage.DataStructures.Tests.csproj            (1A)
+│   ├── MSTestSettings.cs                                   (4G)
+│   ├── TestLog.cs                                          (4G — D8)
+│   ├── DataStructureGoldenRunner.cs                        (4G)
+│   └── DataStructureCatalogueIntegrationTests.cs           (4G — 220 [TestMethod]s)
 ├── TinyLanguage.DemoFiles\
 │   ├── TinyLanguage.DemoFiles.csproj                       (1A)
 │   ├── 00001..00399.*.tlg                                  (1D — Tier A, 399 demos)
@@ -237,6 +248,8 @@ TinyLanguage.YYYY.MM.DD.HH\
 │   ├── 00580..00599.*.tlg                                  (1D — Tier C: Heaps + Hash-based)
 │   ├── 00600..00629.*.tlg                                  (1D — Tier C: Graphs + Space partitioning)
 │   ├── 00640..00659.*.tlg                                  (1D — Tier C: ADTs + Composites)
+│   ├── 00700..00899.*.tlg                                  (1D — Tier C catalogue-completion, D23)
+│   ├── catalogue.manifest.tsv                              (1D — 220 entry→demo rows, D23)
 │   ├── *.cmd (one per .tlg, CWD-independent)               (1D)
 │   ├── *.expected (golden stdout, one per .tlg)            (1D)
 │   ├── run-all-demos.cmd                                   (1D — D2)
@@ -277,6 +290,7 @@ Pin these. Future regenerations must NOT reroll values that are baked into the V
 | Extension version | `0.1.0` | `source.extension.vsixmanifest` + `extensions/vscode/package.json` | 4D, 4F |
 | VS Code extension ID | `tinylanguage-local.tinylanguage-debug` | `code --list-extensions`; `code --install-extension` arg | 4D |
 | VS18 install hive | `%LOCALAPPDATA%\Microsoft\VisualStudio\18.0_*\Extensions\` | per-user (no admin); `vswhere -find` against `Common7\IDE\Extensions\` returns empty | 4F |
+| Data Structures catalogue | 220 entries (page order, pinned), new-demo band `00700–00899`, test names `Ds001..Ds220` (do not re-roll for existing entries — append new) | `Build.DataStructures.md`; `tools\data-structures.catalogue.json`; `TinyLanguage.DemoFiles\catalogue.manifest.tsv`; `TinyLanguage.DataStructures.Tests` | 1A/1D/4G (D23) |
 
 ---
 

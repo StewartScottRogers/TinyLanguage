@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, OpenAI Codex, Curs
 
 ## Project Overview
 
-TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Build.Plan.md` has the dependency graph and work unit breakdown. The user-facing reference is `TinyLanguage.wiki.md` inside each generated solution folder — produced by Phase 4E of the orchestration; cross-references the spec without duplicating it.
+TinyLanguage is a complete .NET 10.0 implementation of a small programming language (`.tlg` files) with Lexer, Parser, AST, and tree-walking Interpreter. The specification is locked in `Build.Solution.md` (read-only — never modify it). `Build.md` describes the multi-phase Claude Code orchestration plan. `Build.Plan.md` has the dependency graph and work unit breakdown. `Build.DataStructures.md` is the authoritative catalogue (220 entries) + spec for the `TinyLanguage.DataStructures.Tests` suite — read it on every run; it adds one numbered test per data structure in Wikipedia's *List of data structures*, implemented in `.tlg` (deviation D23). The user-facing reference is `TinyLanguage.wiki.md` inside each generated solution folder — produced by Phase 4E of the orchestration; cross-references the spec without duplicating it.
 
 ## SDK pin (`global.json`) — required so VS and CLI agree
 
@@ -61,6 +61,8 @@ Run a single test class:
 dotnet test --filter "FullyQualifiedName~LexerUnitTests"
 dotnet test --filter "FullyQualifiedName~DebuggerEngineUnitTests"
 dotnet test --filter "FullyQualifiedName~DebugAdapterIntegrationTests"
+dotnet test --filter "FullyQualifiedName~DataStructureCatalogueIntegrationTests"   # the 220-test catalogue
+dotnet test --filter "Name~Ds079"                                                   # one catalogue entry (Splay tree)
 ```
 
 **Acceptance criteria:** `dotnet build` → 0 errors/warnings; `dotnet test` → 0 failures; `TinyLanguage.DemoFiles\run-all-demos.cmd` → exit 0.
@@ -119,7 +121,7 @@ The shim is a tiny `IAdapterLauncher` implementation in `extensions/vs/` that pl
 
 ## Architecture
 
-Seven projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed first so Visual Studio treats it as the startup project (the `.slnx` format has no explicit startup-project field; VS defaults to the first executable project). A `.vscode/launch.json` provides the same default for VS Code.
+Eight projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed first so Visual Studio treats it as the startup project (the `.slnx` format has no explicit startup-project field; VS defaults to the first executable project). A `.vscode/launch.json` provides the same default for VS Code.
 
 | Project | Role |
 |---|---|
@@ -129,7 +131,8 @@ Seven projects in the solution (`TinyLanguage.slnx`). `TinyLanguage` is listed f
 | `TinyLanguage` | Console app (stdin / file / DAP modes) |
 | `TinyLanguage.UnitTests` | MSTest unit tests (lexer, parser, debugger engine) |
 | `TinyLanguage.IntegrationTests` | MSTest integration tests (interpreter end-to-end + DAP) |
-| `TinyLanguage.DemoFiles` | 600+ `.tlg` demos (Tier A feature coverage 00001–00399, Tier B data structures 00400–00499, Tier C comprehensive DS catalogue 00500–00659) + a golden `.expected` file per demo + matching `.cmd` runners + `run-all-demos.cmd` |
+| `TinyLanguage.DataStructures.Tests` | MSTest suite of 220 numbered tests (`Ds001`–`Ds220`) — one per data structure in Wikipedia's *List of data structures*, each running a `.tlg` implementation in-process and asserting its golden `.expected`. Catalogue + generation spec: `Build.DataStructures.md` (machine-readable `tools/data-structures.catalogue.json`). |
+| `TinyLanguage.DemoFiles` | 600+ `.tlg` demos (Tier A feature coverage 00001–00399, Tier B data structures 00400–00499, Tier C comprehensive DS catalogue 00500–00659, Tier C catalogue-completion 00700–00899) + a golden `.expected` file per demo + matching `.cmd` runners + `run-all-demos.cmd` + `catalogue.manifest.tsv` |
 
 Plus `extensions/vscode/` and `extensions/vs/` at the solution root — small editor shims for VS Code (CommonJS extension) and Visual Studio 2026 (managed VSIX with an `IAdapterLauncher`). Both register the `tinylanguage` debug type and spawn the same `TinyLanguage.exe --dap`.
 
