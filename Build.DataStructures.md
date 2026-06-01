@@ -111,17 +111,23 @@ Each catalogue entry maps to **exactly one** demo — its authentic implementati
 
 1. **Reuse** an existing demo when the catalogue's `existing_demo` is the authentic 1:1
    implementation of that exact structure (e.g. `00528.splay_tree` ↔ Splay tree,
-   `00580.binomial_heap` ↔ Binomial heap). Reuse its existing `.tlg` + `.expected`
-   verbatim.
+   `00580.binomial_heap` ↔ Binomial heap) **and** that demo already satisfies the
+   **load contract (§7)**. Reuse its `.tlg` + `.expected` verbatim. If the existing demo is
+   toy-scale (a handful of literal operations on a 3–5 element instance), it does **not**
+   qualify for verbatim reuse: extend it to the load floor (regenerating its `.expected`) or
+   author a load-bearing replacement in `00700–00899` and rebind the entry in the manifest.
 2. **Author a new faithful demo** when `existing_demo` is `_new_` **or** is a
    *closest-related* demo of a **different** structure (clear from the entry's `approach`
    text, e.g. "extend the R-tree class…", "specialization of the d-ary heap", "combine the
    B+-tree with Morton keys"). New demos go in the **reserved band `00700–00899`**
    ("Tier C catalogue-completion"), named `007NN.<snake_name>.tlg`, and MUST satisfy the
    **Tier C per-demo contract** (header `# Structure / # Category / # Operations (Big-O) /
-   # Reference`; class-based; ≥3 named subroutines; ≥8 distinct operations on a small
-   instance; deterministic labelled output; 30–200 lines; `;` separators; a golden
-   `.expected`; a matching `.cmd`). Approximations follow the entry's `approach` (arithmetic
+   # Reference`; class-based; ≥3 named subroutines; ≥8 distinct operation **kinds**; a
+   **non-trivial workload per the load contract (§7)** — loop/seed-generated to the
+   structure's scale floor, triggering its characteristic behavior, with ≥2 post-load
+   invariant checks and a traversal checksum; deterministic labelled output (a **compact
+   post-load summary**, never a dump of the N elements); 30–250 lines; `;` separators; a
+   golden `.expected`; a matching `.cmd`). Approximations follow the entry's `approach` (arithmetic
    bit-slicing, seeded LCG, single-process modeling) and note the deviation in the header.
 3. **Duplicates/synonyms** (the **Dup-of** column / `duplicate_of` field): reuse the
    canonical entry's demo. Their test still runs and asserts that demo's golden — a real
@@ -149,10 +155,10 @@ other demo — they are ordinary members of the demo corpus.
 | Phase | Responsibility for this feature |
 |-------|--------------------------------|
 | **1A** | Scaffold an empty `TinyLanguage.DataStructures.Tests\TinyLanguage.DataStructures.Tests.csproj` (MSTest 4.x, refs to Interpreter + Lexer) and add `<Project Path="TinyLanguage.DataStructures.Tests\TinyLanguage.DataStructures.Tests.csproj" />` to `TinyLanguage.slnx` (alongside the other test projects). |
-| **1D** | Author every catalogue-completion `.tlg` + `.expected` (band `00700–00899`) that is not an authentic reuse, per §3; write `catalogue.manifest.tsv` (220 rows). Hardcode the canonical absolute DemoFiles path into each fan-out agent prompt (per the `args`-don't-reach-subagents lesson). |
-| **4.5** | The golden sweep now covers the expanded demo set; gate stays `FAILED=0 TIMEOUT=0 GOLD=0`. New demos are triaged like any other. |
+| **1D** | Author every catalogue-completion `.tlg` + `.expected` (band `00700–00899`) that is not an authentic reuse, per §3; write `catalogue.manifest.tsv` (220 rows). **Every authored (and every rebound) demo meets the load contract (§7)** — workload loop/seed-generated to the tier floor, characteristic behavior triggered, ≥2 post-load invariant checks + a traversal checksum, runtime < 2 s. Hardcode the canonical absolute DemoFiles path into each fan-out agent prompt (per the `args`-don't-reach-subagents lesson). |
+| **4.5** | The golden sweep now covers the expanded demo set; gate stays `FAILED=0 TIMEOUT=0 GOLD=0`. New demos are triaged like any other. Load demos (§7) MUST stay under the sweep's 5 s per-demo timeout at their chosen scale — a load demo that TIMEs out is a triage item (drop N to the next tier down, prefer indexed-assign growth over `arr + [x]`), never a reason to relax the timeout. |
 | **4G** *(new)* | Read `tools\data-structures.catalogue.json` + `catalogue.manifest.tsv`; generate `TinyLanguage.DataStructures.Tests` (TestLog, runner, `MSTestSettings`, exactly 220 `[TestMethod]`s). Runs after 3A (interpreter) and 4.5 (demos green); serialized with the other build-running test phases. `dotnet test TinyLanguage.DataStructures.Tests` → `Failed: 0`. |
-| **5** | Gate: project builds 0/0; `dotnet test` `Failed: 0`; **method count == 220 == catalogue size == manifest rows**; structural check for the new csproj at the canonical path; golden sweep still `0/0/0`. |
+| **5** | Gate: project builds 0/0; `dotnet test` `Failed: 0`; **method count == 220 == catalogue size == manifest rows**; structural check for the new csproj at the canonical path; golden sweep still `0/0/0`; **spot-audit the load contract (§7)** on a sample of demos (workload is loop/seed-generated, characteristic behavior is triggered, ≥2 invariant checks + a checksum are printed — a toy demo printing only a few literal operations fails the audit). |
 
 ---
 
@@ -418,7 +424,113 @@ the page.
 
 ---
 
-## 7. Acceptance (Phase 5 gate for this feature)
+## 7. Load & stress contract — non-trivial workloads (every bound demo)
+
+**Why this exists.** A 3-element toy demo can pass green while the structure it claims to
+implement is subtly broken at scale: a rotation bug that only corrupts the 400th node, a
+hash-table resize that drops a key, a B-tree split that never fires because the instance is
+too small, a heap sift that is only ever one level deep. An "8 operations on a tiny
+instance" gate ships those bugs silently. This contract makes every numbered test exercise
+its structure under a workload large enough to **trigger the structure's characteristic
+behavior many times**, and to **assert invariants over the whole result** — so a break that
+only manifests under load flips the golden output. The contract binds the demo *bound to
+each catalogue entry* (reused, rebound, or new), not just the `00700–00899` newcomers.
+
+### 7.1 What "non-trivial workload" means
+
+- The workload is generated **programmatically** — a `for` loop over `0..N-1`, and/or a
+  **seeded LCG** (the corpus's standing idiom `seed := (seed * 1103515245 + 12345) mod
+  2147483648`) for pseudo-random keys and operation order. Because the sequence is fixed,
+  the golden `.expected` stays exact and stable. Do **not** enumerate the workload as N
+  literals — that is just a bigger toy and it bloats the source.
+- The structure is driven to a **scale floor** (§7.2) that forces its signature behavior to
+  fire **repeatedly**, then put through a **mixed operation sequence** (inserts interleaved
+  with deletes / updates / queries), not a single monotone fill.
+
+### 7.2 Scale tiers (floors, not targets — go larger when it stays under budget)
+
+Pick the **smallest N that triggers the characteristic behavior several times**, then raise
+it only as far as the runtime budget (§7.5) allows.
+
+| Tier | Families | Floor |
+|------|----------|-------|
+| **A** | dynamic/array/array-list/hashed-array-tree/VList, hash table/set/map/filter, simple lists, simple ADTs (stack/queue/deque/circular buffer), `primitive` accumulation | **N ≥ 1000** elements via a loop; must trigger ≥1 growth/resize and (for hashes) real collisions |
+| **B** | self-balancing & search trees, heaps/priority queues, tries/radix/ternary-search, union-find, graphs | **N ≥ 256**; must fire the structure's rebalancing / sifting / split-merge / path-compression / traversal many times (a balanced tree at N=256 is ≥8 levels deep) |
+| **C** | heavy spatial / string / persistent structures (R*-tree, k-d/quad/BSP/VP/M/BK tree, suffix tree/array, FM-index, finger tree, rope, …) | **N ≥ 64** points/characters/nodes **plus a mixed query batch of ≥ 32** signature queries (range / k-NN / substring / split-concat) |
+
+### 7.3 Characteristic-behavior triggers (the load MUST fire these ≥ once, ideally often)
+
+| Family | Must be triggered under load |
+|--------|------------------------------|
+| dynamic array / array list / hashed array tree / VList | ≥1 capacity growth (resize/realloc) |
+| hash table / Bloom / cuckoo / quotient / HAMT | real key collisions; ≥1 rehash/resize (filters: reach a realistic load factor) |
+| BST / AVL / red-black / AA / splay / treap / scapegoat / WAVL / zip | many rotations/re-balances; final height within the structure's bound |
+| B-tree / B+ / B* / 2-3 / 2-3-4 / (a,b) | ≥1 node **split** on insert **and** ≥1 **merge/borrow** on delete |
+| heaps (binary / d-ary / binomial / Fibonacci / pairing / leftist / skew / …) | sift across ≥3 levels; ≥1 meld / decrease-key where the variant supports it |
+| trie / radix / suffix / ternary search | shared-prefix branching; insert+lookup of ≥ the floor distinct keys |
+| union-find / disjoint-set | path compression + union-by-rank across ≥ floor unions, then a component-count check |
+| graphs | ≥ floor edges; run a real traversal (BFS/DFS/topo) and assert a graph-wide property |
+| spatial (k-d / quad / R-tree / BSP / VP / M / BK) | bulk insert to the floor, then a range or k-NN query **batch** with verified results |
+| circular buffer / queue / deque / gap buffer / piece table | wrap-around / overwrite / many splice ops — not a single fill |
+
+### 7.4 Deterministic output — the load-summary convention (keeps `.expected` small)
+
+The summary is what makes load demos diff-able and fast to gate. **Never dump the N
+elements.** Each demo prints a handful of labelled lines that are a *fingerprint* of the
+entire post-load structure:
+
+- the final **`size` / element count**;
+- **≥2 structural-invariant checks** as `label: true`/`false` (§7.4.1);
+- a deterministic **traversal checksum/fold** — e.g. `checksum := (checksum * 31 + value)
+  mod 1000000007` over a full in-order/level-order walk — so a single wrong element anywhere
+  in the structure flips the printed number;
+- a few **spot probes**: min, max, a couple of point/range queries, the final height/depth,
+  the node/bucket count.
+
+Because every printed value is derived from the *whole* structure after the *full* workload,
+a scale-only break (corrupted element #400, a dropped key on resize, a missed rotation)
+changes the checksum or flips an invariant → the golden gate (§4 Phase 4.5/5) catches it. A
+toy demo cannot produce this signal.
+
+#### 7.4.1 Mandatory invariants (≥2 per demo, each one that FAILS if the structure breaks)
+
+- **Ordered** structures: iteration/in-order is sorted → print `sorted: true`.
+- **Heaps**: heap property holds for all internal nodes; K extracts come out monotonically
+  ordered.
+- **Balanced trees**: final height ≤ the structure's bound for N (e.g. AVL `height ≤
+  1.44·log2(N+2)`), printed as a pass/fail.
+- **Hash / set / map / filter**: membership round-trips — every inserted key is found; a
+  disjoint probe set is (mostly, for filters) absent; **count conservation**
+  (`size == inserts − deletes`).
+- **Union-find**: component count equals the expected value after the union sequence.
+- **Graphs**: a global traversal property (reachable count, valid topological order, no
+  cycle where a DAG is asserted).
+
+### 7.5 Runtime budget (the binding constraint)
+
+Each demo MUST finish in **well under the sweep's 5 s per-demo timeout**
+(`tools\sweep-demos.ps1`, file mode, published single-file exe) — **target < 2 s**. The
+interpreter's `arr + [x]` append is **O(n)** (it copies the array), so building N by repeated
+concatenation is **O(n²)**. For the larger floors, prefer **indexed-assign growth**
+(`arr[i] := v` appends at `i == Length`, deviation D22) or pre-size the backing array, and
+keep N to the smallest value that still triggers the characteristic behavior several times.
+If a structure genuinely cannot reach its tier floor under budget, **drop to the next tier
+down** and record the chosen N in the header `# Operations` note — never exceed the timeout
+to chase a bigger N.
+
+### 7.6 Carve-outs
+
+- **`primitive`** entries (Boolean, Integer, …) have no structure to stress: they stay
+  minimal *usage* demos but must still exercise the type in a **loop** (e.g. accumulate /
+  fold over `0..999`) and print the folded result, not a single literal.
+- **`approx`** entries apply the load to the faithful approximation exactly as above (the
+  approximation is what ships); the bit-slicing / seeded-LCG / single-process modeling is
+  unchanged.
+- **`no` / `[Ignore]`** entries are exempt (they never run).
+
+---
+
+## 8. Acceptance (Phase 5 gate for this feature)
 
 - `TinyLanguage.DataStructures.Tests` exists at the canonical path, builds **0 errors / 0
   warnings**, and `dotnet test TinyLanguage.DataStructures.Tests` reports **`Failed: 0`**.
@@ -426,6 +538,11 @@ the page.
   (`Ds001`…`Ds220`); `catalogue.manifest.tsv` has **220 rows**; every referenced demo
   basename exists with a `.tlg` **and** a `.expected`; every new demo is in `00700–00899`.
 - The full golden sweep (`tools\sweep-demos.ps1`) over the expanded demo corpus still
-  reports **`FAILED=0 TIMEOUT=0 GOLD=0`**.
+  reports **`FAILED=0 TIMEOUT=0 GOLD=0`** — including the load demos, which must stay under
+  the 5 s per-demo timeout at their chosen scale.
+- **Every bound demo meets the load contract (§7):** its workload is loop/seed-generated to
+  at least its tier floor (§7.2), triggers the structure's characteristic behavior (§7.3),
+  and prints ≥2 post-load invariant checks plus a traversal checksum (§7.4) — not a few
+  literal operations on a toy instance. Spot-audited in Phases 4.5/5.
 - Any `[Ignore]`d entry (feasible `no`) carries a `NOT IMPLEMENTABLE: <reason>` message and
   is still one of the 220 numbered methods.
