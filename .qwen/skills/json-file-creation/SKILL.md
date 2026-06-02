@@ -1,0 +1,1 @@
+[['item1', 'item2'], {'sdk': {'version': '10.0.300', 'rollForward': 'latestPatch'}}, {'sdk': {'version': '10.0.300', 'rollForward': 'latestPatch'}}]

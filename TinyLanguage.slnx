@@ -10,6 +10,7 @@
     <File Path="CLAUDE.md" />
     <File Path="LMStudio.Settings.json" />
     <File Path="Build.Plan.md" />
+    <File Path="Qwen--openrouter.cmd" />
   </Folder>
   <Project Path=".claude/claude.shproj" Id="60827118-5955-4d80-a32e-a6bf7ae2c2d3" />
 </Solution>
