@@ -67,6 +67,8 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 
 > **Spec compliance, not a deviation (2026.05.29.23 run):** the interpreter was made spec-compliant on array out-of-bounds READ — Build.Solution.md Layer 4 ("Out-of-bounds index returns null without crashing") requires a list/string OOB read to return `null` (not throw); map missing-key still throws. This aligns the implementation with the locked spec and so is NOT recorded as a deviation below.
 
+> The 2026.06.01 run surfaced further non-deviation lessons (now in `Build.md`/`AGENTS.md`, not the deviation table): class bodies are mandatorily brace-delimited `class X { ... }` per BNF §505 (127 brace-less Tier C demos were the run's dominant convergence failure); the parser must accept the `do { ... } while` brace-block form (spec §1.5); the interpreter must unwrap an `EnumValue` bound in `for i := A to B` loops; the **MSB3270** AnyCPU-vs-win-x64 warning on `TinyLanguage.IntegrationTests` (it references the win-x64 console exe) breaks the full-solution 0-warning gate unless `<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</...>` is set in Phase 1A; and the `run-all-demos.cmd` finalizer must emit `%TEMP%\tinylanguage_...` correctly. Delivered 631 demos / 396 tests, all gates green incl. `devenv /Rebuild` 8/0/0.
+
 | ID | Title | Spec says | Override | Phases |
 |----|-------|-----------|----------|--------|
 | D1 | `TinyLanguage.exe` has no demo mode | Zero-arg walks `DemoFiles\` and prints "All demos completed successfully." | Two modes: zero-arg stdin pipe, two-arg file mode. Anything else → usage to stderr + exit 1. No `Console.IsInputRedirected` branching. | 4B, 5 |

@@ -203,6 +203,11 @@ Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "
 
 ## Language behaviours demo authors rely on (learned from the corpus)
 
+- **Class bodies MUST be brace-delimited: `class Name { ... }`** (BNF §505). The corpus convention is `{`-open / `end`-close, e.g. `class Counter { let x := 0; function Get() return this.x end end`. Brace-LESS bodies (`class Foo <newline> let N := 0 ... end`) DO NOT parse — this was the dominant convergence failure of the 2026.06.01 run (127 demos). `module`/`match`/`switch` bodies are also brace-form.
+- **`function init(...)` is NOT a constructor** — only a member literally named `Constructor` (capital C) is auto-invoked by `new`. A method named `init` is never called unless you call it explicitly.
+- **`match`/`switch` are STATEMENT-only, never expression position.** `let r := match X { ... }` fails ("Unexpected token 'match' in expression"); use a `match`/`switch` statement with `return`/assignment inside each case.
+- **Unary `!` and `^` are NOT in the grammar** — logical-not is `not` (parenthesize: `not (a and b)`); exponentiation is `**` (right-assoc), never `^`.
+- **`/` is FLOAT division; `//` is integer/floor division.** Use `//` for any value used as an index or in integer/bit-slice math (`arr[i // 2]`, `(v // 2^b) % 2`) — `/` yields a Float and `arr[i / 2]` throws "Index must be an integer, got Float". Method return-type annotation is `) -> T` (not `) : T`); a typed field needs an initializer.
 - **Built-in conversions work as BOTH casts and calls:** `(int)x` and `int(x)` are equivalent; same for float/bool/str. `len`/`str` are ordinary calls too.
 - **`as` is a CHECKED type assertion, not a converter.** `x as int` throws when the runtime type does not match (e.g. `3.7 as int` fails). To CONVERT use `int(3.7)` or `(int)3.7`. Demo authors must not write `x as T` expecting coercion.
 - **No map/object literal exists.** There is no `{ key: value }` literal — maps and objects are modeled as classes (e.g. a Dictionary class over parallel arrays). `let m := { ... }` does not parse. (`map` is also a reserved type-name keyword, so it cannot be a variable name.)

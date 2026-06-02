@@ -3,21 +3,32 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
-> **Last verified full run:** 2026-05-30 → delivered to
-> `Z:\repos\TinyLanguage.2026.05.30.12\` — 633 demos (Tier A 00001–00399 / B 00400–00499 /
+> **Last verified full run:** 2026-06-01 → delivered to
+> `Z:\repos\TinyLanguage.2026.06.01.14\` — 631 demos (Tier A 00001–00399 / B 00400–00485 /
 > C 00500–00659 + catalogue-completion 00700–00752), EACH with a golden `.expected` file,
-> validated by the golden sweep (`FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared to
-> `.expected`, not just exit 0); **425 tests (138 unit + 67 integration + 220 Data Structures
-> catalogue)**, all gates green including `devenv.com /Rebuild` (8 succeeded, 0 failed, no
-> MAX_PATH); a `GENERATED.md` provenance stamp at the solution root. SDK pin was `10.0.300`
-> (no 10.0.2xx band installed). Baseline convergence was unusually clean (FAILED=3 GOLD=12 of
-> 633). The deviations and build lessons discovered across runs are folded into the relevant
-> phases/preambles below (search D16–D22, the "Output formatting contract", "MSTest 4.x", and
-> "Demo sweep harness" preambles, the `tools\sweep-demos.ps1` helper, the "Orchestration
-> execution recipe", "Phase 4.7", "Demo convergence", "Execution model", and the SDK/long-path
-> preambles). The 2026.05.30 run added three interpreter behaviors to Phase 3A (enum-as-integer-
-> constant; `switch` no-fall-through; uncaught top-level control-flow → `Runtime error` exit 1)
-> and a CRLF requirement for generated `.cmd` files (Phase 4D/4F installers) — see those phases.
+> validated by the golden sweep (`TOTAL=631 FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared
+> to `.expected`, not just exit 0); **396 tests (117 unit [106 lexer/parser + 11 debugger-engine]
+> + 59 integration [52 + 7 DAP] + 220 Data Structures catalogue)**, all gates green including
+> `devenv.com /Rebuild` (8 succeeded, 0 failed, no MAX_PATH) and both editor-extension installers
+> (exit 0, idempotent); a `GENERATED.md` provenance stamp at the solution root. SDK pin was
+> `10.0.300` (no 10.0.2xx band installed). Convergence baseline was **FAILED=140 GOLD=3 of 631** —
+> dominated by ONE systematic demo bug: ~127 Tier C demos (bands 00560–00599, 00600–00659) wrote
+> brace-LESS class bodies (`class X <newline> members end`), but the BNF requires `class X { ... }`
+> (Build.Solution.md §505). See the "Class bodies MUST be brace-delimited" note in Phase 1D. The
+> deviations and build lessons discovered across runs are folded into the relevant phases/preambles
+> below (search D16–D22, the "Output formatting contract", "MSTest 4.x", and "Demo sweep harness"
+> preambles, the `tools\sweep-demos.ps1` helper, the "Orchestration execution recipe", "Phase 4.7",
+> "Demo convergence", "Execution model", and the SDK/long-path preambles). The 2026.05.30 run added
+> three interpreter behaviors to Phase 3A (enum-as-integer-constant; `switch` no-fall-through;
+> uncaught top-level control-flow → `Runtime error` exit 1) and a CRLF requirement for generated
+> `.cmd` files. The 2026.06.01 run added: (a) **`class X { ... }` braces are mandatory** — Phase 1D
+> demo authors must brace-open every class body (the corpus convention is `{`-open, `end`-close);
+> (b) parser `do { ... } while` brace-block form (Phase 2); (c) interpreter unwraps an `EnumValue`
+> bound in `for i := A to B` loops (Phase 3A); (d) the **MSB3270** AnyCPU-vs-win-x64 warning on
+> `TinyLanguage.IntegrationTests` (it references the win-x64 console exe) breaks the 0-warning gate
+> at full-solution build — Phase 1A sets `<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</...>`
+> on that test csproj; (e) the `run-all-demos.cmd` finalizer must emit `%TEMP%\tinylanguage_...`
+> (a literal-tab corruption broke the temp path) — see those phases.
 
 > ## Output location — non-negotiable
 >
@@ -810,6 +821,11 @@ this layout (all paths relative to that solution root):
   TinyLanguage.Interpreter/TinyLanguage.Interpreter.csproj  ← classlib (net10.0)
   TinyLanguage.UnitTests/TinyLanguage.UnitTests.csproj      ← MSTest
   TinyLanguage.IntegrationTests/TinyLanguage.IntegrationTests.csproj  ← MSTest
+                                                              (references the win-x64 console
+                                                              project, so add
+                                                              <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</...>
+                                                              to its PropertyGroup — see the MSB3270
+                                                              note below)
   TinyLanguage.DataStructures.Tests/TinyLanguage.DataStructures.Tests.csproj  ← MSTest
                                                               (empty scaffold here; filled by
                                                               Phase 4G — see Build.DataStructures.md
@@ -977,6 +993,18 @@ TinyLanguage/TinyLanguage.csproj must include:
           DestinationFolder="$(MSBuildProjectDirectory)\..\TinyLanguage.DemoFiles\"
           SkipUnchangedFiles="true" />
   </Target>
+
+MSB3270 — non-negotiable for the 0-warning gate. `TinyLanguage.IntegrationTests`
+references the `TinyLanguage` console project, which pins `RuntimeIdentifier=win-x64`.
+On a FULL-solution `dotnet build` (as opposed to per-project builds) once the win-x64
+output exists, MSBuild emits `warning MSB3270: mismatch between the processor architecture
+of the project being built "MSIL" and the reference "...TinyLanguage.dll", "AMD64"` for the
+test project — which fails the 0-warning gate. The reference is managed/compile-time-only
+(no real runtime arch dependency; the tests pass), so add to the
+`TinyLanguage.IntegrationTests.csproj` `<PropertyGroup>`:
+  <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+This was discovered in the 2026.06.01 run when the full-solution build surfaced it after
+Phase 4F (per-project test builds earlier did not). Author it in Phase 1A from the start.
 
 Run: dotnet build
 Accept only: 0 errors, 0 warnings.
@@ -1227,6 +1255,30 @@ Anti-patterns specific to Tier B that have shipped before and must not recur:
 
 GLOBAL anti-patterns (apply to all tiers; each one has shipped before and
 broken the demo sweep):
+
+- **Class bodies MUST be brace-delimited: `class Name { ... }`.** The BNF
+  (Build.Solution.md §505) is `("static")? "class" <id> (...)? "{" <member_list> "}"`.
+  The corpus convention is `{`-open / `end`-close (`class Counter { let x := 0;
+  function Get() return this.x end end`). The 2026.06.01 run's DOMINANT failure (127 of
+  140 crashes) was two Tier C bands (00560–00599, 00600–00659) writing brace-LESS class
+  bodies (`class AdjMatrix <newline> let N := 0 ... end`) → `Parse error: Expected '{'
+  but found 'let'/'var'`. ALWAYS put the opening `{` after the class header. Same for
+  `module`, `match`, and `switch` bodies — all are brace-form, not bare-keyword bodies.
+- **`function init(...)` is NOT a constructor.** Only a member literally named
+  `Constructor` (capital C) is auto-invoked by `new`. A method named `init`/`__init__`
+  is never called unless you call it explicitly. Use `Constructor(...)` for setup.
+- **Method return-type annotation is `) -> T`, not `) : T`** (Build.Solution.md). A
+  type-only field needs an initializer (`let x := 0`, not `var x : int`).
+- **`match`/`switch` are STATEMENT-only — never expression position.** `let r := match
+  X { ... }` fails "Unexpected token 'match' in expression". Use a `match` STATEMENT with
+  a `return`/assignment inside each case instead.
+- **Unary `!` and `^` are NOT in the grammar.** Logical-not is the keyword `not`
+  (precedence Or→And→Not→Comparison, so `not (a and b)` needs parens); exponentiation is
+  `**` (right-assoc), never `^`. `^` lexes as Unknown.
+- **`/` is FLOAT division; use `//` for integer/floor division** (indices, midpoints,
+  parent/child heap math, arithmetic bit-slicing `(v // 2^b) % 2`). `arr[i / 2]` throws
+  "Index must be an integer, got Float"; `arr[i // 2]` is correct. This was the single
+  biggest per-line trap across the data-structure demos.
 
 - **Keywords used as parameter names.** TinyLanguage reserves these tokens:
   `to`, `from` (not actually a kw, OK), `step`, `in`, `do`, `then`, `else`,
@@ -1673,6 +1725,10 @@ Implement TinyLanguage.Lexer/Parser.cs:
   a strictly-later source line as an index/call on the previous statement's
   expression (a leading `.` member access may still cross lines). Without this a
   `print "x"` before a `[a, b] => ...` match case swallows the case. Fixed 00306.
+- `do { ... } while <expr>` brace-block form: besides the braceless BNF `do <stmt_list>
+  while <expr>` (Build.Solution.md), ParseDoWhileStatement must ALSO accept an optional
+  `{ ... }` block (the §1.5 disambiguation "`while` after `}` closes a do-while"). Several
+  demos use the brace form; without it they fail to parse. (Found in the 2026.06.01 run.)
 
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.
@@ -1729,10 +1785,12 @@ Implement TinyLanguage.Interpreter/:
   one conversion code path.
 - Enum members are named INTEGER CONSTANTS (Build.Solution.md "the enum form declares
   named constants"): UNWRAP an `EnumValue` to its underlying integer in `Visit(BinaryOpNode)`
-  (both operands) and at the top of `ValuesEqual` (covers `switch` + `match` equality), and
-  `Stringify(EnumValue)` renders the underlying value. So `Level.Low + Level.High`,
-  `Priority.High == 9`, and `switch Signal.Go { case 1: ... }` all work. (2026.05.30 Phase 4.5
-  fixed this interpreter-side; 6 enum demos depend on it — implement it here from the start.)
+  (both operands), at the top of `ValuesEqual` (covers `switch` + `match` equality), AND on the
+  start/end/step bounds of `Visit(ForStmtNode)` (so `for i := Range.Start to Range.Stop` iterates
+  as integers, not doubles printing `6.0`), and `Stringify(EnumValue)` renders the underlying
+  value. So `Level.Low + Level.High`, `Priority.High == 9`, `switch Signal.Go { case 1: ... }`,
+  and `for i := Lo.A to Hi.B` all work. (2026.05.30 Phase 4.5 fixed the arithmetic/equality cases;
+  the 2026.06.01 run added the for-loop-bound case — implement ALL of them here from the start.)
 - `switch` is NO-FALL-THROUGH (Build.Solution.md interpreter coverage: "non-matching case
   body does not execute"; "default executes when no case matches"): the FIRST matching case
   runs its body and the switch ENDS; `break` only exits a case body early; `default` runs only
