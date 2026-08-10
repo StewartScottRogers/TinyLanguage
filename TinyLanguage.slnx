@@ -12,6 +12,7 @@
     <File Path="LMStudio.Settings.json" />
     <File Path="Build.Plan.md" />
     <File Path="Qwen--openrouter.cmd" />
+    <File Path="TinyLanguage.2026.08.10.09.zip" />
   </Folder>
   <Project Path=".claude/claude.shproj" Id="60827118-5955-4d80-a32e-a6bf7ae2c2d3" />
 </Solution>
