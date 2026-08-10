@@ -20,7 +20,8 @@ REM      [4/6] Ensure herdr          (installs/updates the terminal multiplexer)
 REM      [5/6] Ensure herdr server   (starts a compatible one if needed)
 REM      [6/6] Launch Claude         (as a tracked pane anchored to this folder)
 REM
-REM  Claude shows up as a tracked "Claude" pane in herdr's sidebar; its live state
+REM  Claude shows up in herdr's sidebar as a tracked pane captioned with the folder
+REM  it is anchored to ("TinyLanguage - Claude"); its live state
 REM  (idle / working / blocked) is reported by herdr's native Claude integration
 REM  hook. Step [4/6] guarantees both the "claude" and "copilot" integration hooks
 REM  are installed, running each install unless status confirms it already is.
@@ -66,6 +67,13 @@ REM  cleanly later. There is no second candidate and no fallback anywhere else o
 REM  the machine -- that is what keeps the script confined to this tree.
 set "WORK_DIR=%~dp0"
 if "%WORK_DIR:~-1%"=="\" set "WORK_DIR=%WORK_DIR:~0,-1%"
+
+REM  The leaf name of that folder ("TinyLanguage" for Z:\repos\TinyLanguage) is what
+REM  goes in the herdr tab caption, so a sidebar holding several projects says which
+REM  one each Claude is anchored to. It is empty when the script sits at a drive root
+REM  ("Z:" has no name part); the caption then falls back to the bare "Claude" label.
+set "WORK_NAME="
+for %%I in ("%WORK_DIR%") do set "WORK_NAME=%%~nxI"
 
 REM  winget is our fallback installer for git and Node.js. Locate it once; a blank
 REM  WINGET means "not available", which is only fatal if a tool actually needs it.
@@ -246,14 +254,18 @@ REM ----------------------------------------------------------------------------
 echo [6/6] Launching Claude in herdr ...
 echo       working directory: "%WORK_DIR%"
 
-REM  Choose a friendly, incrementing tab label ("Claude", "Claude 2", ...) by
-REM  counting the claude agents herdr already tracks. The agent itself is
-REM  identified by detection (herdr's integration hook), not by this label, so the
-REM  label is display-only. PowerShell parses herdr's JSON API output for the count.
+REM  Choose a friendly tab caption that names the containing folder, so several
+REM  projects sharing one herd stay distinguishable at a glance: "TinyLanguage -
+REM  Claude", then "TinyLanguage - Claude 2" for the next one. The counter is the
+REM  number of claude agents herdr already tracks (herd-wide, not per folder), so
+REM  it just keeps captions unique. The agent itself is identified by detection
+REM  (herdr's integration hook), not by this label, so the label is display-only.
+REM  PowerShell parses herdr's JSON API output for the count.
 set "CLAUDE_COUNT=0"
 for /f "usebackq delims=" %%N in (`powershell -NoProfile -Command "@((& '%HERDR%' agent list | ConvertFrom-Json).result.agents | Where-Object { $_.agent -eq 'claude' }).Count"`) do set "CLAUDE_COUNT=%%N"
 set /a LABEL_N=CLAUDE_COUNT+1
 if "%LABEL_N%"=="1" (set "AGENT_LABEL=Claude") else (set "AGENT_LABEL=Claude %LABEL_N%")
+if defined WORK_NAME set "AGENT_LABEL=%WORK_NAME% - %AGENT_LABEL%"
 
 REM  Create the pane that will host Claude. Newer herdr (protocol 17+) redesigned
 REM  the launch flow: `agent start` now attaches to an EXISTING pane by id, and the
