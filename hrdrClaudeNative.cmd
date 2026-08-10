@@ -45,7 +45,7 @@ REM
 REM  CUSTOMISING THE MODEL
 REM  ---------------------
 REM      setx CLAUDE_MODEL "claude-sonnet-5"
-REM  (default below is claude-opus-4-8, the latest and most capable model)
+REM  (default below is claude-opus-5, the latest and most capable Claude model)
 REM
 REM  IMPLEMENTATION NOTE
 REM  -------------------
@@ -58,7 +58,7 @@ REM ============================================================================
 REM -----------------------------------------------------------------------------
 REM  Configuration
 REM -----------------------------------------------------------------------------
-if not defined CLAUDE_MODEL set "CLAUDE_MODEL=claude-opus-4-8"
+if not defined CLAUDE_MODEL set "CLAUDE_MODEL=claude-opus-5"
 
 REM  The one and only working directory: the folder this script lives in. %~dp0 is
 REM  that folder with a trailing backslash, which we strip so the path quotes
