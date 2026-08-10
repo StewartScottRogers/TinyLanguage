@@ -15,16 +15,24 @@ with `dotnet --list-sdks`:
 ```json
 {
   "sdk": {
-    "version": "10.0.300",
+    "version": "10.0.302",
     "rollForward": "latestPatch"
   }
 }
 ```
 
-The literal version is a moving target, not a constant. On the current machine
-only `10.0.300` (stable) and `10.0.100-rc.1` are installed — there is **no
-`10.0.2xx` band** — so the pin is `10.0.300`. (Earlier docs pinned `10.0.203`;
-that band is not installed here, so a `10.0.203` pin would fail outright.)
+The literal version is a moving target, not a constant. As of 2026-08-10 the machine has
+`10.0.100-rc.1` (rc), `10.0.302` (stable) and `10.0.400-preview` (preview) — `10.0.302` is the
+only stable band, so it is the pin. (Earlier docs pinned `10.0.203` and then `10.0.300`;
+neither band is installed here, so either would fail outright. Re-derive from
+`dotnet --list-sdks` every run.)
+
+> **`global.json` is resolved from the CURRENT DIRECTORY, not from the project path.**
+> `dotnet build <abs-path-to-slnx>` run from a directory with no `global.json` silently
+> resolves the newest installed SDK — a `-preview` band — and emits `NETSDK1057`. The same
+> command run from the solution root resolves the pin. Always `cd` to the solution root first.
+> If someone reports "the pin isn't taking effect", check their working directory before
+> touching `global.json`.
 
 This pin exists because VS18's NuGet integration must resolve the SAME SDK the
 CLI publish used, or lockfiles mismatch and VS NRE's `ResolvePackageAssets`
@@ -205,6 +213,7 @@ Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "
 
 - **Class bodies MUST be brace-delimited: `class Name { ... }`** (BNF §505). The corpus convention is `{`-open / `end`-close, e.g. `class Counter { let x := 0; function Get() return this.x end end`. Brace-LESS bodies (`class Foo <newline> let N := 0 ... end`) DO NOT parse — this was the dominant convergence failure of the 2026.06.01 run (127 demos). `module`/`match`/`switch` bodies are also brace-form.
 - **`function init(...)` is NOT a constructor** — only a member literally named `Constructor` (capital C) is auto-invoked by `new`. A method named `init` is never called unless you call it explicitly.
+- **A constructor is declared WITHOUT the `function` keyword** — `Constructor(a, b) ... end`. Writing `function Constructor(...)` is a parse error. (2026-08-10: cost three separate agents a debugging cycle.)
 - **`match`/`switch` are STATEMENT-only, never expression position.** `let r := match X { ... }` fails ("Unexpected token 'match' in expression"); use a `match`/`switch` statement with `return`/assignment inside each case.
 - **Unary `!` and `^` are NOT in the grammar** — logical-not is `not` (parenthesize: `not (a and b)`); exponentiation is `**` (right-assoc), never `^`.
 - **`/` is FLOAT division; `//` is integer/floor division.** Use `//` for any value used as an index or in integer/bit-slice math (`arr[i // 2]`, `(v // 2^b) % 2`) — `/` yields a Float and `arr[i / 2]` throws "Index must be an integer, got Float". Method return-type annotation is `) -> T` (not `) : T`); a typed field needs an initializer.
@@ -221,7 +230,10 @@ Full details (BNF citation + implementation pointer + reasoning) in `Build.md` "
 - **`try` requires `catch`** — no catch-less `try/finally`.
 - **Uncaught top-level control-flow must not crash the host.** A `break`/`continue`/`return` outside any loop/function, and any uncaught user `throw`, must surface through the interpreter's top-level `Run` as an `InterpreterException` carrying the source line (so `Program.cs` reports `Runtime error (line N): …` and exits 1), NOT escape as a raw .NET exception/stack trace (which exits 127 and violates the Runtime Error Policy). (Folded in from the 2026.05.30 Phase 4.7 adversarial review — implement it in Phase 3A's `Run`.)
 - **Out of the BNF (avoid / mark `# NOT IMPLEMENTABLE`):** scientific-notation float literals (`6.6e-34`), field-level annotations (`@Foo` on a class field).
-- **Reserved words can't be parameter/variable names** — includes `step`, `to`, `in`, `do`, `match`, the type-name keywords, etc.
+- **Reserved words can't be parameter/variable names** — includes `step`, `to`, `in`, `do`, `match`, the type-name keywords, etc. This is the demo bug that recurs every run: `to` and `step` read as natural English in a data-structure API, and `function ReplaceAll(from, to)`, `function DistOf(from, to)` and `for step := 1 to 32` were ALL six demo failures of the 2026-08-10 run. Grep new demos for `, to)` and `for step` before converging.
+- **`(str)x` is NOT a valid cast** — `str` is not in the BNF `<base_type>` list, so `(str)12` fails with "Cannot cast a value of type Integer to str". The working forms are `str(12)` (call) and `(string)12` (cast). `int`/`float`/`bool` do work in both forms.
+- **List comprehension has NO filter clause** — only `[<expr> for <id> in <source>]` exists. `[n for n in xs if cond]` is a parse error; filter with an explicit loop.
+- **`const` is immutable and built-ins can't be redefined** — assigning to a `const` binding (from any scope) and declaring `function len(x)` are both runtime errors. An inner `let` may still shadow a `const`.
 - **Out-of-bounds index READ returns null** (spec compliance, NOT a deviation). Build.Solution.md Layer-4 Interpreter Coverage states "Out-of-bounds index returns null without crashing", so reading a LIST or STRING at an index `< 0` or `>= length` yields `null` (a map missing-key still throws "Key not found"). This specific rule overrides the general "no silent failures" principle. Demo implication: a "catchable index error" demo must index a NON-collection (e.g. `let n := 5; print n[0]` -> "Cannot index into a value of type Integer"), NOT do an out-of-range read (which returns null, not a throwable error).
 - **Every demo ships a golden `.expected` file.** Beside each `<name>.tlg` is a `<name>.expected` holding the EXACT predicted file-mode stdout. Convergence (Phase 4.5) and final validation (Phase 5) validate BOTH no-crash AND output == `.expected` (CRLF->LF normalized, trailing newline trimmed) — this catches wrong-but-non-crashing demos that an exit-0-only gate ships silently. Predictions are made against the pinned Output Formatting Contract (below).
 
@@ -249,6 +261,27 @@ private bool PeekIsDigit()
 ```
 
 Phase 1B agents must implement this correctly from the start.
+
+## Interpreter trap: evaluate the assignment RHS BEFORE resolving the target
+
+In `ArrayElementAssignNode`, `MemberAssignStmtNode` and `PostfixAssignStmtNode`, evaluate the
+right-hand side FIRST, then resolve the container being written to. The natural-looking
+implementation (resolve the target container, then evaluate the RHS) is WRONG here, because the
+corpus's universal append idiom `this.X := this.X + [v]` REBINDS `this.X` to a **new** list:
+
+```
+this.Left[n] := this.InsertAt(this.Left[n], k)   # the call appends internally
+```
+
+Resolving `this.Left` first captures the OLD list; the call then rebinds the field to a new one,
+and the store lands in the discarded copy. Symptom: every BST / treap / quadtree / tree-height
+demo silently builds a one-element tree, **exits 0**, and prints wrong-but-plausible output. It
+is invisible to an exit-code gate — only the golden `.expected` byte-compare catches it. This
+was the single highest-impact interpreter bug of the 2026-08-10 run (~18 demos).
+
+Related performance note: signalling `return` purely by throwing is a real cliff on call-heavy
+demos. Keep the exception path for a `return` nested inside an if/loop, but add a fast path for
+a `return` written directly in a function body.
 
 ---
 

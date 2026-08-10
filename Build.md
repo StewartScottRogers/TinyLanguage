@@ -3,7 +3,26 @@
 This file drives a **Claude Code multi-agent build** of the TinyLanguage solution.
 The canonical specification lives in `Build.Solution.md` — treat it as READ-ONLY.
 
-> **Last verified full run:** 2026-06-01 → delivered to
+> **Last verified full run:** 2026-08-10 → delivered to
+> `Z:\repos\TinyLanguage.2026.08.10.09\` — 618 demos (Tier A 00001–00389 / B 00400–00474 /
+> C 00500–00659 + catalogue-completion 00700–00875), EACH with a golden `.expected` and a
+> generated `.cmd`; golden sweep `TOTAL=618 FAILED=0 TIMEOUT=0 GOLD=0`; **567 tests
+> (239 unit [63 lexer + 162 parser + 14 debugger-engine] + 108 integration [85 interpreter +
+> 10 console + 9 DAP + 4 demo spot-checks] + 220 Data Structures catalogue)**; every gate green
+> including `devenv.com /Rebuild` (8 succeeded, 0 failed, no MAX_PATH) and both editor-extension
+> installers (exit 0, idempotent, both actually installed); `GENERATED.md` provenance stamp at
+> the solution root. SDK pin was `10.0.302` (the only stable band installed; 10.0.100 is rc and
+> 10.0.400 is preview). Convergence baseline was remarkably low — the interpreter's own corpus
+> sweep landed at **CRASHED=3 MISMATCHED=0 of 592** on first completion, because every band was
+> given the pinned semantics UP FRONT (see "Pin the corpus semantics in the Phase 3A prompt"
+> below). The six demo bugs found were all one class: **reserved words used as identifiers**
+> (`to`, `step`) — see the Phase 1D note. This run added: (a) **RHS-first assignment evaluation**
+> (Phase 3A — the single highest-impact interpreter bug, ~18 demos); (b) five spec-conformance
+> fixes Phase 4.7 found that NO demo exercised (Phases 2 and 3A); (c) the `global.json`
+> current-directory resolution trap (SDK preamble); (d) VSIX pkgdef asset + `vswhere` selection
+> fixes (Phase 4F); (e) a corrected Phase 4E wiki line budget.
+>
+> **Prior verified run:** 2026-06-01 → delivered to
 > `Z:\repos\TinyLanguage.2026.06.01.14\` — 631 demos (Tier A 00001–00399 / B 00400–00485 /
 > C 00500–00659 + catalogue-completion 00700–00752), EACH with a golden `.expected` file,
 > validated by the golden sweep (`TOTAL=631 FAILED=0 TIMEOUT=0 GOLD=0` — output byte-compared
@@ -212,6 +231,29 @@ The canonical specification lives in `Build.Solution.md` — treat it as READ-ON
 > `10.0.300-preview.0.26177.108` and Visual Studio 18 resolved
 > `10.0.203` by default. The publish wrote `obj/project.assets.json`
 > in the preview SDK's format; VS18's older NuGet bits NRE'd reading it.
+>
+> ### `global.json` is resolved from the CURRENT DIRECTORY, not the project path
+>
+> **(2026-08-10 lesson — cost two agents a false alarm each.)** The SDK is selected by
+> walking up from the shell's **working directory**, NOT from the path of the `.slnx`/`.csproj`
+> passed on the command line. So `dotnet build Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.slnx`
+> issued from the ORCHESTRATOR repo (which has no `global.json`) silently resolves the newest
+> installed SDK — a `-preview` band — and emits `NETSDK1057`, while the very same command run
+> from the canonical solution root resolves the pinned stable SDK. On the 2026-08-10 machine:
+>
+> ```
+> cd Z:\repos\TinyLanguage.2026.08.10.09  ; dotnet --version  ->  10.0.302                     (pinned, correct)
+> cd Z:\repos\TinyLanguage                ; dotnet --version  ->  10.0.400-preview.0.26322.102 (no global.json here)
+> ```
+>
+> Consequences, all mandatory:
+> - EVERY agent prompt that tells an agent to build/test/publish must say **run it from the
+>   canonical solution root** (`cd Z:\repos\TinyLanguage.YYYY.MM.DD.HH` first), never from the
+>   agent's inherited cwd.
+> - Phase 5 Step 6c's "verify `dotnet --version` from `$canonical`" check is only meaningful
+>   when actually executed with `$canonical` as the working directory — that is the point of it.
+> - If an agent reports "global.json is not taking effect", check its working directory BEFORE
+>   touching the pin. Two agents reported exactly this in the 2026-08-10 run and the pin was fine.
 >
 > ### The fix
 >
@@ -757,6 +799,31 @@ locks), but ONE big unit parallelizes cleanly and should overlap the whole chain
 - **Gate between phases** on the exact acceptance (`build 0/0`, `test Failed:0`, the
   golden sweep `FAILED=0 TIMEOUT=0 GOLD=0`) so a cascading bug is caught at the phase
   that introduced it, not three phases later.
+- **PIN THE CORPUS SEMANTICS IN THE PHASE 3A PROMPT — this is what made the 2026-08-10 run
+  converge almost for free.** By the time Phase 3A starts, ~600 golden `.expected` files
+  already exist and they collectively PIN the runtime semantics. Do not make the interpreter
+  agent rediscover them from the spec. Enumerate them explicitly in its prompt, sourced from
+  the finished Phase 1D band reports and from AGENTS.md's "Language behaviours" list: `/` is
+  always float division while `//` is integer; `and`/`or` short-circuit; the exact Stringify
+  contract; out-of-bounds read → `null`; D22 append-at-length via ONE shared `StoreIndexed`
+  used by both `arr[i] :=` and `this.x[i] :=`; function scopes parented at GLOBAL (so
+  `Global := Global + [x]` inside a function mutates the global — an entire Tier B band relies
+  on it); fresh child scope per loop-body iteration; enum unwrapping (incl. `for` bounds);
+  `switch` no-fall-through; `Constructor` auto-invocation; `as` is a checked assertion.
+  Result: Phase 3A's own first full corpus sweep came back **CRASHED=3 MISMATCHED=0 of 592**,
+  versus a FAILED=140 baseline in the 2026-06-01 run. Convergence stopped being a phase and
+  became a formality.
+- **Harvest the cross-band syntax contract before Phase 2.** Each Phase 1D band reports the
+  exact forms it used (class/module brace style, `match`/`switch` shape, loop syntax, operator
+  spellings). Collect those into a "syntax contract" block in the PARSER prompt. The
+  2026-08-10 parser hit 550/551 demos parsing on its first completion because it was told
+  up front what the corpus actually looks like.
+- **Reserved words as identifiers is the demo bug that keeps recurring.** Every demo failure
+  in the 2026-08-10 run — all six, across four different bands — was a keyword used as a
+  parameter or loop variable: `to` and `step`. Both read as natural English in a data-structure
+  API (`ReplaceAll(from, to)`, `DistOf(from, to)`, `for step := 1 to 32`). Put an explicit
+  "do NOT name anything `to`, `step`, `in`, `do`, `match`, or a type-name keyword" line in
+  EVERY Phase 1D band prompt, and grep the corpus for `(from, to)` / `for step` before 4.5.
 - **Size convergence with `tools\sweep-demos.ps1` FIRST** (it now does the golden compare
   too). The 2026.05.29.23 run's real failures were ~61 crashes (one systematic
   array-build idiom fixed by D22 + a dozen `=`/`<>` demo anti-patterns) and only 3 golden
@@ -1730,6 +1797,22 @@ Implement TinyLanguage.Lexer/Parser.cs:
   `{ ... }` block (the §1.5 disambiguation "`while` after `}` closes a do-while"). Several
   demos use the brace form; without it they fail to parse. (Found in the 2026.06.01 run.)
 
+Three spec-conformance rules that NO demo exercises — get them right up front, or Phase 4.7
+will find them (all three were 2026-08-10 Phase 4.7 finds):
+- **A class `<member_list>` takes NO separator token.** The BNF is
+  `<member_list> ::= <member> <member_list>`, so `class C { let a := 1 let b := 2 }` and two
+  `function` members back-to-back on one line must parse. Do NOT require a `;` or a line break
+  between members — loop until `}`/`end`/EOF and let `ParseClassMember` reject a non-member
+  token. (Multi-line class bodies hid this: the whole corpus writes one member per line.)
+- **Comparison operators are NON-associative.** `<comparison_expr>` permits exactly one
+  operator, and the spec says "`a < b < c` requires parentheses". Parse comparison ONE-SHOT;
+  a second comparison / `is` / `as` at the same level is a PARSE error
+  (`Comparison operators are not associative; parenthesise the operands around '<'`), not a
+  deferred runtime type error.
+- **`switch X { }` with no `case` and no `default` must be REJECTED.** `<case_list>` requires
+  at least one clause and Build.Solution.md's Layer-2 error list names this case explicitly.
+  It was previously accepted and executed as a silent no-op.
+
 Run: dotnet build TinyLanguage.Lexer
 Accept only: 0 errors, 0 warnings.
 ```
@@ -1802,6 +1885,28 @@ Implement TinyLanguage.Interpreter/:
   no enclosing `try`), and rethrow each as an `InterpreterException` carrying the offending
   statement's line — so `Program.cs` reports `Runtime error (line N): …` and exits 1 (Runtime
   Error Policy), NOT a CLR stack trace + exit 127. (2026.05.30 Phase 4.7 adversarial-review find.)
+- **EVALUATE THE RIGHT-HAND SIDE FIRST in every assignment form.** This is the single
+  highest-impact interpreter bug found in the 2026-08-10 run (~18 demos, and it fails SILENTLY
+  with plausible-looking output). In `ArrayElementAssignNode`, `MemberAssignStmtNode` and
+  `PostfixAssignStmtNode`, resolve the RHS BEFORE resolving the target container. Why: the
+  corpus's universal append idiom `this.X := this.X + [v]` REBINDS `this.X` to a NEW list, so a
+  statement like `this.Left[n] := this.InsertAt(this.Left[n], k)` — where the call appends
+  internally — writes into a STALE copy if the container was resolved first. Symptom: every
+  BST/treap/quadtree/tree-height demo silently builds a one-element tree, exits 0, and produces
+  wrong-but-non-crashing output that only the golden gate catches.
+- **`return` needs a non-exception fast path.** Signalling `return` purely by throwing makes
+  call-heavy demos crawl (one demo went 44 s -> 29 s -> sub-second once a `return` written
+  directly in a function body returned its value without throwing). Keep the exception path for
+  a `return` nested inside an if/loop; add the fast path for the direct case.
+- **`const` is IMMUTABLE — enforce it for plain variables, not just class fields.** Assigning to
+  a `const` binding (from any scope, including inside a function) is
+  `Runtime error (line N): Cannot assign to constant 'K'`. An inner `let` may still legitimately
+  shadow it. (2026-08-10 Phase 4.7 find: class-body `const` was enforced but plain `const` was
+  silently mutable — a "silent failure", which the Runtime Error Policy forbids.)
+- **Built-in functions may NOT be redefined by user code** (Build.Solution.md, Built-in
+  Functions). `function len(x) ...` is `Runtime error (line N): Built-in function 'len' cannot
+  be redefined`. In practice only `len`/`str` are reachable (the rest lex as type keywords).
+  (2026-08-10 Phase 4.7 find: a user `len` silently shadowed the builtin.)
 
 Run: dotnet build TinyLanguage.Interpreter
 Accept only: 0 errors, 0 warnings.
@@ -2502,7 +2607,11 @@ Constraints:
   for runnable examples. Verify the snippets actually parse (lex them through
   the freshly-built TinyLanguage.exe — if a snippet fails to lex/parse, fix
   the snippet, do not "loosen" the example to hide a real bug).
-- Keep the wiki under ~600 lines. It is a reference document, not a tutorial.
+- Keep the wiki under ~1000 lines. It is a reference document, not a tutorial.
+  (Budget raised from ~600 after the 2026-08-10 run: the REQUIRED content — both editor
+  debuggers, the DataStructures catalogue suite, the gotchas table, and D1–D23 rationale —
+  does not compress below ~880 lines. Do not pad, but do not amputate a required section to
+  hit an obsolete number.)
 - When the wiki and Build.Solution.md disagree, the spec wins — say so
   explicitly at the top of the wiki.
 - Cross-reference but do NOT duplicate Build.Solution.md content verbatim.
@@ -2511,7 +2620,14 @@ Constraints:
 Acceptance:
 
 - Z:\repos\TinyLanguage.YYYY.MM.DD.HH\TinyLanguage.wiki.md exists, > 200 lines,
-  < 800 lines.
+  < 1000 lines.
+- NOTE: the Tier/band figures quoted elsewhere in this prompt drift between runs — do NOT
+  copy them into the wiki. MEASURE the actual bands off disk (count the `.tlg` basenames per
+  numeric range) and write what you measured. The 2026-08-10 run was A 00001–00389 (320),
+  B 00400–00474 (50), C 00500–00659 (125), completion 00700–00875 (123).
+- Every ```tinylanguage block must have been EXECUTED through the published exe and its
+  printed output byte-compared — not merely parsed. A block that parses but prints something
+  other than what the surrounding prose claims is worse than no example.
 - Every fenced code block tagged ```tinylanguage parses cleanly through the
   built parser (run the lexer + parser smoke harness used in Phase 2 against
   each block, or write a quick ad-hoc check).
@@ -2688,8 +2804,26 @@ Version="0.1.0" Publisher="tinylanguage-local". InstallationTarget for VS18:
 
 Prerequisite: Microsoft.VisualStudio.Component.CoreEditor [18.0,)
 
-Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project"
-d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|"
+TWO Asset entries are required — the generated one AND the hand-written pkgdef:
+
+  <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project"
+         d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+  <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File"
+         Path="Resources\PackageRegistration.pkgdef" />
+
+SILENT-FAILURE GOTCHA (2026-08-10): with ONLY the `PkgdefProjectOutputGroup` asset,
+`Resources\PackageRegistration.pkgdef` is still PACKAGED inside the .vsix but is never
+DECLARED as a VsPackage asset — so VS never merges the AD7 engine registration, the launcher
+CLSID, or the `.tlg` file association into its registry. The extension then installs
+successfully, shows up in Help → About, and does absolutely nothing on F5. Every installer
+gate stays green while the feature is dead. Verify the second `<Asset>` survives into the
+BUILT `extension.vsixmanifest` inside the .vsix, not just the source manifest.
+
+Also required, though Build.md's file list predates it: `extensions\vs\AssemblyInfo.cs`.
+A legacy (non-SDK) csproj does not auto-generate assembly attributes, and
+`PackageRegistration.pkgdef` hard-codes `Version=0.1.0.0` in the launcher's `Assembly` value —
+without AssemblyInfo.cs the DLL is `0.0.0.0` and the CLSID fails to activate. Add it to
+`.projitems` too (16 `<None>` items, not 15).
 
 ELEMENT-ORDER GOTCHA (VSSDK1062, hit in the 2026.05.29.23 run): inside `<Metadata>`,
 `<License>` MUST appear BEFORE `<Icon>` — the VSX-2011 schema enforces this order and a
@@ -2830,6 +2964,18 @@ install-vscode-debugger.cmd:
      `vswhere -products * -requires Microsoft.Component.MSBuild` and pick the first
      whose Common7\IDE\VSIXInstaller.exe exists) so the Community/Pro/Enterprise IDE
      install wins over BuildTools.
+     REFINEMENT (2026-08-10): "has VSIXInstaller.exe" is NOT sufficient — on that machine the
+     `18.9.0-insiders` **BuildTools** install shipped BOTH MSBuild.exe AND
+     Common7\IDE\VSIXInstaller.exe, so it satisfied the old heuristic and would have been
+     chosen over the real IDE. Additionally require **Common7\IDE\devenv.exe** to exist; that
+     is what actually distinguishes an IDE install from BuildTools, and it also guarantees the
+     same install can serve Phase 5 Step 6i's `devenv.com /Rebuild`.
+     SHELL GOTCHA (2026-08-10): agent shells may set `NoDefaultCurrentDirectoryInExePath=1`,
+     so a bare `vswhere.exe` after `pushd` fails with "not recognized". Invoke it as
+     `.\vswhere.exe`, which works in both environments. The `pushd`-then-relative-invoke
+     pattern is deliberate: it keeps `%ProgramFiles(x86)%`'s literal parentheses out of a
+     `for /f (...)` header — the same paren gotcha this file documents for `if` blocks applies
+     to `for` headers too.
   4. pushd "%SCRIPT_DIR%extensions\vs" && call "%MSBUILD%" TinyLanguage.VsTools.csproj
      /restore /p:Configuration=Release /p:DeployExtension=false
   5. call "%VSIXINSTALLER%" /quiet "%SCRIPT_DIR%extensions\vs\bin\Release\TinyLanguage.VsTools.vsix"

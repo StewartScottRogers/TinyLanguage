@@ -95,6 +95,39 @@ From Build.md "Deliberate deviations from Build.Solution.md" plus the additive P
 | D22 | Indexed-assign append at `index == Length` | BNF/Note 7: `<id>[expr] := <expr>` mutates an existing element. | Interpreter: an indexed assignment where `index == array.Length` APPENDS (grow-by-one); `index < Length` mutates in place; `index > Length`/`< 0` still errors. Applies to both `arr[i] := v` (ArrayElementAssignNode) and `this.data[i] := v` (PostfixAssignStmtNode) via one shared `StoreIndexed`. Required by Tier B algorithm demos that build arrays by indexed assignment from empty. Safe: only converts a former error to success. | 3A |
 | D23 | "Data Structures" catalogue test project (additive) | Silent on a per-data-structure test suite. | New 8th .NET project `TinyLanguage.DataStructures.Tests` with EXACTLY 220 numbered `[TestMethod]`s — one per structure on Wikipedia's *List of data structures* — each running a `.tlg` implementation in-process and asserting its golden `.expected`. The full catalogue, per-entry feasibility (yes/approx/primitive/no), demo-coverage rule, and generation/acceptance spec live in `Build.DataStructures.md` (machine-readable `tools\data-structures.catalogue.json`). Extends Tier C with catalogue-completion demos in reserved band `00700–00899` plus a `catalogue.manifest.tsv`. | 1A, 1D, 4.5, 4G, 5 |
 
+### 2b. Conformance corrections carried forward (NOT deviations)
+
+The 2026-08-10 Phase 4.7 adversarial review found five places where the implementation diverged
+from `Build.Solution.md` in ways **no demo exercised** — a green golden sweep proves the corpus
+works, it does not prove spec conformance. These are restorations of the spec, not deviations,
+so they carry no `D` number; implement them from the start in the phases noted.
+
+| # | Correction | Spec basis | Phase |
+|---|---|---|---|
+| C1 | `const` bindings are immutable everywhere, not just as class fields (an inner `let` may still shadow) | "`const` declares an immutable binding" + Runtime Error Policy "silent failures are forbidden" | 3A |
+| C2 | Built-in functions (`len`, `str`, `int`, `bool`, `float`) may not be redefined by user code | Built-in Functions section | 3A |
+| C3 | `switch X { }` with no `case` and no `default` is a PARSE error | `<case_list>` requires ≥1 clause; named in the Layer-2 error list | 2 |
+| C4 | A class `<member_list>` takes no separator token — two members may sit on one line | `<member_list> ::= <member> <member_list>` | 2 |
+| C5 | Comparison operators are non-associative — `1 < 2 < 3` is a PARSE error, not a deferred runtime type error | `<comparison_expr>` permits one operator; "all forms are non-associative" | 2 |
+
+Plus one correctness rule that is neither deviation nor spec text, but an implementation trap
+that silently produces wrong output (see AGENTS.md "Interpreter trap"): **evaluate the
+assignment RHS before resolving the target container** in `ArrayElementAssignNode`,
+`MemberAssignStmtNode` and `PostfixAssignStmtNode`. ~18 demos in Phase 3A.
+
+### 2c. Ambiguities in Build.Solution.md — resolved by corpus precedent, do NOT thrash
+
+Re-litigated every run; the pinned answers are:
+
+| Ambiguity | Resolution |
+|---|---|
+| `Integer / Integer` — table says "Float (when the result has a fractional part)" | `/` is **always** float division (`6 / 3` → `2.0`); `//` is integer division |
+| List comprehension — "defined but not yet implemented" vs Feature Status "must be fully implemented" | It **is** implemented (`[x * 2 for x in a]`). There is no `if` filter clause. |
+| Note 13 cast-vs-grouping — a strict reading makes `(a)` a cast to type `a` | Treated as grouping; a strict reading would break ordinary parenthesised expressions |
+| Note 2 vs Layer-1 checklist on a bare `=` | Follow the checklist: lexes as `SingleEqual` (not `Unknown`); the parser rejects it |
+| Type annotations at runtime | Syntax only — not runtime-enforced. Enforcing would be invention, not conformance. |
+| Layer-2 "trailing `;` before `end` → parse exception" vs D11 | D11 wins: it is tolerated |
+
 ---
 
 ## 3. Work-Unit List
